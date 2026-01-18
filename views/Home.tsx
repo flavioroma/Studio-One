@@ -1,0 +1,101 @@
+import React from 'react';
+import { Video, Box, ArrowRight, Sparkles, Scissors, Layers, Image as ImageIcon } from 'lucide-react';
+import { ToolId } from '../App';
+import { useLanguage } from '../contexts/LanguageContext';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
+
+interface HomeProps {
+  onSelectTool: (tool: ToolId) => void;
+}
+
+export const Home: React.FC<HomeProps> = ({ onSelectTool }) => {
+  const { t } = useLanguage();
+
+  const tools = [
+    {
+      id: 'mptrim' as ToolId,
+      name: 'MP(3)trim',
+      description: t.home.mptrim.description,
+      icon: Scissors,
+      color: 'bg-emerald-500',
+      badge: t.home.badges.updated
+    },
+    {
+      id: 'slidesync' as ToolId,
+      name: 'SlideSync',
+      description: t.home.slidesync.description,
+      icon: Video,
+      color: 'bg-blue-500',
+      badge: t.home.badges.popular
+    },
+    {
+      id: 'videoverlay' as ToolId,
+      name: 'Videoverlay',
+      description: t.home.videoverlay.description,
+      icon: Layers,
+      color: 'bg-purple-500',
+      badge: t.home.badges.new
+    },
+    {
+      id: 'photoverlay' as ToolId,
+      name: 'Photoverlay',
+      description: t.home.photoverlay.description,
+      icon: ImageIcon,
+      color: 'bg-pink-500',
+      badge: t.home.badges.new
+    }
+  ];
+
+  return (
+    <div className="h-full flex flex-col items-center justify-center p-8 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-slate-950 overflow-y-auto">
+      <div className="max-w-4xl w-full text-center mb-8 animate-fadeIn">
+        <div className="flex justify-center mb-6">
+          <LanguageSwitcher />
+        </div>
+        <h1 className="text-6xl font-black mb-4 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+          {t.home.title}
+        </h1>
+        <p className="text-xl text-slate-400 max-w-4xl mx-auto mb-8 lg:whitespace-nowrap">
+          {t.home.subtitle}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl w-full">
+        {tools.map((tool) => (
+          <button
+            key={tool.id}
+            onClick={() => onSelectTool(tool.id)}
+            className="group relative flex flex-col items-start text-left p-6 bg-slate-800/40 border border-slate-700 rounded-3xl hover:border-blue-500/50 hover:bg-slate-800/60 transition-all duration-300 shadow-xl"
+          >
+            <div className={`p-3 rounded-2xl ${tool.color} mb-6 group-hover:scale-110 transition-transform duration-300`}>
+              <tool.icon className="w-6 h-6 text-white" />
+            </div>
+
+            <div className="flex items-center gap-3 mb-2">
+              <h2 className="text-xl font-bold text-slate-100">{tool.name}</h2>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-700 text-slate-400">
+                {tool.badge}
+              </span>
+            </div>
+
+            <p className="text-slate-400 text-sm leading-relaxed mb-8 flex-1">
+              {tool.description}
+            </p>
+
+            <div className="flex items-center gap-2 text-blue-400 text-sm font-bold group-hover:gap-4 transition-all">
+              <span>{t.common.openTool}</span>
+              <ArrowRight className="w-4 h-4" />
+            </div>
+
+            <div className="absolute -inset-px rounded-3xl border border-white/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-16 flex items-center gap-2 text-slate-500 text-sm italic">
+        <Sparkles className="w-4 h-4" />
+        <span>{t.common.moreTools}</span>
+      </div>
+    </div>
+  );
+};
