@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Slide } from '../types';
 import { GripVertical, Trash2 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -42,6 +42,19 @@ export const Timeline: React.FC<TimelineProps> = ({ slides, activeSlideId, onSel
     }
   };
 
+  useEffect(() => {
+    if (activeSlideId && scrollRef.current) {
+      const element = document.getElementById(`timeline-slide-${activeSlideId}`);
+      if (element) {
+        element.scrollIntoView({
+          behavior: 'smooth',
+          inline: 'center',
+          block: 'nearest',
+        });
+      }
+    }
+  }, [activeSlideId]);
+
   return (
     <div
       ref={scrollRef}
@@ -76,12 +89,13 @@ export const Timeline: React.FC<TimelineProps> = ({ slides, activeSlideId, onSel
       {slides.map((slide, index) => (
         <div
           key={slide.id}
+          id={`timeline-slide-${slide.id}`}
           draggable
           onDragStart={(e) => handleDragStart(e, index)}
           onDragOver={handleDragOver}
           onDrop={(e) => handleDrop(e, index)}
           onClick={() => onSelectSlide(slide.id)}
-          className={`relative group h-24 aspect-video flex-shrink-0 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${activeSlideId === slide.id ? 'border-blue-500 shadow-lg shadow-blue-500/20 scale-105 z-10' : 'border-slate-600 hover:border-slate-400'
+          className={`relative group h-24 aspect-square flex-shrink-0 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${activeSlideId === slide.id ? 'border-blue-500 shadow-lg shadow-blue-500/20 scale-105 z-10' : 'border-slate-600 hover:border-slate-400'
             }`}
         >
           {/* Drag Handle Overlay */}

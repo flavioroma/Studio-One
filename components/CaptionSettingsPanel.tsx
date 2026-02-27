@@ -1,15 +1,7 @@
 import React from 'react';
 import { Wand2, Type, Italic, Palette } from 'lucide-react';
-import { TextPosition, TextColor, TextSize } from '../types';
+import { TextPosition, TextColor, TextSize, CaptionSettings } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
-
-export interface CaptionSettings {
-    text: string;
-    color: TextColor;
-    position: TextPosition;
-    textSize: TextSize;
-    isItalic?: boolean;
-}
 
 interface CaptionSettingsPanelProps {
     settings: CaptionSettings;
@@ -27,7 +19,7 @@ export const CaptionSettingsPanel: React.FC<CaptionSettingsPanelProps> = ({
     const { t } = useLanguage();
 
     return (
-        <div className="space-y-4 pt-4 border-t border-slate-700">
+        <div className="space-y-4">
             <div className="space-y-2">
                 <div className="flex justify-between items-center">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.tools.slidesync.captionText}</label>

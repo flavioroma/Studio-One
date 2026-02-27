@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Music, Upload, Scissors, Play, Pause, Download, Trash2, Clock, CheckCircle2, Flag, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
 import { PersistenceService } from '../../services/PersistenceService';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { ConfirmationModal } from '../../components/ConfirmationModal';
 
 type ExportFormat = 'wav' | 'mp3';
 
@@ -16,8 +17,9 @@ export const MPTrimTool: React.FC = () => {
   const [playMode, setPlayMode] = useState<'selection' | 'all'>('selection');
   const [isExporting, setIsExporting] = useState(false);
   const [peaks, setPeaks] = useState<number[]>([]);
-  const [exportFormat, setExportFormat] = useState<ExportFormat>('mp3');
+  const [exportFormat, setExportFormat] = useState<ExportFormat>('wav');
   const [audioDataOffset, setAudioDataOffset] = useState(0);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const animationRef = useRef<number | null>(null);
@@ -331,7 +333,30 @@ export const MPTrimTool: React.FC = () => {
     setPeaks([]);
     setIsPlaying(false);
     setAudioDataOffset(0);
+    setStartTime(0);
+    setEndTime(0);
     if (audioRef.current) audioRef.current.src = "";
+
+    // Clear Persistence
+    PersistenceService.saveMPTrimState({
+      file: null,
+      startTime: 0,
+      endTime: 0,
+      exportFormat: 'wav'
+    });
+  };
+
+  const handleDeleteRequest = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    reset();
+    setShowDeleteConfirm(false);
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
   };
 
   return (
@@ -374,7 +399,7 @@ export const MPTrimTool: React.FC = () => {
                   <h2 className="text-xl font-bold text-white truncate">{file.name}</h2>
                 </div>
               </div>
-              <button onClick={reset} className="p-3 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all shrink-0" title={t.tools.mptrim.removeFile}>
+              <button onClick={handleDeleteRequest} className="p-3 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all shrink-0" title={t.tools.mptrim.removeFile}>
                 <Trash2 className="w-5 h-5" />
               </button>
             </div>
@@ -427,125 +452,125 @@ export const MPTrimTool: React.FC = () => {
               </div>
 
               {/* Marker Controls Overlay */}
-              <div className="mt-8 flex items-center justify-between">
-                <div className="flex gap-4">
-                  <button
-                    onClick={handleSetStart}
-                    className="group/btn flex items-center gap-2 px-5 py-2.5 bg-slate-700 hover:bg-emerald-600/20 hover:text-emerald-400 border border-slate-600 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95"
-                  >
-                    <Flag className="w-3.5 h-3.5 group-hover/btn:scale-110 transition-transform" /> {t.tools.mptrim.setStart}
-                  </button>
-                  <button
-                    onClick={handleSetEnd}
-                    className="group/btn flex items-center gap-2 px-5 py-2.5 bg-slate-700 hover:bg-emerald-600/20 hover:text-emerald-400 border border-slate-600 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95"
-                  >
-                    <Flag className="w-3.5 h-3.5 fill-current group-hover/btn:scale-110 transition-transform" /> {t.tools.mptrim.setEnd}
-                  </button>
+              <div className="mt-8 space-y-8">
+                <div className="flex justify-center">
+                  <div className="font-mono text-lg text-white bg-black/40 px-6 py-2 rounded-xl border border-slate-700 tabular-nums shadow-inner">
+                    {formatTime(currentTime)}
+                  </div>
                 </div>
 
-                <div className="font-mono text-2xl text-white bg-black/40 px-6 py-2 rounded-xl border border-slate-700 tabular-nums shadow-inner">
-                  {formatTime(currentTime)}
-                </div>
-              </div>
+                <div className="flex justify-evenly items-start pt-8 border-t border-slate-700/50">
+                  <div className="flex flex-col items-center gap-2">
+                    <button
+                      onClick={() => togglePlay('all')}
+                      className={`w-14 h-14 flex items-center justify-center rounded-2xl transition-all ${isPlaying && playMode === 'all'
+                        ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20 ring-2 ring-white/20'
+                        : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+                        }`}
+                      title={t.tools.mptrim.playFull}
+                    >
+                      {isPlaying && playMode === 'all' ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1" />}
+                    </button>
+                    <span className="text-[12px] font-black uppercase tracking-widest text-slate-500">
+                      {t.tools.mptrim.fullTrack}
+                    </span>
+                  </div>
 
-              {/* Range Inputs (Fine-tuning enabled) */}
-              <div className="mt-6 grid grid-cols-2 gap-8">
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center px-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">{t.tools.mptrim.selectionStart}</label>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono text-emerald-400">{formatTime(startTime)}</span>
-                    </div>
+                  <div className="flex flex-col items-center gap-2">
+                    <button
+                      onClick={() => togglePlay('selection')}
+                      className={`w-14 h-14 flex items-center justify-center rounded-2xl transition-all ${isPlaying && playMode === 'selection'
+                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 ring-2 ring-white/20'
+                        : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+                        }`}
+                      title={t.tools.mptrim.playSelection}
+                    >
+                      {isPlaying && playMode === 'selection' ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1" />}
+                    </button>
+                    <span className="text-[12px] font-black uppercase tracking-widest text-slate-500">
+                      {t.tools.mptrim.selection}
+                    </span>
                   </div>
-                  <div className="relative flex items-center gap-2">
-                    <button onClick={() => setStartTime(s => Math.max(0, s - 0.1))} className="p-1 hover:text-white text-slate-500 transition-colors"><ChevronLeft className="w-4 h-4" /></button>
-                    <input
-                      ref={startInputRef}
-                      type="range"
-                      min="0"
-                      max={audioBuffer?.duration || 100}
-                      step="0.001"
-                      value={startTime}
-                      onKeyDown={(e) => handleKeyDown(e, 'start')}
-                      onChange={(e) => {
-                        const val = parseFloat(e.target.value);
-                        setStartTime(Math.min(val, endTime - 0.01));
-                        if (audioRef.current) audioRef.current.currentTime = val;
-                      }}
-                      className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
-                    />
-                    <button onClick={() => setStartTime(s => Math.min(endTime - 0.01, s + 0.1))} className="p-1 hover:text-white text-slate-500 transition-colors"><ChevronRight className="w-4 h-4" /></button>
-                  </div>
-                  <p className="text-[9px] text-slate-600 text-center italic">{t.tools.mptrim.tip}</p>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center px-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">{t.tools.mptrim.selectionEnd}</label>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono text-emerald-400">{formatTime(endTime)}</span>
-                    </div>
-                  </div>
-                  <div className="relative flex items-center gap-2">
-                    <button onClick={() => setEndTime(s => Math.max(startTime + 0.01, s - 0.1))} className="p-1 hover:text-white text-slate-500 transition-colors"><ChevronLeft className="w-4 h-4" /></button>
-                    <input
-                      ref={endInputRef}
-                      type="range"
-                      min="0"
-                      max={audioBuffer?.duration || 100}
-                      step="0.001"
-                      value={endTime}
-                      onKeyDown={(e) => handleKeyDown(e, 'end')}
-                      onChange={(e) => {
-                        const val = parseFloat(e.target.value);
-                        setEndTime(Math.max(val, startTime + 0.01));
-                      }}
-                      className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
-                    />
-                    <button onClick={() => setEndTime(s => Math.min(audioBuffer?.duration || 0, s + 0.1))} className="p-1 hover:text-white text-slate-500 transition-colors"><ChevronRight className="w-4 h-4" /></button>
-                  </div>
-                  <p className="text-[9px] text-slate-600 text-center italic">{t.tools.mptrim.tip}</p>
                 </div>
               </div>
             </div>
 
             {/* Main Controls Panel */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Playback Controls */}
-              <div className="bg-slate-800/80 backdrop-blur-sm p-6 rounded-3xl border border-slate-700 flex items-center justify-around">
-                <div className="flex flex-col items-center gap-3">
+            <div className="flex flex-col gap-6">
+              {/* Marker Controls */}
+              <div className="bg-slate-800/80 backdrop-blur-sm p-8 rounded-3xl border border-slate-700 space-y-8">
+                <div className="flex items-center justify-between gap-4">
                   <button
-                    onClick={() => togglePlay('all')}
-                    className={`w-14 h-14 flex items-center justify-center rounded-2xl transition-all ${isPlaying && playMode === 'all'
-                      ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20 ring-2 ring-white/20'
-                      : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
-                      }`}
-                    title={t.tools.mptrim.playFull}
+                    onClick={handleSetStart}
+                    className="flex-1 group/btn flex items-center justify-center gap-2 px-5 py-3.5 bg-slate-700 hover:bg-emerald-600/20 hover:text-emerald-400 border border-slate-600 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95"
                   >
-                    {isPlaying && playMode === 'all' ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1" />}
+                    <Flag className="w-3.5 h-3.5 group-hover/btn:scale-110 transition-transform" /> {t.tools.mptrim.setStart}
                   </button>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">
-                    {t.tools.mptrim.fullTrack}<br />
-                    <span className="text-emerald-400/80 font-mono lower">{formatTime(audioBuffer?.duration || 0)}</span>
-                  </span>
+                  <button
+                    onClick={handleSetEnd}
+                    className="flex-1 group/btn flex items-center justify-center gap-2 px-5 py-3.5 bg-slate-700 hover:bg-emerald-600/20 hover:text-emerald-400 border border-slate-600 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95"
+                  >
+                    <Flag className="w-3.5 h-3.5 fill-current group-hover/btn:scale-110 transition-transform" /> {t.tools.mptrim.setEnd}
+                  </button>
                 </div>
 
-                <div className="h-12 w-[1px] bg-slate-700"></div>
-
-                <div className="flex flex-col items-center gap-3">
-                  <button
-                    onClick={() => togglePlay('selection')}
-                    className={`w-14 h-14 flex items-center justify-center rounded-2xl transition-all ${isPlaying && playMode === 'selection'
-                      ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 ring-2 ring-white/20'
-                      : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
-                      }`}
-                    title={t.tools.mptrim.playSelection}
-                  >
-                    {isPlaying && playMode === 'selection' ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1" />}
-                  </button>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 text-center">
-                    {t.tools.mptrim.selection}<br />
-                    <span className="text-emerald-400/80 font-mono lower">{formatTime(endTime - startTime)}</span>
-                  </span>
+                {/* Range Inputs (Fine-tuning enabled) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center px-1">
+                      <label className="text-[12px] font-black uppercase tracking-widest text-slate-500">{t.tools.mptrim.selectionStart}</label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono text-emerald-400">{formatTime(startTime)}</span>
+                      </div>
+                    </div>
+                    <div className="relative flex items-center gap-2">
+                      <button onClick={() => setStartTime(s => Math.max(0, s - 0.1))} className="p-1 hover:text-white text-slate-500 transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+                      <input
+                        ref={startInputRef}
+                        type="range"
+                        min="0"
+                        max={audioBuffer?.duration || 100}
+                        step="0.001"
+                        value={startTime}
+                        onKeyDown={(e) => handleKeyDown(e, 'start')}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          setStartTime(Math.min(val, endTime - 0.01));
+                          if (audioRef.current) audioRef.current.currentTime = val;
+                        }}
+                        className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                      />
+                      <button onClick={() => setStartTime(s => Math.min(endTime - 0.01, s + 0.1))} className="p-1 hover:text-white text-slate-500 transition-colors"><ChevronRight className="w-4 h-4" /></button>
+                    </div>
+                    <p className="text-[12px] text-slate-600 text-center italic">{t.tools.mptrim.tip}</p>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center px-1">
+                      <label className="text-[12px] font-black uppercase tracking-widest text-slate-500">{t.tools.mptrim.selectionEnd}</label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono text-emerald-400">{formatTime(endTime)}</span>
+                      </div>
+                    </div>
+                    <div className="relative flex items-center gap-2">
+                      <button onClick={() => setEndTime(s => Math.max(startTime + 0.01, s - 0.1))} className="p-1 hover:text-white text-slate-500 transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+                      <input
+                        ref={endInputRef}
+                        type="range"
+                        min="0"
+                        max={audioBuffer?.duration || 100}
+                        step="0.001"
+                        value={endTime}
+                        onKeyDown={(e) => handleKeyDown(e, 'end')}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          setEndTime(Math.max(val, startTime + 0.01));
+                        }}
+                        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                      />
+                      <button onClick={() => setEndTime(s => Math.min(audioBuffer?.duration || 0, s + 0.1))} className="p-1 hover:text-white text-slate-500 transition-colors"><ChevronRight className="w-4 h-4" /></button>
+                    </div>
+                    <p className="text-[12px] text-slate-600 text-center italic">{t.tools.mptrim.tip}</p>
+                  </div>
                 </div>
               </div>
 
@@ -553,26 +578,26 @@ export const MPTrimTool: React.FC = () => {
               <div className="bg-slate-800/80 backdrop-blur-sm p-6 rounded-3xl border border-slate-700 flex flex-col justify-center">
                 <div className="flex items-center justify-between mb-4 px-2">
                   <div>
-                    <p className="text-[10px] font-black uppercase text-slate-500 mb-1">{t.tools.mptrim.outputFormat}</p>
+                    <p className="text-[12px] font-black uppercase text-slate-500 mb-1">{t.tools.mptrim.outputFormat}</p>
                     <div className="flex bg-slate-900/50 p-1 rounded-lg border border-slate-700">
                       <button
-                        onClick={() => setExportFormat('mp3')}
-                        className={`px-4 py-1 text-[10px] font-black uppercase rounded-md transition-all ${exportFormat === 'mp3' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
-                      >
-                        MP3
-                      </button>
-                      <button
                         onClick={() => setExportFormat('wav')}
-                        className={`px-4 py-1 text-[10px] font-black uppercase rounded-md transition-all ${exportFormat === 'wav' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                        className={`px-4 py-1 text-[12px] font-black uppercase rounded-md transition-all ${exportFormat === 'wav' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
                       >
                         WAV
                       </button>
+                      <button
+                        onClick={() => setExportFormat('mp3')}
+                        className={`px-4 py-1 text-[12px] font-black uppercase rounded-md transition-all ${exportFormat === 'mp3' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                      >
+                        MP3
+                      </button>
                     </div>
                   </div>
-                  <div className="text-right hidden lg:block">
-                    <p className="text-[10px] font-black uppercase text-slate-500 mb-1">{t.tools.mptrim.method}</p>
-                    <p className="text-xs text-emerald-400 font-bold flex items-center gap-1 justify-end">
-                      {exportFormat === 'mp3' ? t.tools.mptrim.smartSlice : t.tools.mptrim.losslessMaster}
+                  <div className="flex-1 max-w-[600px] text-right">
+                    <p className="text-[12px] font-black uppercase text-slate-500 mb-1">{t.tools.mptrim.desc}</p>
+                    <p className="text-[12px] text-emerald-400/80 leading-relaxed font-medium whitespace-pre-line">
+                      {exportFormat === 'wav' ? t.tools.mptrim.wavDesc : t.tools.mptrim.mp3Desc}
                     </p>
                   </div>
                 </div>
@@ -586,44 +611,29 @@ export const MPTrimTool: React.FC = () => {
                 </button>
               </div>
             </div>
-
-            {exportFormat === 'mp3' && (
-              <div className="flex items-center gap-3 p-4 bg-amber-900/20 border border-amber-500/20 rounded-2xl text-amber-400">
-                <AlertTriangle className="w-5 h-5 shrink-0" />
-                <p className="text-xs leading-relaxed" dangerouslySetInnerHTML={{ __html: `<strong>${t.tools.mptrim.mp3NoteTitle}</strong> ${t.tools.mptrim.mp3NoteDesc}` }}>
-                </p>
-              </div>
-            )}
           </div>
         )}
 
         <audio ref={audioRef} className="hidden" />
 
-        {/* Info Footer */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-12 border-t border-slate-800/50">
-          <div className="flex gap-4 items-start">
-            <div className="p-2.5 bg-slate-800 rounded-xl border border-slate-700"><CheckCircle2 className="w-5 h-5 text-emerald-500" /></div>
-            <div>
-              <h4 className="font-bold text-white text-sm uppercase tracking-tight">{t.tools.mptrim.headerAwareTitle}</h4>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">{t.tools.mptrim.headerAwareDesc}</p>
-            </div>
-          </div>
-          <div className="flex gap-4 items-start">
-            <div className="p-2.5 bg-slate-800 rounded-xl border border-slate-700"><Scissors className="w-5 h-5 text-emerald-500" /></div>
-            <div>
-              <h4 className="font-bold text-white text-sm uppercase tracking-tight">{t.tools.mptrim.formatChoiceTitle}</h4>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">{t.tools.mptrim.formatChoiceDesc}</p>
-            </div>
-          </div>
-          <div className="flex gap-4 items-start">
-            <div className="p-2.5 bg-slate-800 rounded-xl border border-slate-700"><Download className="w-5 h-5 text-emerald-500" /></div>
-            <div>
-              <h4 className="font-bold text-white text-sm uppercase tracking-tight">{t.tools.mptrim.clientSideTitle}</h4>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">{t.tools.mptrim.clientSideDesc}</p>
-            </div>
-          </div>
+        {/* Description Footer */}
+        <div className="flex justify-center pt-12 border-t border-slate-800/50">
+          <p className="text-xs text-slate-500">
+            <span className="text-white font-bold">{t.tools.mptrim.clientSideTitle}:</span> {t.tools.mptrim.clientSideDesc}
+          </p>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={cancelDelete}
+        onConfirm={confirmDelete}
+        title={t.tools.mptrim.removeTrackTitle}
+        message={t.tools.mptrim.removeTrackMsg}
+        confirmLabel={t.tools.mptrim.yesRemove}
+        cancelLabel={t.tools.mptrim.cancel}
+        Icon={Trash2}
+      />
     </div>
   );
 };

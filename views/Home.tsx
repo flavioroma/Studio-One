@@ -14,7 +14,7 @@ export const Home: React.FC<HomeProps> = ({ onSelectTool }) => {
   const tools = [
     {
       id: 'mptrim' as ToolId,
-      name: 'MP(3)trim',
+      name: 'AudioTrim',
       description: t.home.mptrim.description,
       icon: Scissors,
       color: 'bg-emerald-500',

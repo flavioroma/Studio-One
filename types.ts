@@ -41,14 +41,29 @@ export enum TextColor {
 
 export enum AspectRatio {
   Landscape_16_9 = '16:9',
+  Landscape_5_4 = '5:4',
   Portrait_9_16 = '9:16',
   Portrait_4_5 = '4:5',
   Square_1_1 = '1:1',
+  Original = 'original',
 }
 
 export enum ExportFormat {
   WebM = 'video/webm',
   MP4 = 'video/mp4',
+}
+
+export enum Rotation {
+  None = 0,
+  CW_90 = 90,
+  Half = 180,
+  CCW_90 = 270,
+}
+
+export enum AudioMode {
+  Keep = 'keep',
+  Remove = 'remove',
+  Replace = 'replace',
 }
 
 export interface Slide {
@@ -69,4 +84,29 @@ export interface VideoConfig {
   width: number;
   height: number;
   fps: number;
+}
+
+export interface CaptionSettings {
+  text: string;
+  color: TextColor;
+  position: TextPosition;
+  textSize: TextSize;
+  isItalic?: boolean;
+}
+
+export interface WatermarkSettings {
+  file: File | null;
+  position: TextPosition;
+  opacity: number;
+  scale: number;
+}
+
+export interface PhotoItem {
+  id: string;
+  file: File;
+  imageUrl: string;
+  captionSettings: CaptionSettings;
+  watermarkSettings: WatermarkSettings;
+  metadata: { width: number; height: number } | null;
+  exifData: any | null;
 }

@@ -1,15 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, Video as VideoIcon, Download, Trash2, RotateCcw, Loader2, AlertTriangle, Calendar } from 'lucide-react';
+import { Upload, Video as VideoIcon, Download, Trash2, RotateCcw, Loader2, AlertTriangle, Calendar, Monitor, Smartphone, Smartphone as SmartphoneIcon, Square, Volume2, VolumeX, Music, RotateCw, Flag, ChevronLeft, ChevronRight, Play, Pause } from 'lucide-react';
 import { PlaybackControls } from '../../components/PlaybackControls';
 import { MetadataService, VideoMetadata } from '../../services/MetadataService';
-import { TextPosition, TextColor, TextSize } from '../../types';
+import { TextPosition, TextColor, TextSize, AspectRatio, Rotation, AudioMode, CaptionSettings, WatermarkSettings } from '../../types';
 import { PersistenceService } from '../../services/PersistenceService';
 import { Mp4ExportService } from '../../services/Mp4ExportService';
-import { CaptionSettingsPanel, CaptionSettings } from '../../components/CaptionSettingsPanel';
-import { WatermarkSettingsPanel, WatermarkSettings } from '../../components/WatermarkSettingsPanel';
+import { CaptionSettingsPanel } from '../../components/CaptionSettingsPanel';
+import { WatermarkSettingsPanel } from '../../components/WatermarkSettingsPanel';
 import { calculateCaptionMetrics, calculateCaptionPosition, calculateWatermarkPosition } from '../../utils/captionUtils';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { VideoverlaySidebar } from './VideoverlaySidebar';
 
 export const VideoverlayTool: React.FC = () => {
   const { t } = useLanguage();
@@ -33,6 +34,14 @@ export const VideoverlayTool: React.FC = () => {
     scale: 0.2 // Default 20%
   });
 
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio>(AspectRatio.Landscape_16_9);
+  const [rotation, setRotation] = useState<Rotation>(Rotation.None);
+  const [audioMode, setAudioMode] = useState<AudioMode>(AudioMode.Keep);
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+
+  const [startTime, setStartTime] = useState(0);
+  const [endTime, setEndTime] = useState(0);
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
@@ -47,11 +56,26 @@ export const VideoverlayTool: React.FC = () => {
   // Delete Confirmation
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  // Hover state for player controls
+  const [isHoveringPlayer, setIsHoveringPlayer] = useState(false);
+
   // Preview Sizing
   const [containerSize, setContainerSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioPreviewRef = useRef<HTMLAudioElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Load audio preview URL
+  useEffect(() => {
+    if (audioPreviewRef.current && audioFile && audioMode === AudioMode.Replace) {
+      const url = URL.createObjectURL(audioFile);
+      audioPreviewRef.current.src = url;
+      return () => URL.revokeObjectURL(url);
+    } else if (audioPreviewRef.current) {
+      audioPreviewRef.current.src = "";
+    }
+  }, [audioFile, audioMode]);
 
   // ResizeObserver to track container size for WYSIWYG preview
   useEffect(() => {
@@ -82,12 +106,32 @@ export const VideoverlayTool: React.FC = () => {
 
     const loop = () => {
       if (!video.paused && !video.ended) {
-        setCurrentTime(video.currentTime);
+        let time = video.currentTime;
+        if (endTime > 0 && time >= endTime - 0.05) {
+          video.pause();
+          if (audioPreviewRef.current) audioPreviewRef.current.pause();
+          setIsPlaying(false);
+          video.currentTime = endTime;
+          time = endTime;
+        }
+        setCurrentTime(time);
+
+        // Sync custom audio preview
+        if (audioPreviewRef.current && audioMode === AudioMode.Replace && !audioPreviewRef.current.paused) {
+          const expectedAudioTime = Math.max(0, video.currentTime - startTime);
+          if (Math.abs(audioPreviewRef.current.currentTime - expectedAudioTime) > 0.3) {
+            audioPreviewRef.current.currentTime = expectedAudioTime;
+          }
+        }
+
         animationFrameId = requestAnimationFrame(loop);
       }
     };
 
     if (isPlaying) {
+      if (endTime > 0 && (video.currentTime >= endTime || video.currentTime < startTime)) {
+        video.currentTime = startTime;
+      }
       loop();
     } else {
       // Ensure we catch the exact time when paused
@@ -95,7 +139,14 @@ export const VideoverlayTool: React.FC = () => {
     }
 
     return () => cancelAnimationFrame(animationFrameId);
-  }, [isPlaying]);
+  }, [isPlaying, startTime, endTime, audioMode]);
+
+  const formatTime = (seconds: number) => {
+    if (!Number.isFinite(seconds) || isNaN(seconds)) return "0:00";
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -132,6 +183,13 @@ export const VideoverlayTool: React.FC = () => {
           }));
         }
 
+        if (state.aspectRatio) setAspectRatio(state.aspectRatio);
+        if (state.rotation !== undefined) setRotation(state.rotation);
+        if (state.audioMode) setAudioMode(state.audioMode);
+        if (state.audioFile) setAudioFile(state.audioFile);
+        if (state.startTime !== undefined) setStartTime(state.startTime);
+        if (state.endTime !== undefined) setEndTime(state.endTime);
+
         if (state.file) {
           setVideoUrl(URL.createObjectURL(state.file));
         }
@@ -154,15 +212,22 @@ export const VideoverlayTool: React.FC = () => {
         textSize: captionSettings.textSize,
         isItalic: captionSettings.isItalic,
         watermarkFile: watermarkSettings.file,
-        watermarkPosition: watermarkSettings.position
+        watermarkPosition: watermarkSettings.position,
+        aspectRatio,
+        rotation,
+        audioMode,
+        audioFile,
+        startTime,
+        endTime
       });
     }, 2000);
 
     return () => clearTimeout(timeoutId);
-  }, [file, captionSettings, watermarkSettings]);
+  }, [file, captionSettings, watermarkSettings, aspectRatio, rotation, audioMode, audioFile, startTime, endTime]);
 
   const onLoadedMetadata = async () => {
     if (videoRef.current && file) {
+      const vidDuration = videoRef.current.duration;
       try {
         const data = await MetadataService.getVideoMetadata(file);
         setMetadata(data);
@@ -171,17 +236,75 @@ export const VideoverlayTool: React.FC = () => {
         setMetadata({
           width: videoRef.current.videoWidth,
           height: videoRef.current.videoHeight,
-          duration: videoRef.current.duration,
+          duration: vidDuration,
           bitrate: 0
         });
       }
+
+      setEndTime(prev => prev === 0 ? vidDuration : prev);
     }
   };
 
+  // Auto-select aspect ratio when metadata or rotation changes
+  useEffect(() => {
+    if (!metadata) return;
+
+    const isRotated = rotation === Rotation.CW_90 || rotation === Rotation.CCW_90;
+    const w = isRotated ? metadata.height : metadata.width;
+    const h = isRotated ? metadata.width : metadata.height;
+
+    const ratio = w / h;
+    const isLandscapeOrSquare = w >= h;
+
+    const is16_9 = Math.abs(ratio - 16 / 9) < 0.05;
+    const is9_16 = Math.abs(ratio - 9 / 16) < 0.05;
+    const is5_4 = Math.abs(ratio - 5 / 4) < 0.05;
+    const is4_5 = Math.abs(ratio - 4 / 5) < 0.05;
+
+    const fitsLandscapeExactly = is16_9 || is5_4;
+    const fitsPortraitExactly = is9_16 || is4_5;
+
+    let newAspectRatio = aspectRatio;
+
+    if (isLandscapeOrSquare) {
+      if (is16_9) newAspectRatio = AspectRatio.Landscape_16_9;
+      else if (is5_4) newAspectRatio = AspectRatio.Landscape_5_4;
+      else newAspectRatio = AspectRatio.Original;
+
+      if (aspectRatio === AspectRatio.Square_1_1 && fitsLandscapeExactly) {
+        newAspectRatio = AspectRatio.Square_1_1;
+      }
+    } else {
+      if (is9_16) newAspectRatio = AspectRatio.Portrait_9_16;
+      else if (is4_5) newAspectRatio = AspectRatio.Portrait_4_5;
+      else newAspectRatio = AspectRatio.Original;
+
+      if (aspectRatio === AspectRatio.Square_1_1 && fitsPortraitExactly) {
+        newAspectRatio = AspectRatio.Square_1_1;
+      }
+    }
+
+    if (newAspectRatio !== aspectRatio) {
+      setAspectRatio(newAspectRatio);
+    }
+  }, [metadata, rotation]);
+
   const togglePlay = () => {
     if (videoRef.current) {
-      if (isPlaying) videoRef.current.pause();
-      else videoRef.current.play();
+      if (isPlaying) {
+        videoRef.current.pause();
+        if (audioPreviewRef.current) audioPreviewRef.current.pause();
+      } else {
+        const actualEndTime = endTime > 0 ? endTime : (metadata?.duration || videoRef.current.duration || 0);
+        if (videoRef.current.currentTime >= actualEndTime - 0.1 || videoRef.current.currentTime < startTime) {
+          videoRef.current.currentTime = startTime;
+        }
+        videoRef.current.play();
+        if (audioPreviewRef.current && audioMode === AudioMode.Replace) {
+          audioPreviewRef.current.currentTime = Math.max(0, videoRef.current.currentTime - startTime);
+          audioPreviewRef.current.play().catch(e => console.error("Audio play failed", e));
+        }
+      }
       setIsPlaying(!isPlaying);
     }
   };
@@ -193,6 +316,7 @@ export const VideoverlayTool: React.FC = () => {
     setIsPlaying(false);
     setExportProgress(0);
     if (videoRef.current) videoRef.current.pause();
+    if (audioPreviewRef.current) audioPreviewRef.current.pause();
 
     // Init AbortController
     abortControllerRef.current = new AbortController();
@@ -212,7 +336,13 @@ export const VideoverlayTool: React.FC = () => {
             position: watermarkSettings.position,
             scale: watermarkSettings.scale,
             opacity: watermarkSettings.opacity
-          } : undefined
+          } : undefined,
+          aspectRatio,
+          rotation,
+          audioMode,
+          audioFile,
+          startTime,
+          endTime
         },
         (progress) => setExportProgress(progress),
         abortControllerRef.current.signal
@@ -366,6 +496,12 @@ export const VideoverlayTool: React.FC = () => {
     setMetadata(null);
     setCaptionSettings(prev => ({ ...prev, text: '' }));
     setWatermarkSettings(prev => ({ ...prev, file: null }));
+    setAspectRatio(AspectRatio.Landscape_16_9);
+    setRotation(Rotation.None);
+    setAudioMode(AudioMode.Keep);
+    setAudioFile(null);
+    setStartTime(0);
+    setEndTime(0);
 
     // 2. Immediately Clear Persistence
     PersistenceService.saveVideoverlayState({
@@ -376,52 +512,48 @@ export const VideoverlayTool: React.FC = () => {
       textSize: TextSize.Small,
       isItalic: false,
       watermarkFile: null,
-      watermarkPosition: TextPosition.TopRight
+      watermarkPosition: TextPosition.TopRight,
+      aspectRatio: AspectRatio.Landscape_16_9,
+      rotation: Rotation.None,
+      audioMode: AudioMode.Keep,
+      audioFile: null,
+      startTime: 0,
+      endTime: 0
     });
 
     setShowDeleteConfirm(false);
   };
 
+  const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setAudioFile(e.target.files[0]);
+    }
+  };
+
   return (
     <div className="h-full flex bg-slate-900 overflow-hidden">
-      {/* Settings Sidebar */}
-      <div className="w-80 border-r border-slate-700 bg-slate-800 flex flex-col p-6 overflow-y-auto z-10 shadow-2xl">
-        <h2 className="text-lg font-bold mb-8 text-slate-100 uppercase tracking-widest text-center">
-          {t.tools.videoverlay.overlaySettings}
-        </h2>
-
-        {!file ? (
-          <div className="space-y-6">
-            <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl">
-              <p className="text-md text-blue-400 leading-relaxed text-center">
-                {t.tools.videoverlay.selectVideo}
-              </p>
-            </div>
-            <label className="flex flex-col items-center justify-center gap-4 w-full h-48 rounded-3xl border-2 border-dashed border-slate-600 hover:border-purple-500 hover:bg-slate-700/50 cursor-pointer transition-all group">
-              <div className="p-4 bg-slate-700 rounded-full group-hover:scale-110 transition-transform">
-                <Upload className="w-8 h-8 text-purple-400" />
-              </div>
-              <span className="text-sm font-bold text-slate-400">{t.tools.videoverlay.uploadVideo}</span>
-              <input type="file" accept="video/*" onChange={handleFileChange} className="hidden" />
-            </label>
-          </div>
-        ) : (
-          <div className="space-y-8 animate-fadeIn">
-            <CaptionSettingsPanel
-              settings={captionSettings}
-              onUpdate={(updates) => setCaptionSettings(prev => ({ ...prev, ...updates }))}
-            />
-
-            <WatermarkSettingsPanel
-              settings={watermarkSettings}
-              onUpdate={(updates) => setWatermarkSettings(prev => ({ ...prev, ...updates }))}
-            />
-
-          </div>
-        )}
-      </div>
+      <VideoverlaySidebar
+        file={file}
+        metadata={metadata}
+        aspectRatio={aspectRatio}
+        rotation={rotation}
+        audioMode={audioMode}
+        audioFile={audioFile}
+        captionSettings={captionSettings}
+        watermarkSettings={watermarkSettings}
+        onFileChange={handleFileChange}
+        onAspectRatioChange={setAspectRatio}
+        onRotationChange={setRotation}
+        onAudioModeChange={setAudioMode}
+        onAudioFileChange={handleAudioUpload}
+        onRemoveAudioFile={() => setAudioFile(null)}
+        onCaptionUpdate={(updates) => setCaptionSettings(prev => ({ ...prev, ...updates }))}
+        onWatermarkUpdate={(updates) => setWatermarkSettings(prev => ({ ...prev, ...updates }))}
+        onDelete={handleDeleteRequest}
+      />
 
       {/* Main Preview / Viewport */}
+
       <div className="flex-1 flex flex-col min-w-0 bg-slate-950">
         <div className="flex-1 relative flex flex-col items-center justify-center p-12 overflow-hidden gap-8">
           {!videoUrl ? (
@@ -433,19 +565,38 @@ export const VideoverlayTool: React.FC = () => {
             <>
               <div
                 ref={containerRef}
-                className="relative group shadow-2xl rounded-2xl overflow-hidden border-4 border-slate-800 max-h-[60vh]"
+                className="relative group shadow-2xl rounded-2xl overflow-hidden border border-slate-700 bg-black max-h-[75vh]"
                 style={{
-                  aspectRatio: metadata ? `${metadata.width} / ${metadata.height}` : '16 / 9'
+                  aspectRatio: aspectRatio === AspectRatio.Landscape_16_9 ? '16 / 9' :
+                    aspectRatio === AspectRatio.Landscape_5_4 ? '5 / 4' :
+                      aspectRatio === AspectRatio.Portrait_9_16 ? '9 / 16' :
+                        aspectRatio === AspectRatio.Portrait_4_5 ? '4 / 5' :
+                          aspectRatio === AspectRatio.Square_1_1 ? '1 / 1' :
+                            metadata ? `${(rotation === Rotation.CW_90 || rotation === Rotation.CCW_90 ? metadata.height : metadata.width)} / ${(rotation === Rotation.CW_90 || rotation === Rotation.CCW_90 ? metadata.width : metadata.height)}` : '16 / 9'
                 }}
+                onMouseEnter={() => setIsHoveringPlayer(true)}
+                onMouseLeave={() => setIsHoveringPlayer(false)}
               >
                 <video
                   ref={videoRef}
                   src={videoUrl}
                   onLoadedMetadata={onLoadedMetadata}
-                  onEnded={() => setIsPlaying(false)}
+                  onEnded={() => {
+                    setIsPlaying(false);
+                    if (audioPreviewRef.current) audioPreviewRef.current.pause();
+                  }}
                   onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
-                  className="max-h-[60vh] w-auto pointer-events-none"
+                  className={`object-contain pointer-events-none ${(rotation === Rotation.CW_90 || rotation === Rotation.CCW_90) ? 'absolute top-1/2 left-1/2' : 'w-full h-full'}`}
+                  style={{
+                    width: (rotation === Rotation.CW_90 || rotation === Rotation.CCW_90) ? (containerSize.height || '100%') : '100%',
+                    height: (rotation === Rotation.CW_90 || rotation === Rotation.CCW_90) ? (containerSize.width || '100%') : '100%',
+                    transform: (rotation === Rotation.CW_90 || rotation === Rotation.CCW_90) ? `translate(-50%, -50%) rotate(${rotation}deg)` : `rotate(${rotation}deg)`,
+                    transformOrigin: 'center center'
+                  }}
+                  muted={audioMode !== AudioMode.Keep}
                 />
+
+                <audio ref={audioPreviewRef} className="hidden" />
 
                 {/* Watermark Overlay (DOM) */}
                 {watermarkSettings.file && (
@@ -468,37 +619,128 @@ export const VideoverlayTool: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Pause Overlay */}
-                {!isPlaying && !isExporting && (
-                  <div
-                    className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center cursor-pointer group z-20"
-                    onClick={togglePlay}
-                  >
-                    <div className="bg-white/10 backdrop-blur-md p-6 rounded-full border border-white/20 group-hover:scale-110 transition-all flex flex-col items-center gap-2">
-                      <RotateCcw className="w-12 h-12 text-white" />
-                      <span className="text-white text-[10px] font-black uppercase tracking-widest">{t.tools.videoverlay.restartPreview}</span>
+                {/* Player UI Overlay */}
+                <div
+                  className={`absolute inset-0 z-30 flex flex-col transition-opacity duration-300 ${isHoveringPlayer && !isExporting ? 'opacity-100' : 'opacity-0'}`}
+                >
+                  <div className="flex-1 cursor-pointer" onClick={togglePlay} />
+
+                  {/* Bottom Bar */}
+                  <div className="bg-gradient-to-t from-black/90 via-black/50 to-transparent p-4 flex items-center gap-4">
+                    <button
+                      onClick={togglePlay}
+                      className="text-white hover:text-emerald-400 transition-transform active:scale-95 disabled:opacity-50"
+                      disabled={isExporting}
+                    >
+                      {(() => {
+                        const actualEndTime = endTime > 0 ? endTime : (metadata?.duration || 0);
+                        const isEnded = !isPlaying && currentTime >= actualEndTime - 0.1;
+                        if (isEnded) return <RotateCcw className="w-6 h-6" />;
+                        if (isPlaying) return <Pause className="w-6 h-6 fill-current" />;
+                        return <Play className="w-6 h-6 fill-current translate-x-0.5" />;
+                      })()}
+                    </button>
+
+                    <input
+                      type="range"
+                      min={startTime}
+                      max={endTime > 0 ? endTime : (metadata?.duration || 100)}
+                      step="0.001"
+                      value={currentTime}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        setCurrentTime(val);
+                        if (videoRef.current) {
+                          videoRef.current.currentTime = val;
+                        }
+                      }}
+                      className="flex-1 h-1.5 bg-slate-600 rounded-full appearance-none cursor-pointer accent-emerald-500 hover:h-2 transition-all outline-none"
+                    />
+
+                    <div className="font-mono text-xs text-white tabular-nums drop-shadow-md pr-2 select-none">
+                      {formatTime(currentTime)} / {formatTime(endTime > 0 ? endTime : (metadata?.duration || 0))}
                     </div>
                   </div>
-                )}
+                </div>
               </div>
 
-              <PlaybackControls
-                isPlaying={isPlaying}
-                onTogglePlay={togglePlay}
-                currentTime={currentTime}
-                duration={metadata?.duration || 0}
-                isDisabled={isExporting}
-              />
+              {/* Trimming Controls */}
+              {!isExporting && metadata && (
+                <div className="w-full max-w-2xl bg-slate-800/80 backdrop-blur-sm p-6 rounded-3xl border border-slate-700 space-y-6 mt-4 z-20 shadow-xl">
+                  <div className="flex items-center justify-between gap-4">
+                    <button
+                      onClick={() => {
+                        if (videoRef.current) setStartTime(Math.min(videoRef.current.currentTime, endTime - 0.01));
+                      }}
+                      className="flex-1 group/btn flex items-center justify-center gap-2 px-5 py-3 bg-slate-700 hover:bg-emerald-600/20 hover:text-emerald-400 border border-slate-600 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95"
+                    >
+                      <Flag className="w-3.5 h-3.5 group-hover/btn:scale-110 transition-transform" /> {t.tools.mptrim.setStart}
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (videoRef.current) setEndTime(Math.max(videoRef.current.currentTime, startTime + 0.01));
+                      }}
+                      className="flex-1 group/btn flex items-center justify-center gap-2 px-5 py-3 bg-slate-700 hover:bg-emerald-600/20 hover:text-emerald-400 border border-slate-600 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95"
+                    >
+                      <Flag className="w-3.5 h-3.5 fill-current group-hover/btn:scale-110 transition-transform" /> {t.tools.mptrim.setEnd}
+                    </button>
+                  </div>
 
-              {/* Remove Button - Positioned in Corner of Enclosing Area */}
-              <button
-                onClick={handleDeleteRequest}
-                disabled={isExporting}
-                className="absolute bottom-6 right-6 p-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl border border-red-500/20 transition-all shadow-lg backdrop-blur-sm z-30 group"
-                title={t.tools.videoverlay.removeVideo}
-              >
-                <Trash2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
-              </button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center px-1">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">{t.tools.mptrim.selectionStart}</label>
+                        <span className="text-xs font-mono text-emerald-400">
+                          {Math.floor(startTime / 60)}:{Math.floor(startTime % 60).toString().padStart(2, '0')}.{Math.floor((startTime % 1) * 100).toString().padStart(2, '0')}
+                        </span>
+                      </div>
+                      <div className="relative flex items-center gap-2">
+                        <button onClick={() => setStartTime(s => Math.max(0, s - 0.1))} className="p-1 hover:text-white text-slate-500 transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+                        <input
+                          type="range"
+                          min="0"
+                          max={metadata.duration || 100}
+                          step="0.001"
+                          value={startTime}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value);
+                            setStartTime(Math.min(val, endTime - 0.01));
+                            if (videoRef.current) videoRef.current.currentTime = val;
+                          }}
+                          className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                        />
+                        <button onClick={() => setStartTime(s => Math.min(endTime - 0.01, s + 0.1))} className="p-1 hover:text-white text-slate-500 transition-colors"><ChevronRight className="w-4 h-4" /></button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center px-1">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">{t.tools.mptrim.selectionEnd}</label>
+                        <span className="text-xs font-mono text-emerald-400">
+                          {Math.floor(endTime / 60)}:{Math.floor(endTime % 60).toString().padStart(2, '0')}.{Math.floor((endTime % 1) * 100).toString().padStart(2, '0')}
+                        </span>
+                      </div>
+                      <div className="relative flex items-center gap-2">
+                        <button onClick={() => setEndTime(s => Math.max(startTime + 0.01, s - 0.1))} className="p-1 hover:text-white text-slate-500 transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+                        <input
+                          type="range"
+                          min="0"
+                          max={metadata.duration || 100}
+                          step="0.001"
+                          value={endTime}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value);
+                            setEndTime(Math.max(val, startTime + 0.01));
+                          }}
+                          className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                        />
+                        <button onClick={() => setEndTime(s => Math.min(metadata.duration || 0, s + 0.1))} className="p-1 hover:text-white text-slate-500 transition-colors"><ChevronRight className="w-4 h-4" /></button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
             </>
           )}
         </div>
@@ -557,7 +799,7 @@ export const VideoverlayTool: React.FC = () => {
                 {isExporting ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>{t.tools.videoverlay.processingProgress} {Math.round(exportProgress * 100)}%</span>
+                    <span>{Math.round(exportProgress * 100)}%</span>
                   </>
                 ) : (
                   <>
@@ -585,7 +827,7 @@ export const VideoverlayTool: React.FC = () => {
             <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
               <div
                 className="h-full bg-purple-500 transition-all duration-300 ease-out"
-                style={{ width: `${exportProgress * 100}%` }}
+                style={{ width: `${Math.round(exportProgress * 100)}%` }}
               />
             </div>
 
@@ -612,10 +854,10 @@ export const VideoverlayTool: React.FC = () => {
         isOpen={showCancelConfirm}
         onClose={closeCancelConfirm}
         onConfirm={confirmCancel}
-        title={t.tools.videoverlay.abortGenerationTitle}
-        message={t.tools.videoverlay.abortGenerationMsg}
-        confirmLabel={t.tools.videoverlay.yesAbort}
-        cancelLabel={t.tools.videoverlay.continue}
+        title={t.tools.videoverlay.cancelExport}
+        message={t.tools.videoverlay.cancelConfirm}
+        confirmLabel={t.tools.videoverlay.yesCancel}
+        cancelLabel={t.tools.videoverlay.noContinue}
         Icon={AlertTriangle}
       />
 
@@ -624,10 +866,10 @@ export const VideoverlayTool: React.FC = () => {
         isOpen={showDeleteConfirm}
         onClose={cancelDelete}
         onConfirm={confirmDelete}
-        title={t.tools.videoverlay.removeVideoTitle}
-        message={t.tools.videoverlay.removeVideoMsg}
-        confirmLabel={t.tools.videoverlay.yesRemove}
-        cancelLabel={t.tools.videoverlay.cancel}
+        title={t.common.eraseProject}
+        message={t.common.eraseConfirm}
+        confirmLabel={t.common.eraseProject}
+        cancelLabel={t.common.cancel}
         Icon={Trash2}
       />
     </div>

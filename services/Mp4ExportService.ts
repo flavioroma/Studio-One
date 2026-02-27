@@ -1,5 +1,5 @@
 import * as Mp4Muxer from "mp4-muxer";
-import { Slide, TextPosition, TextSize, TextColor } from "../types";
+import { Slide, TextPosition, TextSize, TextColor, AspectRatio, Rotation, AudioMode } from "../types";
 import { calculateCaptionMetrics, calculateCaptionPosition, calculateWatermarkPosition } from "../utils/captionUtils";
 
 export interface OverlayConfig {
@@ -14,6 +14,12 @@ export interface OverlayConfig {
         scale: number;
         opacity: number;
     };
+    aspectRatio?: AspectRatio;
+    rotation?: Rotation;
+    audioMode?: AudioMode;
+    audioFile?: File | null;
+    startTime?: number;
+    endTime?: number;
 }
 
 interface ExportConfig {
@@ -259,18 +265,55 @@ export class Mp4ExportService {
             video.onloadedmetadata = () => resolve();
         });
 
-        const width = video.videoWidth;
-        const height = video.videoHeight;
-        const duration = video.duration;
+        let width = video.videoWidth;
+        let height = video.videoHeight;
+
+        // Apply Aspect Ratio config
+        if (overlay.aspectRatio && overlay.aspectRatio !== AspectRatio.Original) {
+            if (overlay.aspectRatio === AspectRatio.Landscape_16_9) {
+                width = 1920; height = 1080;
+            } else if (overlay.aspectRatio === AspectRatio.Portrait_9_16) {
+                width = 1080; height = 1920;
+            } else if (overlay.aspectRatio === AspectRatio.Landscape_5_4) {
+                width = 1350; height = 1080;
+            } else if (overlay.aspectRatio === AspectRatio.Portrait_4_5) {
+                width = 1080; height = 1350; // 4:5
+            } else if (overlay.aspectRatio === AspectRatio.Square_1_1) {
+                width = 1080; height = 1080; // 1:1
+            }
+        } else {
+            if (overlay.rotation === Rotation.CW_90 || overlay.rotation === Rotation.CCW_90) {
+                width = video.videoHeight;
+                height = video.videoWidth;
+            }
+        }
+
+        const duration = overlay.endTime || video.duration;
+        const startOffset = overlay.startTime || 0;
         const fps = 30; // Target 30 FPS for export
 
         this.canvas.width = width;
         this.canvas.height = height;
 
         // 2. Prepare Audio
-        const audioCtx = new AudioContext();
-        const arrayBuffer = await videoFile.arrayBuffer();
-        const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+        let audioBuffer: AudioBuffer | null = null;
+        let audioCtx: AudioContext | null = null;
+
+        if (overlay.audioMode !== AudioMode.Remove) {
+            audioCtx = new AudioContext();
+            try {
+                let arrayBuffer: ArrayBuffer;
+                if (overlay.audioMode === AudioMode.Replace && overlay.audioFile) {
+                    arrayBuffer = await overlay.audioFile.arrayBuffer();
+                } else {
+                    arrayBuffer = await videoFile.arrayBuffer();
+                }
+                audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+            } catch (err) {
+                console.error("Failed to decode audio", err);
+                audioBuffer = null;
+            }
+        }
 
         // 3. Setup Muxer & Video Encoder
         const muxer = new Mp4Muxer.Muxer({
@@ -280,11 +323,11 @@ export class Mp4ExportService {
                 width,
                 height
             },
-            audio: {
+            audio: audioBuffer ? {
                 codec: 'aac',
                 numberOfChannels: audioBuffer.numberOfChannels,
                 sampleRate: audioBuffer.sampleRate
-            },
+            } : undefined,
             firstTimestampBehavior: 'offset',
             fastStart: 'in-memory'
         });
@@ -303,17 +346,20 @@ export class Mp4ExportService {
         });
 
         // 4. Setup Audio Encoder
-        const audioEncoder = new AudioEncoder({
-            output: (chunk, meta) => muxer.addAudioChunk(chunk, meta),
-            error: (e) => console.error("AudioEncoder error:", e)
-        });
+        let audioEncoder: AudioEncoder | null = null;
+        if (audioBuffer) {
+            audioEncoder = new AudioEncoder({
+                output: (chunk, meta) => muxer.addAudioChunk(chunk, meta),
+                error: (e) => console.error("AudioEncoder error:", e)
+            });
 
-        audioEncoder.configure({
-            codec: 'mp4a.40.2',
-            numberOfChannels: audioBuffer.numberOfChannels,
-            sampleRate: audioBuffer.sampleRate,
-            bitrate: 192_000 // 192 kbps audio
-        });
+            audioEncoder.configure({
+                codec: 'mp4a.40.2',
+                numberOfChannels: audioBuffer.numberOfChannels,
+                sampleRate: audioBuffer.sampleRate,
+                bitrate: 192_000 // 192 kbps audio
+            });
+        }
 
         // 5. Pre-load Watermark if exists
         let watermarkImg: HTMLImageElement | null = null;
@@ -324,7 +370,8 @@ export class Mp4ExportService {
         }
 
         // 6. Process Frames
-        const totalFrames = Math.ceil(duration * fps);
+        const exportDuration = duration - startOffset;
+        const totalFrames = Math.ceil(exportDuration * fps);
         const ctx = this.ctx;
 
         try {
@@ -333,7 +380,7 @@ export class Mp4ExportService {
                     throw new DOMException('Export aborted', 'AbortError');
                 }
 
-                const time = i / fps;
+                const time = startOffset + (i / fps);
 
                 // Allow seek to complete
                 video.currentTime = time;
@@ -345,8 +392,32 @@ export class Mp4ExportService {
                     video.addEventListener('seeked', onSeeked, { once: true });
                 });
 
-                // Draw Video
-                ctx.drawImage(video, 0, 0, width, height);
+                // Draw Video Header
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(0, 0, width, height);
+
+                // Handle Rotation & Aspect Ratio scaling
+                ctx.save();
+                ctx.translate(width / 2, height / 2);
+                if (overlay.rotation) {
+                    ctx.rotate((overlay.rotation * Math.PI) / 180);
+                }
+
+                // Determine scaling based on fit (object-contain)
+                const rot = overlay.rotation || 0;
+                let vW = video.videoWidth;
+                let vH = video.videoHeight;
+                if (rot % 180 !== 0) {
+                    vW = video.videoHeight;
+                    vH = video.videoWidth;
+                }
+                const scale = Math.min(width / vW, height / vH);
+
+                const drawW = video.videoWidth * scale;
+                const drawH = video.videoHeight * scale;
+
+                ctx.drawImage(video, -drawW / 2, -drawH / 2, drawW, drawH);
+                ctx.restore();
 
                 // Draw Watermark
                 if (watermarkImg && overlay.watermark) {
@@ -380,41 +451,56 @@ export class Mp4ExportService {
             }
 
             // 7. Encode Audio
-            // ... (Audio encoding logic remains same, but wrapped in try/block)
-            const numberOfChannels = audioBuffer.numberOfChannels;
-            const length = audioBuffer.length;
-            const sampleRate = audioBuffer.sampleRate;
-            const chunkSize = Math.floor(sampleRate / 10);
+            if (audioEncoder && audioBuffer) {
+                const numberOfChannels = audioBuffer.numberOfChannels;
+                const sampleRate = audioBuffer.sampleRate;
 
-            for (let offset = 0; offset < length; offset += chunkSize) {
-                if (signal?.aborted) throw new DOMException('Export aborted', 'AbortError');
+                let startSample = 0;
+                let endSample = audioBuffer.length;
 
-                const size = Math.min(chunkSize, length - offset);
-                const timestamp = (offset / sampleRate) * 1_000_000;
-
-                const destBuffer = new Float32Array(size * numberOfChannels);
-                for (let ch = 0; ch < numberOfChannels; ch++) {
-                    const channelData = audioBuffer.getChannelData(ch);
-                    const segment = channelData.subarray(offset, offset + size);
-                    destBuffer.set(segment, ch * size);
+                if (overlay.audioMode !== AudioMode.Replace) {
+                    startSample = Math.floor(startOffset * sampleRate);
+                    endSample = Math.floor(duration * sampleRate);
+                } else {
+                    endSample = Math.floor(exportDuration * sampleRate);
                 }
 
-                const audioData = new AudioData({
-                    format: 'f32-planar',
-                    sampleRate,
-                    numberOfFrames: size,
-                    numberOfChannels,
-                    timestamp,
-                    data: destBuffer
-                });
+                startSample = Math.max(0, Math.min(startSample, audioBuffer.length));
+                endSample = Math.max(startSample, Math.min(endSample, audioBuffer.length));
 
-                audioEncoder.encode(audioData);
-                audioData.close();
+                const length = endSample - startSample;
+                const chunkSize = Math.floor(sampleRate / 10);
+
+                for (let offset = 0; offset < length; offset += chunkSize) {
+                    if (signal?.aborted) throw new DOMException('Export aborted', 'AbortError');
+
+                    const size = Math.min(chunkSize, length - offset);
+                    const timestamp = (offset / sampleRate) * 1_000_000;
+
+                    const destBuffer = new Float32Array(size * numberOfChannels);
+                    for (let ch = 0; ch < numberOfChannels; ch++) {
+                        const channelData = audioBuffer.getChannelData(ch);
+                        const segment = channelData.subarray(startSample + offset, startSample + offset + size);
+                        destBuffer.set(segment, ch * size);
+                    }
+
+                    const audioData = new AudioData({
+                        format: 'f32-planar',
+                        sampleRate,
+                        numberOfFrames: size,
+                        numberOfChannels,
+                        timestamp,
+                        data: destBuffer
+                    });
+
+                    audioEncoder.encode(audioData);
+                    audioData.close();
+                }
             }
 
             // 8. Finish
             await videoEncoder.flush();
-            await audioEncoder.flush();
+            if (audioEncoder) await audioEncoder.flush();
             muxer.finalize();
 
             const { buffer } = muxer.target;
@@ -424,7 +510,7 @@ export class Mp4ExportService {
             // Cleanup on error
             video.src = "";
             video.load();
-            audioCtx.close(); // Close audio context on error
+            if (audioCtx) audioCtx.close(); // Close audio context on error
             throw error;
         } finally {
             // Basic Cleanup

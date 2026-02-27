@@ -1,14 +1,7 @@
 import React, { useRef } from 'react';
 import { Upload, Trash2, Layout, Image as ImageIcon } from 'lucide-react';
-import { TextPosition } from '../types';
+import { TextPosition, WatermarkSettings } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
-
-export interface WatermarkSettings {
-    file: File | null;
-    position: TextPosition;
-    opacity: number;
-    scale: number; // Percentage of container width (0.1 to 1.0)
-}
 
 interface WatermarkSettingsPanelProps {
     settings: WatermarkSettings;
