@@ -5,8 +5,6 @@ import { MetadataService, VideoMetadata } from '../../services/MetadataService';
 import { TextPosition, TextColor, TextSize, AspectRatio, Rotation, AudioMode, CaptionSettings, WatermarkSettings } from '../../types';
 import { PersistenceService } from '../../services/PersistenceService';
 import { Mp4ExportService } from '../../services/Mp4ExportService';
-import { CaptionSettingsPanel } from '../../components/CaptionSettingsPanel';
-import { WatermarkSettingsPanel } from '../../components/WatermarkSettingsPanel';
 import { calculateCaptionMetrics, calculateCaptionPosition, calculateWatermarkPosition } from '../../utils/captionUtils';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -34,7 +32,6 @@ export const VideoverlayTool: React.FC = () => {
     scale: 0.2 // Default 20%
   });
 
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>(AspectRatio.Landscape_16_9);
   const [rotation, setRotation] = useState<Rotation>(Rotation.None);
   const [audioMode, setAudioMode] = useState<AudioMode>(AudioMode.Keep);
   const [audioFile, setAudioFile] = useState<File | null>(null);
@@ -183,7 +180,6 @@ export const VideoverlayTool: React.FC = () => {
           }));
         }
 
-        if (state.aspectRatio) setAspectRatio(state.aspectRatio);
         if (state.rotation !== undefined) setRotation(state.rotation);
         if (state.audioMode) setAudioMode(state.audioMode);
         if (state.audioFile) setAudioFile(state.audioFile);
@@ -213,7 +209,6 @@ export const VideoverlayTool: React.FC = () => {
         isItalic: captionSettings.isItalic,
         watermarkFile: watermarkSettings.file,
         watermarkPosition: watermarkSettings.position,
-        aspectRatio,
         rotation,
         audioMode,
         audioFile,
@@ -223,7 +218,7 @@ export const VideoverlayTool: React.FC = () => {
     }, 2000);
 
     return () => clearTimeout(timeoutId);
-  }, [file, captionSettings, watermarkSettings, aspectRatio, rotation, audioMode, audioFile, startTime, endTime]);
+  }, [file, captionSettings, watermarkSettings, rotation, audioMode, audioFile, startTime, endTime]);
 
   const onLoadedMetadata = async () => {
     if (videoRef.current && file) {
@@ -244,50 +239,6 @@ export const VideoverlayTool: React.FC = () => {
       setEndTime(prev => prev === 0 ? vidDuration : prev);
     }
   };
-
-  // Auto-select aspect ratio when metadata or rotation changes
-  useEffect(() => {
-    if (!metadata) return;
-
-    const isRotated = rotation === Rotation.CW_90 || rotation === Rotation.CCW_90;
-    const w = isRotated ? metadata.height : metadata.width;
-    const h = isRotated ? metadata.width : metadata.height;
-
-    const ratio = w / h;
-    const isLandscapeOrSquare = w >= h;
-
-    const is16_9 = Math.abs(ratio - 16 / 9) < 0.05;
-    const is9_16 = Math.abs(ratio - 9 / 16) < 0.05;
-    const is5_4 = Math.abs(ratio - 5 / 4) < 0.05;
-    const is4_5 = Math.abs(ratio - 4 / 5) < 0.05;
-
-    const fitsLandscapeExactly = is16_9 || is5_4;
-    const fitsPortraitExactly = is9_16 || is4_5;
-
-    let newAspectRatio = aspectRatio;
-
-    if (isLandscapeOrSquare) {
-      if (is16_9) newAspectRatio = AspectRatio.Landscape_16_9;
-      else if (is5_4) newAspectRatio = AspectRatio.Landscape_5_4;
-      else newAspectRatio = AspectRatio.Original;
-
-      if (aspectRatio === AspectRatio.Square_1_1 && fitsLandscapeExactly) {
-        newAspectRatio = AspectRatio.Square_1_1;
-      }
-    } else {
-      if (is9_16) newAspectRatio = AspectRatio.Portrait_9_16;
-      else if (is4_5) newAspectRatio = AspectRatio.Portrait_4_5;
-      else newAspectRatio = AspectRatio.Original;
-
-      if (aspectRatio === AspectRatio.Square_1_1 && fitsPortraitExactly) {
-        newAspectRatio = AspectRatio.Square_1_1;
-      }
-    }
-
-    if (newAspectRatio !== aspectRatio) {
-      setAspectRatio(newAspectRatio);
-    }
-  }, [metadata, rotation]);
 
   const togglePlay = () => {
     if (videoRef.current) {
@@ -337,7 +288,6 @@ export const VideoverlayTool: React.FC = () => {
             scale: watermarkSettings.scale,
             opacity: watermarkSettings.opacity
           } : undefined,
-          aspectRatio,
           rotation,
           audioMode,
           audioFile,
@@ -496,7 +446,6 @@ export const VideoverlayTool: React.FC = () => {
     setMetadata(null);
     setCaptionSettings(prev => ({ ...prev, text: '' }));
     setWatermarkSettings(prev => ({ ...prev, file: null }));
-    setAspectRatio(AspectRatio.Landscape_16_9);
     setRotation(Rotation.None);
     setAudioMode(AudioMode.Keep);
     setAudioFile(null);
@@ -513,7 +462,6 @@ export const VideoverlayTool: React.FC = () => {
       isItalic: false,
       watermarkFile: null,
       watermarkPosition: TextPosition.TopRight,
-      aspectRatio: AspectRatio.Landscape_16_9,
       rotation: Rotation.None,
       audioMode: AudioMode.Keep,
       audioFile: null,
@@ -535,14 +483,12 @@ export const VideoverlayTool: React.FC = () => {
       <VideoverlaySidebar
         file={file}
         metadata={metadata}
-        aspectRatio={aspectRatio}
         rotation={rotation}
         audioMode={audioMode}
         audioFile={audioFile}
         captionSettings={captionSettings}
         watermarkSettings={watermarkSettings}
         onFileChange={handleFileChange}
-        onAspectRatioChange={setAspectRatio}
         onRotationChange={setRotation}
         onAudioModeChange={setAudioMode}
         onAudioFileChange={handleAudioUpload}
@@ -567,12 +513,7 @@ export const VideoverlayTool: React.FC = () => {
                 ref={containerRef}
                 className="relative group shadow-2xl rounded-2xl overflow-hidden border border-slate-700 bg-black max-h-[75vh]"
                 style={{
-                  aspectRatio: aspectRatio === AspectRatio.Landscape_16_9 ? '16 / 9' :
-                    aspectRatio === AspectRatio.Landscape_5_4 ? '5 / 4' :
-                      aspectRatio === AspectRatio.Portrait_9_16 ? '9 / 16' :
-                        aspectRatio === AspectRatio.Portrait_4_5 ? '4 / 5' :
-                          aspectRatio === AspectRatio.Square_1_1 ? '1 / 1' :
-                            metadata ? `${(rotation === Rotation.CW_90 || rotation === Rotation.CCW_90 ? metadata.height : metadata.width)} / ${(rotation === Rotation.CW_90 || rotation === Rotation.CCW_90 ? metadata.width : metadata.height)}` : '16 / 9'
+                  aspectRatio: metadata ? `${(rotation === Rotation.CW_90 || rotation === Rotation.CCW_90 ? metadata.height : metadata.width)} / ${(rotation === Rotation.CW_90 || rotation === Rotation.CCW_90 ? metadata.width : metadata.height)}` : '16 / 9'
                 }}
                 onMouseEnter={() => setIsHoveringPlayer(true)}
                 onMouseLeave={() => setIsHoveringPlayer(false)}
@@ -586,11 +527,11 @@ export const VideoverlayTool: React.FC = () => {
                     if (audioPreviewRef.current) audioPreviewRef.current.pause();
                   }}
                   onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
-                  className={`object-contain pointer-events-none ${(rotation === Rotation.CW_90 || rotation === Rotation.CCW_90) ? 'absolute top-1/2 left-1/2' : 'w-full h-full'}`}
+                  className="w-full h-full object-contain pointer-events-none"
                   style={{
-                    width: (rotation === Rotation.CW_90 || rotation === Rotation.CCW_90) ? (containerSize.height || '100%') : '100%',
-                    height: (rotation === Rotation.CW_90 || rotation === Rotation.CCW_90) ? (containerSize.width || '100%') : '100%',
-                    transform: (rotation === Rotation.CW_90 || rotation === Rotation.CCW_90) ? `translate(-50%, -50%) rotate(${rotation}deg)` : `rotate(${rotation}deg)`,
+                    transform: (rotation === Rotation.CW_90 || rotation === Rotation.CCW_90)
+                      ? `rotate(${rotation}deg) scale(${metadata ? Math.max(metadata.width, metadata.height) / Math.min(metadata.width, metadata.height) : 1})`
+                      : `rotate(${rotation}deg)`,
                     transformOrigin: 'center center'
                   }}
                   muted={audioMode !== AudioMode.Keep}
@@ -751,7 +692,7 @@ export const VideoverlayTool: React.FC = () => {
             <div className="flex items-center gap-6">
 
               <div className="flex flex-col">
-                <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">{t.tools.videoverlay.resolution}</p>
+                <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">{t.common.resolution}</p>
                 <p className="text-sm font-bold text-white">
                   {metadata ? `${metadata.width} x ${metadata.height}` : t.tools.videoverlay.calculating}
                 </p>

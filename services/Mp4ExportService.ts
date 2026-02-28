@@ -14,7 +14,6 @@ export interface OverlayConfig {
         scale: number;
         opacity: number;
     };
-    aspectRatio?: AspectRatio;
     rotation?: Rotation;
     audioMode?: AudioMode;
     audioFile?: File | null;
@@ -268,24 +267,9 @@ export class Mp4ExportService {
         let width = video.videoWidth;
         let height = video.videoHeight;
 
-        // Apply Aspect Ratio config
-        if (overlay.aspectRatio && overlay.aspectRatio !== AspectRatio.Original) {
-            if (overlay.aspectRatio === AspectRatio.Landscape_16_9) {
-                width = 1920; height = 1080;
-            } else if (overlay.aspectRatio === AspectRatio.Portrait_9_16) {
-                width = 1080; height = 1920;
-            } else if (overlay.aspectRatio === AspectRatio.Landscape_5_4) {
-                width = 1350; height = 1080;
-            } else if (overlay.aspectRatio === AspectRatio.Portrait_4_5) {
-                width = 1080; height = 1350; // 4:5
-            } else if (overlay.aspectRatio === AspectRatio.Square_1_1) {
-                width = 1080; height = 1080; // 1:1
-            }
-        } else {
-            if (overlay.rotation === Rotation.CW_90 || overlay.rotation === Rotation.CCW_90) {
-                width = video.videoHeight;
-                height = video.videoWidth;
-            }
+        if (overlay.rotation === Rotation.CW_90 || overlay.rotation === Rotation.CCW_90) {
+            width = video.videoHeight;
+            height = video.videoWidth;
         }
 
         const duration = overlay.endTime || video.duration;

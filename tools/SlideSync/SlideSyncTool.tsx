@@ -264,10 +264,10 @@ export const SlideSyncTool: React.FC = () => {
         isOpen={showEraseConfirm}
         onClose={() => setShowEraseConfirm(false)}
         onConfirm={handleEraseProject}
-        title={t.tools.photoverlay.removeAllPhotosTitle}
-        message={t.tools.photoverlay.removeAllPhotosMsg}
-        confirmLabel={t.tools.photoverlay.yesRemoveAll}
-        cancelLabel={t.tools.photoverlay.cancel}
+        title={t.tools.slidesync.removeAllDataTitle}
+        message={t.tools.slidesync.removeAllDataMsg}
+        confirmLabel={t.tools.slidesync.yesRemoveAll}
+        cancelLabel={t.common.cancel}
         Icon={Trash2}
       />
     </div>

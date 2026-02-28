@@ -33,13 +33,13 @@ export const WatermarkSettingsPanel: React.FC<WatermarkSettingsPanelProps> = ({
         return (
             <div className="space-y-4 pt-4 border-t border-slate-700 animate-fadeIn">
                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <ImageIcon className="w-3 h-3" /> {t.tools.videoverlay.watermark.title}
+                    <ImageIcon className="w-3 h-3" /> {t.watermark.title}
                 </h3>
                 <label className="flex flex-col items-center justify-center gap-3 w-full h-24 rounded-2xl border-2 border-dashed border-slate-700 hover:border-blue-500 hover:bg-slate-700/30 cursor-pointer transition-all group">
                     <div className="p-2 bg-slate-800 rounded-full group-hover:scale-110 transition-transform">
                         <Upload className="w-4 h-4 text-blue-400" />
                     </div>
-                    <span className="text-[10px] font-bold text-slate-500 group-hover:text-blue-400 uppercase tracking-wider">{t.tools.videoverlay.watermark.upload}</span>
+                    <span className="text-[10px] font-bold text-slate-500 group-hover:text-blue-400 uppercase tracking-wider">{t.watermark.upload}</span>
                     <input
                         ref={fileInputRef}
                         type="file"
@@ -56,13 +56,13 @@ export const WatermarkSettingsPanel: React.FC<WatermarkSettingsPanelProps> = ({
         <div className="space-y-4 pt-4 border-t border-slate-700 animate-fadeIn">
             <div className="flex justify-between items-center">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <ImageIcon className="w-3 h-3" /> {t.tools.videoverlay.watermark.title}
+                    <ImageIcon className="w-3 h-3" /> {t.watermark.title}
                 </label>
                 <button
                     onClick={handleRemove}
                     className="text-[10px] font-bold text-red-400 hover:text-red-300 flex items-center gap-1 uppercase tracking-tight transition-colors"
                 >
-                    <Trash2 className="w-3 h-3" /> {t.tools.videoverlay.watermark.remove}
+                    <Trash2 className="w-3 h-3" /> {t.watermark.remove}
                 </button>
             </div>
 
@@ -84,7 +84,7 @@ export const WatermarkSettingsPanel: React.FC<WatermarkSettingsPanelProps> = ({
 
                 <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                        <Layout className="w-3 h-3" /> {t.tools.videoverlay.watermark.position}
+                        <Layout className="w-3 h-3" /> {t.watermark.position}
                     </label>
                     <select
                         value={settings.position}
@@ -92,7 +92,7 @@ export const WatermarkSettingsPanel: React.FC<WatermarkSettingsPanelProps> = ({
                         className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-[11px] font-bold focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none"
                     >
                         {Object.values(TextPosition).map((pos) => (
-                            <option key={pos} value={pos}>{t.tools.slidesync.textPositions[pos]}</option>
+                            <option key={pos} value={pos}>{t.captions.textPositions[pos]}</option>
                         ))}
                     </select>
                 </div>
@@ -100,7 +100,7 @@ export const WatermarkSettingsPanel: React.FC<WatermarkSettingsPanelProps> = ({
                 {/* Size Slider */}
                 <div className="space-y-1">
                     <div className="flex justify-between items-center">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t.tools.videoverlay.watermark.size}</label>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t.watermark.size}</label>
                         <span className="text-[10px] font-medium text-slate-400">{Math.round(settings.scale * 100)}%</span>
                     </div>
                     <input
@@ -117,7 +117,7 @@ export const WatermarkSettingsPanel: React.FC<WatermarkSettingsPanelProps> = ({
                 {/* Opacity Slider */}
                 <div className="space-y-1">
                     <div className="flex justify-between items-center">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t.tools.videoverlay.watermark.opacity}</label>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t.watermark.opacity}</label>
                         <span className="text-[10px] font-medium text-slate-400">{Math.round(settings.opacity * 100)}%</span>
                     </div>
                     <input

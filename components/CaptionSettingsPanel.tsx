@@ -22,7 +22,7 @@ export const CaptionSettingsPanel: React.FC<CaptionSettingsPanelProps> = ({
         <div className="space-y-4">
             <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.tools.slidesync.captionText}</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.captions.captionText}</label>
                     {/* AI Caption hidden for now - existing code preserved below */}
                     {/* {onAutoCaption && (
                         <button
@@ -32,7 +32,7 @@ export const CaptionSettingsPanel: React.FC<CaptionSettingsPanelProps> = ({
                             title={t.tools.slidesync.aiCaptionTitle}
                         >
                             <Wand2 className="w-3 h-3" />
-                            {isProcessing ? t.tools.slidesync.thinking : t.tools.slidesync.aiCaption}
+                            {isProcessing ? t.captions.thinking : t.captions.aiCaption}
                         </button>
                     )} */}
                 </div>
@@ -40,7 +40,7 @@ export const CaptionSettingsPanel: React.FC<CaptionSettingsPanelProps> = ({
                     value={settings.text}
                     onChange={(e) => onUpdate({ text: e.target.value })}
                     className="w-full bg-slate-700 border border-slate-600 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none h-24"
-                    placeholder={t.tools.slidesync.enterOverlayText}
+                    placeholder={t.captions.enterOverlayText}
                 />
             </div>
 
@@ -48,27 +48,27 @@ export const CaptionSettingsPanel: React.FC<CaptionSettingsPanelProps> = ({
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                            <Italic className="w-3 h-3" /> {t.tools.slidesync.textStyle}
+                            <Italic className="w-3 h-3" /> {t.captions.textStyle}
                         </label>
                         <div className="flex bg-slate-700 p-1 rounded-xl border border-slate-600">
                             <button
                                 onClick={() => onUpdate({ isItalic: false })}
                                 className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${!settings.isItalic ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'}`}
                             >
-                                {t.tools.slidesync.normal}
+                                {t.captions.normal}
                             </button>
                             <button
                                 onClick={() => onUpdate({ isItalic: true })}
                                 className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${settings.isItalic ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'}`}
                             >
-                                {t.tools.slidesync.italic}
+                                {t.captions.italic}
                             </button>
                         </div>
                     </div>
 
                     <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                            <Type className="w-3 h-3" /> {t.tools.slidesync.textSize}
+                            <Type className="w-3 h-3" /> {t.captions.textSize}
                         </label>
                         <div className="flex bg-slate-700 p-1 rounded-xl border border-slate-600">
                             {Object.values(TextSize).map((size) => (
@@ -78,21 +78,21 @@ export const CaptionSettingsPanel: React.FC<CaptionSettingsPanelProps> = ({
                                     className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${settings.textSize === size ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'
                                         }`}
                                 >
-                                    {t.tools.slidesync.textSizes[size]}
+                                    {t.captions.textSizes[size]}
                                 </button>
                             ))}
                         </div>
                     </div>
 
                     <div className="space-y-2 col-span-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.tools.slidesync.position}</label>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.captions.position}</label>
                         <select
                             value={settings.position}
                             onChange={(e) => onUpdate({ position: e.target.value as TextPosition })}
                             className="w-full bg-slate-700 border border-slate-600 rounded-xl p-2.5 text-[11px] font-bold focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none"
                         >
                             {Object.values(TextPosition).map((pos) => (
-                                <option key={pos} value={pos}>{t.tools.slidesync.textPositions[pos]}</option>
+                                <option key={pos} value={pos}>{t.captions.textPositions[pos]}</option>
                             ))}
                         </select>
                     </div>
@@ -100,7 +100,7 @@ export const CaptionSettingsPanel: React.FC<CaptionSettingsPanelProps> = ({
 
                 <div className="space-y-2">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                        <Palette className="w-3 h-3" /> {t.tools.slidesync.colorPalette}
+                        <Palette className="w-3 h-3" /> {t.captions.colorPalette}
                     </label>
                     <div className="grid grid-cols-10 gap-1.5 pt-1">
                         {Object.entries(TextColor).map(([name, hex]) => (

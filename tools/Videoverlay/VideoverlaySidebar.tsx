@@ -8,14 +8,12 @@ import { useLanguage } from '../../contexts/LanguageContext';
 interface VideoverlaySidebarProps {
     file: File | null;
     metadata: { width: number; height: number; duration?: number; bitrate?: number } | null;
-    aspectRatio: AspectRatio;
     rotation: Rotation;
     audioMode: AudioMode;
     audioFile: File | null;
     captionSettings: CaptionSettings;
     watermarkSettings: WatermarkSettings;
     onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    onAspectRatioChange: (ratio: AspectRatio) => void;
     onRotationChange: (rot: Rotation) => void;
     onAudioModeChange: (mode: AudioMode) => void;
     onAudioFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -28,14 +26,12 @@ interface VideoverlaySidebarProps {
 export const VideoverlaySidebar: React.FC<VideoverlaySidebarProps> = ({
     file,
     metadata,
-    aspectRatio,
     rotation,
     audioMode,
     audioFile,
     captionSettings,
     watermarkSettings,
     onFileChange,
-    onAspectRatioChange,
     onRotationChange,
     onAudioModeChange,
     onAudioFileChange,
@@ -45,50 +41,6 @@ export const VideoverlaySidebar: React.FC<VideoverlaySidebarProps> = ({
     onDelete,
 }) => {
     const { t } = useLanguage();
-
-    const isRotated = rotation === Rotation.CW_90 || rotation === Rotation.CCW_90;
-    const w = metadata ? (isRotated ? metadata.height : metadata.width) : 16;
-    const h = metadata ? (isRotated ? metadata.width : metadata.height) : 9;
-
-    const ratio = w / h;
-    const isLandscapeOrSquare = w >= h;
-
-    const is16_9 = Math.abs(ratio - 16 / 9) < 0.05;
-    const is9_16 = Math.abs(ratio - 9 / 16) < 0.05;
-    const is5_4 = Math.abs(ratio - 5 / 4) < 0.05;
-    const is4_5 = Math.abs(ratio - 4 / 5) < 0.05;
-
-    let formatOptions = [];
-
-    if (isLandscapeOrSquare) {
-        if (is16_9 || is5_4) {
-            formatOptions = [
-                { id: AspectRatio.Landscape_16_9, label: '16:9', icon: Monitor },
-                { id: AspectRatio.Landscape_5_4, label: '5:4', icon: Monitor }, // 5:4 is Landscape/Monitor
-                { id: AspectRatio.Square_1_1, label: '1:1', icon: Square },
-            ];
-        } else {
-            formatOptions = [
-                { id: AspectRatio.Landscape_16_9, label: '16:9', icon: Monitor },
-                { id: AspectRatio.Landscape_5_4, label: '5:4', icon: Monitor },
-                { id: AspectRatio.Original, label: t.tools.videoverlay.originalFormat, icon: VideoIcon },
-            ];
-        }
-    } else {
-        if (is9_16 || is4_5) {
-            formatOptions = [
-                { id: AspectRatio.Portrait_9_16, label: '9:16', icon: Smartphone },
-                { id: AspectRatio.Portrait_4_5, label: '4:5', icon: SmartphoneIcon },
-                { id: AspectRatio.Square_1_1, label: '1:1', icon: Square },
-            ];
-        } else {
-            formatOptions = [
-                { id: AspectRatio.Portrait_9_16, label: '9:16', icon: Smartphone },
-                { id: AspectRatio.Portrait_4_5, label: '4:5', icon: SmartphoneIcon },
-                { id: AspectRatio.Original, label: t.tools.videoverlay.originalFormat, icon: VideoIcon },
-            ];
-        }
-    }
 
     const rotationOptions = [
         { id: Rotation.None, label: '0°' },
@@ -122,26 +74,6 @@ export const VideoverlaySidebar: React.FC<VideoverlaySidebarProps> = ({
                 </div>
             ) : (
                 <div className="space-y-8 animate-fadeIn">
-                    {/* Format Settings */}
-                    <div className="space-y-4">
-                        <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">{t.tools.videoverlay.videoFormat}</h3>
-                        <div className="grid grid-cols-3 gap-2">
-                            {formatOptions.map((opt) => (
-                                <button
-                                    key={opt.id}
-                                    onClick={() => onAspectRatioChange(opt.id)}
-                                    className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${aspectRatio === opt.id
-                                        ? 'bg-blue-600/20 border-blue-500 text-blue-300 shadow-[0_0_15px_rgba(59,130,246,0.2)]'
-                                        : 'bg-slate-700/50 border-slate-600 hover:border-slate-500'
-                                        }`}
-                                >
-                                    <opt.icon className="w-4 h-4 mb-1" />
-                                    <span className="text-[10px] font-bold uppercase">{opt.label}</span>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
                     {/* Rotation Settings */}
                     <div className="space-y-4">
                         <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">{t.tools.videoverlay.rotation}</h3>

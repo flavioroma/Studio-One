@@ -2,8 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Upload, Image as ImageIcon, Download, Trash2, Loader2, Move, Calendar, MapPin, Monitor, Plus, Check } from 'lucide-react';
 import { TextPosition, TextColor, TextSize, PhotoItem, CaptionSettings, WatermarkSettings } from '../../types';
 import { PersistenceService } from '../../services/PersistenceService';
-import { CaptionSettingsPanel } from '../../components/CaptionSettingsPanel';
-import { WatermarkSettingsPanel } from '../../components/WatermarkSettingsPanel';
 import { calculateCaptionMetrics, calculateCaptionPosition, calculateWatermarkPosition } from '../../utils/captionUtils';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { MetadataService, PhotoMetadata } from '../../services/MetadataService';
@@ -555,7 +553,7 @@ export const PhotoverlayTool: React.FC = () => {
                                                     handleDeleteItem(item.id);
                                                 }}
                                                 className="absolute bottom-1 right-1 p-1.5 bg-red-500/90 text-white rounded-md hover:bg-red-600 transition-all opacity-0 group-hover:opacity-100 z-30 shadow-sm hover:scale-110"
-                                                title={t.tools.slidesync.removeFile}
+                                                title={t.common.removeFile}
                                             >
                                                 <Trash2 className="w-3 h-3" />
                                             </button>
@@ -579,7 +577,7 @@ export const PhotoverlayTool: React.FC = () => {
                         <div className="flex items-center gap-8">
                             <div className="flex flex-col">
                                 <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
-                                    <Monitor className="w-3 h-3" /> {t.tools.photoverlay.resolution}
+                                    <Monitor className="w-3 h-3" /> {t.common.resolution}
                                 </p>
                                 <p className="text-sm font-bold text-white">
                                     {selectedItem.metadata ? `${selectedItem.metadata.width} x ${selectedItem.metadata.height}` : '...'}
@@ -640,7 +638,7 @@ export const PhotoverlayTool: React.FC = () => {
                 title={t.tools.photoverlay.removeAllPhotosTitle}
                 message={t.tools.photoverlay.removeAllPhotosMsg}
                 confirmLabel={t.tools.photoverlay.yesRemoveAll}
-                cancelLabel={t.tools.photoverlay.cancel}
+                cancelLabel={t.common.cancel}
                 Icon={Trash2}
             />
 
@@ -651,7 +649,7 @@ export const PhotoverlayTool: React.FC = () => {
                 title={t.tools.photoverlay.applyToAllTitle}
                 message={t.tools.photoverlay.applyToAllMsg}
                 confirmLabel={t.tools.photoverlay.yesApply}
-                cancelLabel={t.tools.photoverlay.cancel}
+                cancelLabel={t.common.cancel}
                 Icon={Check}
             />
         </div>

@@ -6,7 +6,7 @@ import { ConfirmationModal } from '../../components/ConfirmationModal';
 
 type ExportFormat = 'wav' | 'mp3';
 
-export const MPTrimTool: React.FC = () => {
+export const AudioTrimTool: React.FC = () => {
   const { t } = useLanguage();
   const [file, setFile] = useState<File | null>(null);
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
@@ -399,7 +399,7 @@ export const MPTrimTool: React.FC = () => {
                   <h2 className="text-xl font-bold text-white truncate">{file.name}</h2>
                 </div>
               </div>
-              <button onClick={handleDeleteRequest} className="p-3 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all shrink-0" title={t.tools.mptrim.removeFile}>
+              <button onClick={handleDeleteRequest} className="p-3 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all shrink-0" title={t.common.removeFile}>
                 <Trash2 className="w-5 h-5" />
               </button>
             </div>
@@ -630,8 +630,8 @@ export const MPTrimTool: React.FC = () => {
         onConfirm={confirmDelete}
         title={t.tools.mptrim.removeTrackTitle}
         message={t.tools.mptrim.removeTrackMsg}
-        confirmLabel={t.tools.mptrim.yesRemove}
-        cancelLabel={t.tools.mptrim.cancel}
+        confirmLabel={t.common.yesRemove}
+        cancelLabel={t.common.cancel}
         Icon={Trash2}
       />
     </div>

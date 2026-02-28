@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Home } from './views/Home';
 import { Navbar } from './components/Navbar';
 import { SlideSyncTool } from './tools/SlideSync/SlideSyncTool';
-import { MPTrimTool } from './tools/MPTrim/MPTrimTool';
+import { AudioTrimTool } from './tools/AudioTrim/AudioTrimTool';
 import { VideoverlayTool } from './tools/Videoverlay/VideoverlayTool';
 import { PhotoverlayTool } from './tools/Photoverlay/PhotoverlayTool';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
@@ -17,7 +17,7 @@ const AppContent: React.FC = () => {
       case 'slidesync':
         return <SlideSyncTool />;
       case 'mptrim':
-        return <MPTrimTool />;
+        return <AudioTrimTool />;
       case 'videoverlay':
         return <VideoverlayTool />;
       case 'photoverlay':

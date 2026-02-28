@@ -8,6 +8,45 @@ export const translations = {
             moreTools: 'More tools coming...',
             openTool: 'Open Tool',
             eraseProject: 'Erase the project',
+            eraseConfirm: 'Are you sure you want to erase the project? This action cannot be undone.',
+            cancel: 'Cancel',
+            removeFile: 'Remove file',
+            restartPreview: 'Restart Preview',
+            yesRemove: 'Yes, Remove',
+            resolution: 'Resolution',
+        },
+        captions: {
+            captionText: 'Caption Text',
+            aiCaption: 'AI Caption',
+            thinking: 'Thinking...',
+            enterOverlayText: 'Enter overlay text...',
+            textStyle: 'Text Style',
+            normal: 'Normal',
+            italic: 'Italic',
+            textSize: 'Text Size',
+            position: 'Position',
+            colorPalette: 'Color Palette',
+            textPositions: {
+                'Top Center': 'Top Center',
+                'Top Left': 'Top Left',
+                'Top Right': 'Top Right',
+                'Bottom Center': 'Bottom Center',
+                'Bottom Left': 'Bottom Left',
+                'Bottom Right': 'Bottom Right',
+                'Center': 'Center',
+            },
+            textSizes: {
+                'Small': 'Small',
+                'Large': 'Large',
+            },
+        },
+        watermark: {
+            title: 'Watermark',
+            upload: 'Upload Watermark',
+            remove: 'Remove',
+            position: 'Position',
+            size: 'Size',
+            opacity: 'Opacity',
         },
         home: {
             title: 'Studio One',
@@ -28,7 +67,7 @@ export const translations = {
             },
             photoverlay: {
                 description: 'Overlay text captions and watermarks onto a single photo.',
-            }
+            },
         },
         tools: {
             mptrim: {
@@ -37,7 +76,6 @@ export const translations = {
                 dropZoneTitle: 'Trim & Slice Audio',
                 dropZoneDesc: 'Drag and drop an audio file to start.<br />Precise lossless trimming with professional master rendering.',
                 selectFile: 'Select File',
-                removeFile: 'Remove file',
                 setStart: 'Set Start',
                 setEnd: 'Set End',
                 selectionStart: 'Selection Start',
@@ -59,8 +97,6 @@ export const translations = {
                 clientSideDesc: 'All processing happens directly in your browser, keeping your data private.',
                 removeTrackTitle: 'Remove Audio Track?',
                 removeTrackMsg: 'Are you sure you want to remove this audio track? This action cannot be undone.',
-                yesRemove: 'Yes, Remove',
-                cancel: 'Cancel'
             },
             slidesync: {
                 title: 'SlideSync Studio',
@@ -88,7 +124,6 @@ export const translations = {
                 hasText: 'Has text',
                 addImagesToStart: 'Add images to start',
                 addAudioToStart: 'Add audio to start',
-                restartPreview: 'Restart Preview',
                 creating: 'Creating...',
                 exportClip: 'Export Clip',
                 recordingNote: 'Recording Render... Do not switch tabs.',
@@ -97,29 +132,9 @@ export const translations = {
                 aiCaptionTitle: 'Generate caption using AI',
                 exportAsWebm: 'Export as WebM (VP9)',
                 exportAsMp4: 'Export as MP4 (H.264)',
-                captionText: 'Caption Text',
-                aiCaption: 'AI Caption',
-                thinking: 'Thinking...',
-                enterOverlayText: 'Enter overlay text...',
-                textStyle: 'Text Style',
-                normal: 'Normal',
-                italic: 'Italic',
-                textSize: 'Text Size',
-                position: 'Position',
-                colorPalette: 'Color Palette',
-                textPositions: {
-                    'Top Center': 'Top Center',
-                    'Top Left': 'Top Left',
-                    'Top Right': 'Top Right',
-                    'Bottom Center': 'Bottom Center',
-                    'Bottom Left': 'Bottom Left',
-                    'Bottom Right': 'Bottom Right',
-                    'Center': 'Center'
-                },
-                textSizes: {
-                    'Small': 'Small',
-                    'Large': 'Large'
-                }
+                removeAllDataTitle: 'Remove All Data?',
+                removeAllDataMsg: 'Are you sure you want to remove all data? This action cannot be undone.',
+                yesRemoveAll: 'Yes, Remove All',
             },
             videoverlay: {
                 title: 'Videoverlay',
@@ -127,9 +142,7 @@ export const translations = {
                 selectVideo: 'Select a video to add overlays',
                 uploadVideo: 'Upload Video',
                 awaitingSource: 'Awaiting Source',
-                restartPreview: 'Restart Preview',
                 removeVideo: 'Remove Video',
-                resolution: 'Resolution',
                 calculating: 'Calculating...',
                 mediaCreated: 'Media Created',
                 highQualityRender: 'High Quality Render',
@@ -154,17 +167,7 @@ export const translations = {
                 continue: 'Continue',
                 removeVideoTitle: 'Remove Video?',
                 removeVideoMsg: 'Are you sure you want to remove this video? This action cannot be undone.',
-                yesRemove: 'Yes, Remove',
-                cancel: 'Cancel',
                 exportFailed: 'Export failed. See console for details.',
-                watermark: {
-                    title: 'Watermark',
-                    upload: 'Upload Watermark',
-                    remove: 'Remove',
-                    position: 'Position',
-                    size: 'Size',
-                    opacity: 'Opacity'
-                },
                 originalFormat: 'Original',
                 videoFormat: 'Video Format',
                 rotation: 'Rotation',
@@ -172,7 +175,7 @@ export const translations = {
                 keepAudio: 'Keep Audio',
                 removeAudio: 'Remove',
                 replaceAudio: 'Replace',
-                selectAudio: 'Select Audio'
+                selectAudio: 'Select Audio',
             },
             photoverlay: {
                 title: 'Photoverlay',
@@ -181,15 +184,12 @@ export const translations = {
                 uploadPhoto: 'Upload Photo',
                 awaitingSource: 'Awaiting Source',
                 removePhoto: 'Remove Photo',
-                resolution: 'Resolution',
                 mediaCreated: 'Media Created',
                 location: 'Location',
                 exportPhoto: 'EXPORT PHOTO',
                 exporting: 'Exporting...',
                 removePhotoTitle: 'Remove Photo?',
                 removePhotoMsg: 'Are you sure you want to remove this photo? This action cannot be undone.',
-                yesRemove: 'Yes, Remove',
-                cancel: 'Cancel',
                 exportFailed: 'Export failed. See console.',
                 panImage: 'Pan Image',
                 applyToAll: 'Apply this overlay to all photos',
@@ -201,8 +201,8 @@ export const translations = {
                 removeAllPhotosTitle: 'Remove All Photos?',
                 removeAllPhotosMsg: 'Are you sure you want to remove all photos? This action cannot be undone.',
                 yesRemoveAll: 'Yes, Remove All',
-            }
-        }
+            },
+        },
     },
     it: {
         common: {
@@ -211,6 +211,45 @@ export const translations = {
             moreTools: 'Altri strumenti in arrivo...',
             openTool: 'Apri Strumento',
             eraseProject: 'Butta via il progetto',
+            eraseConfirm: 'Sei sicuro di voler buttare via il progetto? L\'azione non può essere annullata.',
+            cancel: 'Annulla',
+            removeFile: 'Rimuovi file',
+            restartPreview: 'Riavvia Anteprima',
+            yesRemove: 'Sì, Rimuovi',
+            resolution: 'Risoluzione',
+        },
+        captions: {
+            captionText: 'Testo Didascalia',
+            aiCaption: 'Didascalia AI',
+            thinking: 'Elaborazione...',
+            enterOverlayText: 'Inserisci testo...',
+            textStyle: 'Stile Testo',
+            normal: 'Normale',
+            italic: 'Corsivo',
+            textSize: 'Dimensione',
+            position: 'Posizione',
+            colorPalette: 'Tavolozza Colori',
+            textPositions: {
+                'Top Center': 'In alto al centro',
+                'Top Left': 'In alto a sinistra',
+                'Top Right': 'In alto a destra',
+                'Bottom Center': 'In basso al centro',
+                'Bottom Left': 'In basso a sinistra',
+                'Bottom Right': 'In basso a destra',
+                'Center': 'Al centro',
+            },
+            textSizes: {
+                'Small': 'Piccolo',
+                'Large': 'Grande',
+            },
+        },
+        watermark: {
+            title: 'Filigrana',
+            upload: 'Carica Filigrana',
+            remove: 'Rimuovi',
+            position: 'Posizione',
+            size: 'Dimensione',
+            opacity: 'Opacità',
         },
         home: {
             title: 'Studio One',
@@ -231,7 +270,7 @@ export const translations = {
             },
             photoverlay: {
                 description: 'Sovrapponi didascalie di testo e filigrane su una singola foto.',
-            }
+            },
         },
         tools: {
             mptrim: {
@@ -240,7 +279,6 @@ export const translations = {
                 dropZoneTitle: 'Taglia e Dividi Audio',
                 dropZoneDesc: 'Trascina un file audio per iniziare.<br />Ritaglio lossless preciso con rendering master professionale.',
                 selectFile: 'Seleziona File',
-                removeFile: 'Rimuovi file',
                 setStart: 'Imposta Inizio',
                 setEnd: 'Imposta Fine',
                 selectionStart: 'Inizio Selezione',
@@ -262,8 +300,6 @@ export const translations = {
                 clientSideDesc: 'Tutta l\'elaborazione avviene direttamente nel browser, mantenendo i tuoi dati privati.',
                 removeTrackTitle: 'Rimuovere Traccia Audio?',
                 removeTrackMsg: 'Sei sicuro di voler rimuovere questa traccia audio? L\'azione non può essere annullata.',
-                yesRemove: 'Sì, Rimuovi',
-                cancel: 'Annulla'
             },
             slidesync: {
                 title: 'SlideSync Studio',
@@ -291,7 +327,6 @@ export const translations = {
                 hasText: 'Contiene testo',
                 addImagesToStart: 'Aggiungi immagini per iniziare',
                 addAudioToStart: 'Aggiungi audio per iniziare',
-                restartPreview: 'Riavvia Anteprima',
                 creating: 'Creazione in corso...',
                 exportClip: 'Esporta Clip',
                 recordingNote: 'Rendering in corso... Non cambiare scheda.',
@@ -300,29 +335,9 @@ export const translations = {
                 aiCaptionTitle: 'Genera didascalia con AI',
                 exportAsWebm: 'Esporta come WebM (VP9)',
                 exportAsMp4: 'Esporta come MP4 (H.264)',
-                captionText: 'Testo Didascalia',
-                aiCaption: 'Didascalia AI',
-                thinking: 'Elaborazione...',
-                enterOverlayText: 'Inserisci testo...',
-                textStyle: 'Stile Testo',
-                normal: 'Normale',
-                italic: 'Corsivo',
-                textSize: 'Dimensione',
-                position: 'Posizione',
-                colorPalette: 'Tavolozza Colori',
-                textPositions: {
-                    'Top Center': 'In alto al centro',
-                    'Top Left': 'In alto a sinistra',
-                    'Top Right': 'In alto a destra',
-                    'Bottom Center': 'In basso al centro',
-                    'Bottom Left': 'In basso a sinistra',
-                    'Bottom Right': 'In basso a destra',
-                    'Center': 'Al centro'
-                },
-                textSizes: {
-                    'Small': 'Piccolo',
-                    'Large': 'Grande'
-                }
+                removeAllDataTitle: 'Rimuovi tutto?',
+                removeAllDataMsg: 'Sei sicuro di voler rimuovere tutto? L\'azione non può essere annullata.',
+                yesRemoveAll: 'Sì, Rimuovi Tutto',
             },
             videoverlay: {
                 title: 'Videoverlay',
@@ -330,9 +345,7 @@ export const translations = {
                 selectVideo: 'Seleziona un video per aggiungere overlay',
                 uploadVideo: 'Carica Video',
                 awaitingSource: 'In attesa del video',
-                restartPreview: 'Riavvia Anteprima',
                 removeVideo: 'Rimuovi Video',
-                resolution: 'Risoluzione',
                 calculating: 'Calcolo in corso...',
                 mediaCreated: 'Media Creato',
                 highQualityRender: 'Rendering Alta Qualità',
@@ -357,17 +370,7 @@ export const translations = {
                 continue: 'Continua',
                 removeVideoTitle: 'Rimuovere Video?',
                 removeVideoMsg: 'Sei sicuro di voler rimuovere questo video? L\'azione non può essere annullata.',
-                yesRemove: 'Sì, Rimuovi',
-                cancel: 'Annulla',
                 exportFailed: 'Esportazione fallita. Vedi la console per i dettagli.',
-                watermark: {
-                    title: 'Filigrana',
-                    upload: 'Carica Filigrana',
-                    remove: 'Rimuovi',
-                    position: 'Posizione',
-                    size: 'Dimensione',
-                    opacity: 'Opacità'
-                },
                 originalFormat: 'Originale',
                 videoFormat: 'Formato Video',
                 rotation: 'Rotazione',
@@ -375,7 +378,7 @@ export const translations = {
                 keepAudio: 'Mantieni Audio',
                 removeAudio: 'Rimuovi',
                 replaceAudio: 'Sostituisci',
-                selectAudio: 'Seleziona Audio'
+                selectAudio: 'Seleziona Audio',
             },
             photoverlay: {
                 title: 'Photoverlay',
@@ -384,15 +387,12 @@ export const translations = {
                 uploadPhoto: 'Carica Foto',
                 awaitingSource: 'In attesa della foto',
                 removePhoto: 'Rimuovi Foto',
-                resolution: 'Risoluzione',
                 mediaCreated: 'Media Creato',
                 location: 'Posizione',
                 exportPhoto: 'ESPORTA FOTO',
                 exporting: 'Esportazione...',
                 removePhotoTitle: 'Rimuovere Foto?',
                 removePhotoMsg: 'Sei sicuro di voler rimuovere questa foto? L\'azione non può essere annullata.',
-                yesRemove: 'Sì, Rimuovi',
-                cancel: 'Annulla',
                 exportFailed: 'Esportazione fallita. Vedi la console.',
                 panImage: 'Sposta Immagine',
                 applyToAll: 'Applica questa sovraimpressione a tutte le foto',
@@ -404,9 +404,9 @@ export const translations = {
                 removeAllPhotosTitle: 'Rimuovere Tutte le Foto?',
                 removeAllPhotosMsg: 'Sei sicuro di voler rimuovere tutte le foto? L\'azione non può essere annullata.',
                 yesRemoveAll: 'Sì, Rimuovi Tutte',
-            }
-        }
-    }
+            },
+        },
+    },
 };
 
 export type TranslationKeys = typeof translations.en;

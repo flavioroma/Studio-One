@@ -301,7 +301,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
           <div className="absolute inset-0 flex items-center justify-center cursor-pointer transition-all duration-300" onClick={handleRestart}>
             <div className="bg-white/10 backdrop-blur-md p-4 rounded-full border border-white/20 hover:scale-110 hover:bg-white/20 transition-all flex flex-col items-center gap-2 group">
               <RotateCcw className="w-8 h-8 text-white group-hover:rotate-[-45deg] transition-transform" />
-              <span className="text-white text-[10px] font-black uppercase tracking-[0.2em]">{t.tools.slidesync.restartPreview}</span>
+              <span className="text-white text-[10px] font-black uppercase tracking-[0.2em]">{t.common.restartPreview}</span>
             </div>
           </div>
         )}

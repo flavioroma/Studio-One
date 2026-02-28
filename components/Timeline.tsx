@@ -123,7 +123,7 @@ export const Timeline: React.FC<TimelineProps> = ({ slides, activeSlideId, onSel
               onDelete(slide.id);
             }}
             className="absolute bottom-1 right-1 p-1.5 bg-red-500/90 text-white rounded-md hover:bg-red-600 transition-all opacity-0 group-hover:opacity-100 z-30 shadow-sm hover:scale-110"
-            title={t.tools.slidesync.removeFile}
+            title={t.common.removeFile}
           >
             <Trash2 className="w-3 h-3" />
           </button>
