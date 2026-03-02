@@ -45,6 +45,7 @@ export const VideoverlayTool: React.FC = () => {
   const [exportProgress, setExportProgress] = useState(0);
 
   const [metadata, setMetadata] = useState<VideoMetadata | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Abort Control
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -138,6 +139,42 @@ export const VideoverlayTool: React.FC = () => {
     return () => cancelAnimationFrame(animationFrameId);
   }, [isPlaying, startTime, endTime, audioMode]);
 
+  // Global keyboard shortcuts for frame-by-frame navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in a text input or textarea
+      const target = e.target as HTMLElement;
+      const isRangeInput = target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'range';
+      const isTextInput =
+        target.tagName === 'TEXTAREA' ||
+        (target.tagName === 'INPUT' && (target as HTMLInputElement).type !== 'range');
+
+      if (isTextInput) return;
+
+      // If it's a range input, let its native navigation (with our new 0.033 step) handle it
+      if (isRangeInput) return;
+
+      if (!videoRef.current || isExporting) return;
+
+      const frameTime = 1 / 30; // Default to 30fps if unknown
+
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        const newTime = Math.min(videoRef.current.duration, videoRef.current.currentTime + frameTime);
+        videoRef.current.currentTime = newTime;
+        setCurrentTime(newTime);
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        const newTime = Math.max(0, videoRef.current.currentTime - frameTime);
+        videoRef.current.currentTime = newTime;
+        setCurrentTime(newTime);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isExporting]);
+
   const formatTime = (seconds: number) => {
     if (!Number.isFinite(seconds) || isNaN(seconds)) return "0:00";
     const mins = Math.floor(seconds / 60);
@@ -151,6 +188,8 @@ export const VideoverlayTool: React.FC = () => {
       const url = URL.createObjectURL(selectedFile);
       setFile(selectedFile);
       setVideoUrl(url);
+      setMetadata(null);
+      setError(null);
     }
   };
 
@@ -220,23 +259,46 @@ export const VideoverlayTool: React.FC = () => {
     return () => clearTimeout(timeoutId);
   }, [file, captionSettings, watermarkSettings, rotation, audioMode, audioFile, startTime, endTime]);
 
-  const onLoadedMetadata = async () => {
-    if (videoRef.current && file) {
-      const vidDuration = videoRef.current.duration;
+  // Effect to handle metadata extraction when file changes
+  useEffect(() => {
+    if (!file) {
+      setMetadata(null);
+      setError(null);
+      return;
+    }
+
+    const loadMetadata = async () => {
       try {
         const data = await MetadataService.getVideoMetadata(file);
         setMetadata(data);
-      } catch (err) {
-        // Fallback if service fails (unlikely given it uses DOM)
+        setError(null);
+        if (data.duration) {
+          setEndTime(prev => prev === 0 ? data.duration : prev);
+        }
+      } catch (err: any) {
+        console.error("Metadata loading failed:", err);
+        setError(t.tools.videoverlay.videoError);
+      }
+    };
+
+    loadMetadata();
+  }, [file, t.tools.videoverlay.videoError]);
+
+  const onLoadedMetadata = () => {
+    if (videoRef.current && file) {
+      const vidDuration = videoRef.current.duration;
+      setEndTime(prev => prev === 0 ? vidDuration : prev);
+
+      // If metadata failed to load via service, but video element managed to load,
+      // fallback to basic properties
+      if (!metadata) {
         setMetadata({
-          width: videoRef.current.videoWidth,
-          height: videoRef.current.videoHeight,
-          duration: vidDuration,
+          width: videoRef.current.videoWidth || 1920,
+          height: videoRef.current.videoHeight || 1080,
+          duration: vidDuration || 0,
           bitrate: 0
         });
       }
-
-      setEndTime(prev => prev === 0 ? vidDuration : prev);
     }
   };
 
@@ -451,6 +513,7 @@ export const VideoverlayTool: React.FC = () => {
     setAudioFile(null);
     setStartTime(0);
     setEndTime(0);
+    setError(null);
 
     // 2. Immediately Clear Persistence
     PersistenceService.saveVideoverlayState({
@@ -507,6 +570,28 @@ export const VideoverlayTool: React.FC = () => {
               <VideoIcon className="w-24 h-24 stroke-[1px]" />
               <p className="font-bold uppercase tracking-[0.3em] text-xs">{t.tools.videoverlay.awaitingSource}</p>
             </div>
+          ) : error ? (
+            <div className="max-w-md w-full flex flex-col items-center gap-6 p-10 bg-slate-900/50 backdrop-blur-md rounded-3xl border border-red-500/20 shadow-2xl animate-fadeIn">
+              <div className="p-4 bg-red-500/10 rounded-2xl">
+                <AlertTriangle className="w-12 h-12 text-red-500" />
+              </div>
+              <div className="space-y-2 text-center">
+                <h3 className="text-xl font-bold text-white">Video Error</h3>
+                <p className="text-sm text-slate-400 leading-relaxed">
+                  {error}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setFile(null);
+                  setVideoUrl(null);
+                  setError(null);
+                }}
+                className="px-6 py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all"
+              >
+                {t.common.removeFile}
+              </button>
+            </div>
           ) : (
             <>
               <div
@@ -522,6 +607,10 @@ export const VideoverlayTool: React.FC = () => {
                   ref={videoRef}
                   src={videoUrl}
                   onLoadedMetadata={onLoadedMetadata}
+                  onError={() => {
+                    console.error("Video element error");
+                    setError(t.tools.videoverlay.videoError);
+                  }}
                   onEnded={() => {
                     setIsPlaying(false);
                     if (audioPreviewRef.current) audioPreviewRef.current.pause();
@@ -570,7 +659,7 @@ export const VideoverlayTool: React.FC = () => {
                   <div className="bg-gradient-to-t from-black/90 via-black/50 to-transparent p-4 flex items-center gap-4">
                     <button
                       onClick={togglePlay}
-                      className="text-white hover:text-emerald-400 transition-transform active:scale-95 disabled:opacity-50"
+                      className="text-white hover:text-tool-videoverlay transition-transform active:scale-95 disabled:opacity-50"
                       disabled={isExporting}
                     >
                       {(() => {
@@ -586,7 +675,7 @@ export const VideoverlayTool: React.FC = () => {
                       type="range"
                       min={startTime}
                       max={endTime > 0 ? endTime : (metadata?.duration || 100)}
-                      step="0.001"
+                      step="0.033"
                       value={currentTime}
                       onChange={(e) => {
                         const val = parseFloat(e.target.value);
@@ -595,7 +684,7 @@ export const VideoverlayTool: React.FC = () => {
                           videoRef.current.currentTime = val;
                         }
                       }}
-                      className="flex-1 h-1.5 bg-slate-600 rounded-full appearance-none cursor-pointer accent-emerald-500 hover:h-2 transition-all outline-none"
+                      className="flex-1 h-1.5 bg-slate-600 rounded-full appearance-none cursor-pointer accent-tool-videoverlay hover:h-2 transition-all outline-none"
                     />
 
                     <div className="font-mono text-xs text-white tabular-nums drop-shadow-md pr-2 select-none">
@@ -613,69 +702,106 @@ export const VideoverlayTool: React.FC = () => {
                       onClick={() => {
                         if (videoRef.current) setStartTime(Math.min(videoRef.current.currentTime, endTime - 0.01));
                       }}
-                      className="flex-1 group/btn flex items-center justify-center gap-2 px-5 py-3 bg-slate-700 hover:bg-emerald-600/20 hover:text-emerald-400 border border-slate-600 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95"
+                      className="flex-1 group/btn flex items-center justify-center gap-2 px-5 py-3 bg-slate-700 hover:bg-tool-videoverlay/20 hover:text-tool-videoverlay border border-slate-600 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95"
                     >
-                      <Flag className="w-3.5 h-3.5 group-hover/btn:scale-110 transition-transform" /> {t.tools.mptrim.setStart}
+                      <Flag className="w-3.5 h-3.5 group-hover/btn:scale-110 transition-transform" /> {t.tools.audiotrim.setStart}
                     </button>
                     <button
                       onClick={() => {
                         if (videoRef.current) setEndTime(Math.max(videoRef.current.currentTime, startTime + 0.01));
                       }}
-                      className="flex-1 group/btn flex items-center justify-center gap-2 px-5 py-3 bg-slate-700 hover:bg-emerald-600/20 hover:text-emerald-400 border border-slate-600 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95"
+                      className="flex-1 group/btn flex items-center justify-center gap-2 px-5 py-3 bg-slate-700 hover:bg-tool-videoverlay/20 hover:text-tool-videoverlay border border-slate-600 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95"
                     >
-                      <Flag className="w-3.5 h-3.5 fill-current group-hover/btn:scale-110 transition-transform" /> {t.tools.mptrim.setEnd}
+                      <Flag className="w-3.5 h-3.5 fill-current group-hover/btn:scale-110 transition-transform" /> {t.tools.audiotrim.setEnd}
                     </button>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
                     <div className="space-y-3">
                       <div className="flex justify-between items-center px-1">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">{t.tools.mptrim.selectionStart}</label>
-                        <span className="text-xs font-mono text-emerald-400">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">{t.tools.audiotrim.selectionStart}</label>
+                        <span className="text-xs font-mono text-tool-videoverlay">
                           {Math.floor(startTime / 60)}:{Math.floor(startTime % 60).toString().padStart(2, '0')}.{Math.floor((startTime % 1) * 100).toString().padStart(2, '0')}
                         </span>
                       </div>
                       <div className="relative flex items-center gap-2">
-                        <button onClick={() => setStartTime(s => Math.max(0, s - 0.1))} className="p-1 hover:text-white text-slate-500 transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+                        <button
+                          onClick={() => {
+                            const newTime = Math.max(0, startTime - 0.1);
+                            setStartTime(newTime);
+                            if (videoRef.current) videoRef.current.currentTime = newTime;
+                          }}
+                          className="p-1 hover:text-white text-slate-500 transition-colors"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
                         <input
                           type="range"
                           min="0"
                           max={metadata.duration || 100}
-                          step="0.001"
+                          step="0.033"
                           value={startTime}
                           onChange={(e) => {
                             const val = parseFloat(e.target.value);
                             setStartTime(Math.min(val, endTime - 0.01));
                             if (videoRef.current) videoRef.current.currentTime = val;
                           }}
-                          className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                          className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-tool-videoverlay"
                         />
-                        <button onClick={() => setStartTime(s => Math.min(endTime - 0.01, s + 0.1))} className="p-1 hover:text-white text-slate-500 transition-colors"><ChevronRight className="w-4 h-4" /></button>
+                        <button
+                          onClick={() => {
+                            const newTime = Math.min(endTime - 0.01, startTime + 0.1);
+                            setStartTime(newTime);
+                            if (videoRef.current) videoRef.current.currentTime = newTime;
+                          }}
+                          className="p-1 hover:text-white text-slate-500 transition-colors"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
 
                     <div className="space-y-3">
                       <div className="flex justify-between items-center px-1">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">{t.tools.mptrim.selectionEnd}</label>
-                        <span className="text-xs font-mono text-emerald-400">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">{t.tools.audiotrim.selectionEnd}</label>
+                        <span className="text-xs font-mono text-tool-videoverlay">
                           {Math.floor(endTime / 60)}:{Math.floor(endTime % 60).toString().padStart(2, '0')}.{Math.floor((endTime % 1) * 100).toString().padStart(2, '0')}
                         </span>
                       </div>
                       <div className="relative flex items-center gap-2">
-                        <button onClick={() => setEndTime(s => Math.max(startTime + 0.01, s - 0.1))} className="p-1 hover:text-white text-slate-500 transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+                        <button
+                          onClick={() => {
+                            const newTime = Math.max(startTime + 0.01, endTime - 0.1);
+                            setEndTime(newTime);
+                            if (videoRef.current) videoRef.current.currentTime = newTime;
+                          }}
+                          className="p-1 hover:text-white text-slate-500 transition-colors"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
                         <input
                           type="range"
                           min="0"
                           max={metadata.duration || 100}
-                          step="0.001"
+                          step="0.033"
                           value={endTime}
                           onChange={(e) => {
                             const val = parseFloat(e.target.value);
                             setEndTime(Math.max(val, startTime + 0.01));
+                            if (videoRef.current) videoRef.current.currentTime = val;
                           }}
-                          className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                          className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-tool-videoverlay"
                         />
-                        <button onClick={() => setEndTime(s => Math.min(metadata.duration || 0, s + 0.1))} className="p-1 hover:text-white text-slate-500 transition-colors"><ChevronRight className="w-4 h-4" /></button>
+                        <button
+                          onClick={() => {
+                            const newTime = Math.min(metadata.duration || 0, endTime + 0.1);
+                            setEndTime(newTime);
+                            if (videoRef.current) videoRef.current.currentTime = newTime;
+                          }}
+                          className="p-1 hover:text-white text-slate-500 transition-colors"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -703,7 +829,7 @@ export const VideoverlayTool: React.FC = () => {
                   {metadata && metadata.creationTime && (
                     <div className="flex flex-col">
                       <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
-                        <Calendar className="w-3 h-3" /> {t.tools.videoverlay.mediaCreated}
+                        <Calendar className="w-3 h-3" /> {t.common.mediaCreated}
                       </p>
                       <p className="text-sm font-bold text-white">
                         {metadata.creationTime.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
@@ -719,23 +845,23 @@ export const VideoverlayTool: React.FC = () => {
                 <p className="text-[12px] font-black uppercase text-slate-500 tracking-widest">
                   {isExporting ? t.tools.videoverlay.highQualityRender : t.tools.videoverlay.processing}
                 </p>
-                <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                <div className="flex items-center gap-2 text-tool-videoverlay text-xs font-bold">
+                  <div className="w-1.5 h-1.5 rounded-full bg-tool-videoverlay animate-pulse"></div>
                   {isExporting ? t.tools.videoverlay.frameByFrame : t.tools.videoverlay.browserNativeRender}
                 </div>
               </div>
               <div className="hidden lg:flex flex-col items-end mr-4">
                 <p className="text-[12px] font-black uppercase text-slate-500 tracking-widest">
-                  {t.tools.videoverlay.clientSideNote}
+                  {t.tools.videoverlay.videoOutputTitle}
                 </p>
                 <p className="text-[10px] text-slate-400">
-                  {t.tools.videoverlay.privacyNote}
+                  {t.tools.videoverlay.videoOutputDesc}
                 </p>
               </div>
               <button
                 onClick={handleExport}
                 disabled={isExporting}
-                className="flex items-center gap-3 px-8 py-3.5 bg-white hover:bg-slate-100 text-slate-900 font-black rounded-2xl transition-all shadow-xl shadow-white/5 active:scale-95 disabled:opacity-50"
+                className="flex items-center gap-3 px-8 py-3.5 bg-tool-videoverlay hover:opacity-90 text-white font-black rounded-2xl transition-all shadow-xl shadow-tool-videoverlay/10 active:scale-95 disabled:opacity-50"
               >
                 {isExporting ? (
                   <>
@@ -759,15 +885,15 @@ export const VideoverlayTool: React.FC = () => {
         <div className="fixed inset-0 bg-slate-950/90 z-[100] flex flex-col items-center justify-center p-8 animate-fadeIn">
           <div className="max-w-md text-center space-y-6">
             <div className="relative">
-              <Loader2 className="w-20 h-20 text-purple-500 animate-spin mx-auto opacity-20" />
-              <VideoIcon className="w-10 h-10 text-purple-400 absolute inset-0 m-auto animate-pulse" />
+              <Loader2 className="w-20 h-20 text-tool-videoverlay animate-spin mx-auto opacity-20" />
+              <VideoIcon className="w-10 h-10 text-tool-videoverlay/80 absolute inset-0 m-auto animate-pulse" />
             </div>
             <h3 className="text-2xl font-black text-white">{t.tools.videoverlay.generatingHQ}</h3>
 
             {/* Progress Bar */}
             <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
               <div
-                className="h-full bg-purple-500 transition-all duration-300 ease-out"
+                className="h-full bg-tool-videoverlay transition-all duration-300 ease-out"
                 style={{ width: `${Math.round(exportProgress * 100)}%` }}
               />
             </div>

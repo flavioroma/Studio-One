@@ -4,7 +4,7 @@ import { Slide, AspectRatio, TextPosition, TextColor, TextSize, Rotation, AudioM
 const SLIDESYNC_KEY = 'slidesync_state_v1';
 const VIDEOVERLAY_KEY = 'videoverlay_state_v1';
 const PHOTOVERLAY_KEY = 'photoverlay_state_v1';
-const MPTRIM_KEY = 'mptrim_state_v1';
+const AUDIOTRIM_KEY = 'audiotrim_state_v1';
 
 export interface SlideSyncState {
     slides: Slide[];
@@ -45,6 +45,7 @@ export interface PhotoverlayState {
     items: PhotoItemState[];
     selectedId: string | null;
     applyToAll: boolean;
+    exportAsArchive?: boolean;
 }
 
 // For backward compatibility
@@ -59,7 +60,7 @@ export interface LegacyPhotoverlayState {
     watermarkPosition?: TextPosition;
 }
 
-export interface MPTrimState {
+export interface AudioTrimState {
     file: File | null;
     startTime: number;
     endTime: number;
@@ -148,20 +149,20 @@ export class PersistenceService {
         }
     }
 
-    // MPTrim
-    static async saveMPTrimState(state: MPTrimState): Promise<void> {
+    // AudioTrim
+    static async saveAudioTrimState(state: AudioTrimState): Promise<void> {
         try {
-            await set(MPTRIM_KEY, state);
+            await set(AUDIOTRIM_KEY, state);
         } catch (error) {
-            console.error('Failed to save MPTrim state:', error);
+            console.error('Failed to save AudioTrim state:', error);
         }
     }
 
-    static async loadMPTrimState(): Promise<MPTrimState | null> {
+    static async loadAudioTrimState(): Promise<AudioTrimState | null> {
         try {
-            return (await get<MPTrimState>(MPTRIM_KEY)) || null;
+            return (await get<AudioTrimState>(AUDIOTRIM_KEY)) || null;
         } catch (error) {
-            console.error('Failed to load MPTrim state:', error);
+            console.error('Failed to load AudioTrim state:', error);
             return null;
         }
     }

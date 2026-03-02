@@ -4,6 +4,7 @@ import { AspectRatio, Rotation, AudioMode, TextColor, TextPosition, TextSize, Ca
 import { CaptionSettingsPanel } from '../../components/CaptionSettingsPanel';
 import { WatermarkSettingsPanel } from '../../components/WatermarkSettingsPanel';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { FileDropZone } from '../../components/FileDropZone';
 
 interface VideoverlaySidebarProps {
     file: File | null;
@@ -59,18 +60,17 @@ export const VideoverlaySidebar: React.FC<VideoverlaySidebarProps> = ({
         <div className="w-80 border-r border-slate-700 bg-slate-800 flex flex-col p-6 overflow-y-auto z-10 shadow-2xl">
             {!file ? (
                 <div className="space-y-6">
-                    <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl">
-                        <p className="text-md text-blue-400 leading-relaxed text-center">
-                            {t.tools.videoverlay.selectVideo}
-                        </p>
-                    </div>
-                    <label className="flex flex-col items-center justify-center gap-4 w-full h-48 rounded-3xl border-2 border-dashed border-slate-600 hover:border-purple-500 hover:bg-slate-700/50 cursor-pointer transition-all group">
-                        <div className="p-4 bg-slate-700 rounded-full group-hover:scale-110 transition-transform">
-                            <Upload className="w-8 h-8 text-purple-400" />
-                        </div>
-                        <span className="text-sm font-bold text-slate-400">{t.tools.videoverlay.uploadVideo}</span>
-                        <input type="file" accept="video/*" onChange={onFileChange} className="hidden" />
-                    </label>
+                    <FileDropZone
+                        onFilesSelected={(files) => {
+                            const event = {
+                                target: { files }
+                            } as React.ChangeEvent<HTMLInputElement>;
+                            onFileChange(event);
+                        }}
+                        accept="video/*"
+                        label={t.tools.videoverlay.uploadVideo}
+                        themeColor="tool-videoverlay"
+                    />
                 </div>
             ) : (
                 <div className="space-y-8 animate-fadeIn">
@@ -83,7 +83,7 @@ export const VideoverlaySidebar: React.FC<VideoverlaySidebarProps> = ({
                                     key={opt.id}
                                     onClick={() => onRotationChange(opt.id as Rotation)}
                                     className={`flex items-center justify-center gap-2 p-2 rounded-xl border transition-all ${rotation === opt.id
-                                        ? 'bg-blue-600/20 border-blue-500 text-blue-300 shadow-[0_0_15px_rgba(59,130,246,0.2)]'
+                                        ? 'bg-tool-videoverlay/20 border-tool-videoverlay text-tool-videoverlay shadow-[0_0_15px_rgba(var(--tool-videoverlay),0.2)]'
                                         : 'bg-slate-700/50 border-slate-600 hover:border-slate-500'
                                         }`}
                                 >
@@ -102,7 +102,7 @@ export const VideoverlaySidebar: React.FC<VideoverlaySidebarProps> = ({
                                     key={opt.id}
                                     onClick={() => onAudioModeChange(opt.id as AudioMode)}
                                     className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${audioMode === opt.id
-                                        ? 'bg-blue-600/20 border-blue-500 text-blue-300 shadow-[0_0_15px_rgba(59,130,246,0.2)]'
+                                        ? 'bg-tool-videoverlay/20 border-tool-videoverlay text-tool-videoverlay shadow-[0_0_15px_rgba(var(--tool-videoverlay),0.2)]'
                                         : 'bg-slate-700/50 border-slate-600 hover:border-slate-500'
                                         }`}
                                 >
@@ -123,7 +123,7 @@ export const VideoverlaySidebar: React.FC<VideoverlaySidebarProps> = ({
                                 />
                                 <label
                                     htmlFor="audio-upload"
-                                    className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border border-slate-600 cursor-pointer hover:bg-slate-700/50 transition-all ${audioFile ? 'bg-blue-600/10 border-blue-400 text-blue-300' : ''}`}
+                                    className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border border-slate-600 cursor-pointer hover:bg-slate-700/50 transition-all ${audioFile ? 'bg-tool-videoverlay/10 border-tool-videoverlay text-tool-videoverlay' : ''}`}
                                 >
                                     <Music className="w-4 h-4" />
                                     <span className="text-sm truncate max-w-[120px]">{audioFile ? audioFile.name : t.tools.videoverlay.selectAudio}</span>
@@ -149,11 +149,13 @@ export const VideoverlaySidebar: React.FC<VideoverlaySidebarProps> = ({
                         <CaptionSettingsPanel
                             settings={captionSettings}
                             onUpdate={onCaptionUpdate}
+                            themeColor="tool-videoverlay"
                         />
 
                         <WatermarkSettingsPanel
                             settings={watermarkSettings}
                             onUpdate={onWatermarkUpdate}
+                            themeColor="tool-videoverlay"
                         />
                     </div>
                 </div>

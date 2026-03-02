@@ -36,14 +36,13 @@ describe('PhotoverlayTool', () => {
 
     it('renders the initial state with upload button', () => {
         renderWithContext();
-        expect(screen.getByText(/Select a photo/i)).toBeInTheDocument();
-        expect(screen.getByText(/Upload Photo/i)).toBeInTheDocument();
+        expect(screen.getByText(/Select or drop photos/i)).toBeInTheDocument();
     });
 
     it('shows the main tool interface after uploading files', async () => {
         renderWithContext();
         const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
-        const input = screen.getByLabelText(/Upload Photo/i) as HTMLInputElement;
+        const input = screen.getByTestId('file-input') as HTMLInputElement;
 
         fireEvent.change(input, { target: { files: [file] } });
 

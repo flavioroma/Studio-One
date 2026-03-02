@@ -4,7 +4,7 @@ import { Slide, TextPosition, TextColor, AspectRatio, TextSize } from '../../typ
 import { generateCaptionForImage } from '../../services/geminiService';
 import { PersistenceService } from '../../services/PersistenceService';
 import { SlideSyncSidebar } from './SlideSyncSidebar';
-import { Timeline } from '../../components/Timeline';
+import { Timeline } from './Timeline';
 import { VideoPreview } from '../../components/VideoPreview';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -256,6 +256,7 @@ export const SlideSyncTool: React.FC = () => {
             onSelectSlide={setActiveSlideId}
             onReorder={reorderSlides}
             onDelete={deleteSlide}
+            onImageUpload={handleImageUpload}
           />
         </div>
       </div>

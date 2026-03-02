@@ -1,8 +1,8 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { Timeline } from './Timeline';
-import { LanguageProvider } from '../contexts/LanguageContext';
-import { TextColor, TextPosition, TextSize } from '../types';
+import { LanguageProvider } from '../../contexts/LanguageContext';
+import { TextColor, TextPosition, TextSize } from '../../types';
 
 describe('Timeline', () => {
     const mockSlides = [
@@ -38,6 +38,7 @@ describe('Timeline', () => {
         onSelectSlide: vi.fn(),
         onReorder: vi.fn(),
         onDelete: vi.fn(),
+        onImageUpload: vi.fn(),
     };
 
     const renderWithContext = (props = defaultProps) => {
@@ -80,7 +81,7 @@ describe('Timeline', () => {
         const activeContainer = document.getElementById('timeline-slide-1');
         const inactiveContainer = document.getElementById('timeline-slide-2');
 
-        expect(activeContainer?.className).toContain('border-blue-500');
+        expect(activeContainer?.className).toContain('border-tool-slidesync');
         expect(inactiveContainer?.className).toContain('border-slate-600');
     });
 
@@ -93,5 +94,10 @@ describe('Timeline', () => {
 
         // Check if there's only one such indicator (since only slide 1 has text)
         expect(screen.getAllByTitle(/Has text/i).length).toBe(1);
+    });
+
+    it('renders the "Add More" button at the end', () => {
+        renderWithContext();
+        expect(screen.getByText(/Add More/i)).toBeInTheDocument();
     });
 });

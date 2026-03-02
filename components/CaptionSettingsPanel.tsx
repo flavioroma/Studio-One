@@ -8,6 +8,7 @@ interface CaptionSettingsPanelProps {
     onUpdate: (updates: Partial<CaptionSettings>) => void;
     onAutoCaption?: () => void;
     isProcessing?: boolean;
+    themeColor?: string;
 }
 
 export const CaptionSettingsPanel: React.FC<CaptionSettingsPanelProps> = ({
@@ -15,6 +16,7 @@ export const CaptionSettingsPanel: React.FC<CaptionSettingsPanelProps> = ({
     onUpdate,
     onAutoCaption,
     isProcessing = false,
+    themeColor = 'blue-500' // Fallback
 }) => {
     const { t } = useLanguage();
 
@@ -39,7 +41,7 @@ export const CaptionSettingsPanel: React.FC<CaptionSettingsPanelProps> = ({
                 <textarea
                     value={settings.text}
                     onChange={(e) => onUpdate({ text: e.target.value })}
-                    className="w-full bg-slate-700 border border-slate-600 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none h-24"
+                    className={`w-full bg-slate-700 border border-slate-600 rounded-xl p-3 text-sm focus:ring-2 focus:ring-${themeColor} focus:outline-none resize-none h-24`}
                     placeholder={t.captions.enterOverlayText}
                 />
             </div>
@@ -53,13 +55,13 @@ export const CaptionSettingsPanel: React.FC<CaptionSettingsPanelProps> = ({
                         <div className="flex bg-slate-700 p-1 rounded-xl border border-slate-600">
                             <button
                                 onClick={() => onUpdate({ isItalic: false })}
-                                className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${!settings.isItalic ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'}`}
+                                className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${!settings.isItalic ? `bg-${themeColor} text-white shadow-lg` : 'text-slate-400 hover:text-slate-200'}`}
                             >
                                 {t.captions.normal}
                             </button>
                             <button
                                 onClick={() => onUpdate({ isItalic: true })}
-                                className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${settings.isItalic ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'}`}
+                                className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${settings.isItalic ? `bg-${themeColor} text-white shadow-lg` : 'text-slate-400 hover:text-slate-200'}`}
                             >
                                 {t.captions.italic}
                             </button>
@@ -75,7 +77,7 @@ export const CaptionSettingsPanel: React.FC<CaptionSettingsPanelProps> = ({
                                 <button
                                     key={size}
                                     onClick={() => onUpdate({ textSize: size })}
-                                    className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${settings.textSize === size ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'
+                                    className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${settings.textSize === size ? `bg-${themeColor} text-white shadow-lg` : 'text-slate-400 hover:text-slate-200'
                                         }`}
                                 >
                                     {t.captions.textSizes[size]}
@@ -89,7 +91,7 @@ export const CaptionSettingsPanel: React.FC<CaptionSettingsPanelProps> = ({
                         <select
                             value={settings.position}
                             onChange={(e) => onUpdate({ position: e.target.value as TextPosition })}
-                            className="w-full bg-slate-700 border border-slate-600 rounded-xl p-2.5 text-[11px] font-bold focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none"
+                            className={`w-full bg-slate-700 border border-slate-600 rounded-xl p-2.5 text-[11px] font-bold focus:ring-2 focus:ring-${themeColor} focus:outline-none appearance-none`}
                         >
                             {Object.values(TextPosition).map((pos) => (
                                 <option key={pos} value={pos}>{t.captions.textPositions[pos]}</option>
@@ -107,7 +109,7 @@ export const CaptionSettingsPanel: React.FC<CaptionSettingsPanelProps> = ({
                             <button
                                 key={name}
                                 onClick={() => onUpdate({ color: hex as TextColor })}
-                                className={`w-5 h-5 rounded-full border-2 transition-transform hover:scale-125 ${settings.color === hex ? 'border-white ring-2 ring-blue-500/50' : 'border-transparent'
+                                className={`w-5 h-5 rounded-full border-2 transition-transform hover:scale-125 ${settings.color === hex ? `border-white ring-2 ring-${themeColor}/50` : 'border-transparent'
                                     }`}
                                 style={{ backgroundColor: hex }}
                                 title={name}

@@ -7,6 +7,7 @@ import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { MetadataService, PhotoMetadata } from '../../services/MetadataService';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PhotoverlaySidebar } from './PhotoverlaySidebar';
+import JSZip from 'jszip';
 
 
 export const PhotoverlayTool: React.FC = () => {
@@ -18,7 +19,7 @@ export const PhotoverlayTool: React.FC = () => {
     const [isExporting, setIsExporting] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [showApplyAllConfirm, setShowApplyAllConfirm] = useState(false);
-    const [pendingApplyAll, setPendingApplyAll] = useState<boolean | null>(null);
+    const [exportAsArchive, setExportAsArchive] = useState(false);
 
     // Preview Sizing
     const [containerSize, setContainerSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
@@ -197,6 +198,7 @@ export const PhotoverlayTool: React.FC = () => {
                 setItems(finalItems);
                 setSelectedId(state.selectedId || finalItems[0].id);
                 setApplyToAll(state.applyToAll || false);
+                setExportAsArchive(state.exportAsArchive || false);
             }
             isLoadedRef.current = true;
         };
@@ -219,7 +221,8 @@ export const PhotoverlayTool: React.FC = () => {
                     watermarkPosition: item.watermarkSettings.position
                 })),
                 selectedId,
-                applyToAll
+                applyToAll,
+                exportAsArchive
             });
         }, 2000);
         return () => clearTimeout(timeoutId);
@@ -281,6 +284,7 @@ export const PhotoverlayTool: React.FC = () => {
     const handleExport = async () => {
         if (items.length === 0) return;
         setIsExporting(true);
+        const zip = new JSZip();
 
         try {
             for (const item of items) {
@@ -352,17 +356,32 @@ export const PhotoverlayTool: React.FC = () => {
                         console.warn("Failed to transfer metadata", e);
                     }
 
-                    const url = URL.createObjectURL(finalBlob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    const originalName = item.file.name.substring(0, item.file.name.lastIndexOf('.')) || item.file.name;
-                    const ext = 'jpg'; // Force jpeg for metadata support
-                    a.download = `photoverlay-${originalName}.${ext}`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                    // Add small delay between downloads to ensure browser triggers all
-                    await new Promise(r => setTimeout(r, 400));
+                    if (exportAsArchive && items.length > 1) {
+                        const originalName = item.file.name.substring(0, item.file.name.lastIndexOf('.')) || item.file.name;
+                        zip.file(`photoverlay-${originalName}.jpg`, finalBlob);
+                    } else {
+                        const url = URL.createObjectURL(finalBlob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        const originalName = item.file.name.substring(0, item.file.name.lastIndexOf('.')) || item.file.name;
+                        const ext = 'jpg'; // Force jpeg for metadata support
+                        a.download = `photoverlay-${originalName}.${ext}`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        // Add small delay between downloads to ensure browser triggers all
+                        await new Promise(r => setTimeout(r, 400));
+                    }
                 }
+            }
+
+            if (exportAsArchive && items.length > 1) {
+                const content = await zip.generateAsync({ type: 'blob' });
+                const url = URL.createObjectURL(content);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `photoverlay-archive-${new Date().getTime()}.zip`;
+                a.click();
+                URL.revokeObjectURL(url);
             }
         } catch (error) {
             console.error("Export failed:", error);
@@ -512,11 +531,11 @@ export const PhotoverlayTool: React.FC = () => {
                             </div>
 
                             {/* Thumbnails Bar */}
-                            <div className="w-full px-4 pb-0">
+                            <div className="w-full px-6 pb-4">
                                 <div
                                     ref={scrollRef}
                                     onWheel={handleWheel}
-                                    className="flex items-center gap-4 overflow-x-auto py-2 hide-scrollbar select-none"
+                                    className="flex items-center gap-6 overflow-x-auto py-4 px-4 hide-scrollbar select-none"
                                 >
                                     <style>{`
                                         .hide-scrollbar::-webkit-scrollbar {
@@ -532,7 +551,7 @@ export const PhotoverlayTool: React.FC = () => {
                                             key={item.id}
                                             id={`photo-thumb-${item.id}`}
                                             onClick={() => setSelectedId(item.id)}
-                                            className={`relative group h-24 aspect-square flex-shrink-0 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${selectedId === item.id ? 'border-blue-500 shadow-lg shadow-blue-500/20 scale-105 z-10' : 'border-slate-600 hover:border-slate-400'
+                                            className={`relative group h-24 aspect-square flex-shrink-0 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${selectedId === item.id ? 'border-tool-photoverlay shadow-lg shadow-tool-photoverlay/20 scale-105 z-10' : 'border-slate-600 hover:border-slate-400'
                                                 }`}
                                         >
                                             <img
@@ -559,9 +578,9 @@ export const PhotoverlayTool: React.FC = () => {
                                             </button>
                                         </div>
                                     ))}
-                                    <label className="flex-shrink-0 h-24 aspect-square rounded-lg border-2 border-dashed border-slate-700 hover:border-blue-500/50 hover:bg-slate-800/50 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all">
+                                    <label className="flex-shrink-0 h-24 aspect-square rounded-lg border-2 border-dashed border-slate-700 hover:border-tool-photoverlay/50 hover:bg-slate-800/50 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all">
                                         <Plus className="w-5 h-5 text-slate-500" />
-                                        <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter">{t.tools.photoverlay.addMorePhotos}</span>
+                                        <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter">{t.common.addMore}</span>
                                         <input type="file" accept="image/*" multiple onChange={handleFileChange} className="hidden" />
                                     </label>
                                 </div>
@@ -587,7 +606,7 @@ export const PhotoverlayTool: React.FC = () => {
                             {selectedItem.exifData?.creationTime && (
                                 <div className="flex flex-col">
                                     <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
-                                        <Calendar className="w-3 h-3" /> {t.tools.photoverlay.mediaCreated}
+                                        <Calendar className="w-3 h-3" /> {t.common.mediaCreated}
                                     </p>
                                     <p className="text-sm font-bold text-white">
                                         {selectedItem.exifData.creationTime.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
@@ -608,10 +627,26 @@ export const PhotoverlayTool: React.FC = () => {
                         </div>
 
                         <div className="flex items-center gap-4">
+                            {items.length > 1 && (
+                                <div className="flex bg-slate-900/50 p-1 rounded-xl border border-slate-700/50 mr-2">
+                                    <button
+                                        onClick={() => setExportAsArchive(false)}
+                                        className={`px-4 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${!exportAsArchive ? 'bg-tool-photoverlay text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                                    >
+                                        {t.tools.photoverlay.individualFiles}
+                                    </button>
+                                    <button
+                                        onClick={() => setExportAsArchive(true)}
+                                        className={`px-4 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${exportAsArchive ? 'bg-tool-photoverlay text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                                    >
+                                        {t.tools.photoverlay.singleArchive}
+                                    </button>
+                                </div>
+                            )}
                             <button
                                 onClick={handleExport}
                                 disabled={isExporting}
-                                className="flex items-center gap-3 px-8 py-3.5 bg-white hover:bg-slate-100 text-slate-900 font-black rounded-2xl transition-all shadow-xl shadow-white/5 active:scale-95 disabled:opacity-50"
+                                className="flex items-center gap-3 px-8 py-3.5 bg-tool-photoverlay hover:opacity-90 text-white font-black rounded-2xl transition-all shadow-xl shadow-tool-photoverlay/10 active:scale-95 disabled:opacity-50"
                             >
                                 {isExporting ? (
                                     <>

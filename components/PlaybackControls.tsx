@@ -7,6 +7,7 @@ interface PlaybackControlsProps {
     currentTime: number;
     duration: number;
     isDisabled?: boolean;
+    themeColor: string;
     children?: React.ReactNode;
 }
 
@@ -16,6 +17,7 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
     currentTime,
     duration,
     isDisabled = false,
+    themeColor,
     children
 }) => {
     const formatTime = (seconds: number) => {
@@ -30,12 +32,12 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
             <button
                 onClick={onTogglePlay}
                 disabled={isDisabled}
-                className="text-white hover:text-blue-400 disabled:opacity-50 transition-all active:scale-90"
+                className={`text-white hover:text-${themeColor} disabled:opacity-50 transition-all active:scale-90`}
             >
                 {isPlaying ? <Pause className="w-8 h-8 fill-current" /> : <Play className="w-8 h-8 fill-current" />}
             </button>
             <div className="font-mono text-lg text-slate-100 w-32 text-center tabular-nums">
-                <span className="text-blue-400">{formatTime(currentTime)}</span>
+                <span className={`text-${themeColor}`}>{formatTime(currentTime)}</span>
                 <span className="text-slate-600 mx-2">/</span>
                 <span className="text-slate-400">{formatTime(duration)}</span>
             </div>

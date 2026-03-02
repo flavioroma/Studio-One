@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import './index.css';
 import { Home } from './views/Home';
 import { Navbar } from './components/Navbar';
 import { SlideSyncTool } from './tools/SlideSync/SlideSyncTool';
@@ -7,7 +8,7 @@ import { VideoverlayTool } from './tools/Videoverlay/VideoverlayTool';
 import { PhotoverlayTool } from './tools/Photoverlay/PhotoverlayTool';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 
-export type ToolId = 'home' | 'slidesync' | 'photoverlay' | 'mptrim' | 'videoverlay';
+export type ToolId = 'home' | 'slidesync' | 'photoverlay' | 'audiotrim' | 'videoverlay';
 
 const AppContent: React.FC = () => {
   const [activeTool, setActiveTool] = useState<ToolId>('home');
@@ -16,7 +17,7 @@ const AppContent: React.FC = () => {
     switch (activeTool) {
       case 'slidesync':
         return <SlideSyncTool />;
-      case 'mptrim':
+      case 'audiotrim':
         return <AudioTrimTool />;
       case 'videoverlay':
         return <VideoverlayTool />;
@@ -32,7 +33,7 @@ const AppContent: React.FC = () => {
   const getToolName = () => {
     switch (activeTool) {
       case 'slidesync': return t.tools.slidesync.title;
-      case 'mptrim': return t.tools.mptrim.title;
+      case 'audiotrim': return t.tools.audiotrim.title;
       case 'videoverlay': return t.tools.videoverlay.title;
       case 'photoverlay': return t.tools.photoverlay.title;
       default: return '';
@@ -45,6 +46,7 @@ const AppContent: React.FC = () => {
         <Navbar
           toolName={getToolName()}
           onBack={() => setActiveTool('home')}
+          toolId={activeTool}
         />
       )}
       <main className="flex-1 overflow-hidden">

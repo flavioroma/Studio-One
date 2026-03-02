@@ -116,5 +116,27 @@ describe('MetadataService', () => {
             expect(metadata.bitrate).toBe(800000); // (1,000,000 * 8) / 10
             expect(metadata.creationTime?.getFullYear()).toBe(2024);
         });
+
+        it('rejects if video metadata loading times out', async () => {
+            const mockFile = new File(['fake-video-content'], 'test.mp4');
+            vi.useFakeTimers();
+
+            const mockVideo = {
+                onloadedmetadata: null,
+                onerror: null,
+                set src(val: string) {
+                    // Do nothing, simulate a hang
+                }
+            };
+            vi.spyOn(document, 'createElement').mockReturnValue(mockVideo as any);
+
+            const metadataPromise = MetadataService.getVideoMetadata(mockFile);
+
+            // Fast-forward 5.5 seconds
+            vi.advanceTimersByTime(5500);
+
+            await expect(metadataPromise).rejects.toMatch(/timed out/);
+            vi.useRealTimers();
+        });
     });
 });

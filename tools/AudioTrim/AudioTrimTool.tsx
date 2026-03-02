@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Music, Upload, Scissors, Play, Pause, Download, Trash2, Clock, CheckCircle2, Flag, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
+import { Music, Play, Pause, Download, Trash2, Clock, Flag, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FileDropZone } from '../../components/FileDropZone';
 import { PersistenceService } from '../../services/PersistenceService';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
@@ -20,11 +21,13 @@ export const AudioTrimTool: React.FC = () => {
   const [exportFormat, setExportFormat] = useState<ExportFormat>('wav');
   const [audioDataOffset, setAudioDataOffset] = useState(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const animationRef = useRef<number | null>(null);
   const startInputRef = useRef<HTMLInputElement>(null);
   const endInputRef = useRef<HTMLInputElement>(null);
+  const waveformContainerRef = useRef<HTMLDivElement>(null);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -94,15 +97,10 @@ export const AudioTrimTool: React.FC = () => {
       }
     } catch (e) {
       console.error("Decoding error:", e);
-      alert(t.tools.mptrim.decodeError);
+      alert(t.tools.audiotrim.decodeError);
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      processAudio(e.target.files[0]);
-    }
-  }
 
 
   // Persistence Logic
@@ -111,7 +109,7 @@ export const AudioTrimTool: React.FC = () => {
   // Load State
   useEffect(() => {
     const load = async () => {
-      const state = await PersistenceService.loadMPTrimState();
+      const state = await PersistenceService.loadAudioTrimState();
       if (state && state.file) {
         // Restore file and re-process audio
         await processAudio(state.file);
@@ -130,7 +128,7 @@ export const AudioTrimTool: React.FC = () => {
     if (!isLoadedRef.current) return;
 
     const timeoutId = setTimeout(() => {
-      PersistenceService.saveMPTrimState({
+      PersistenceService.saveAudioTrimState({
         file,
         startTime,
         endTime,
@@ -141,10 +139,9 @@ export const AudioTrimTool: React.FC = () => {
     return () => clearTimeout(timeoutId);
   }, [file, startTime, endTime, exportFormat]);
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      processAudio(e.dataTransfer.files[0]);
+  const handleDrop = (files: FileList) => {
+    if (files && files[0]) {
+      processAudio(files[0]);
     }
   };
 
@@ -209,6 +206,38 @@ export const AudioTrimTool: React.FC = () => {
     const newEnd = Math.max(audioRef.current.currentTime, startTime + 0.01);
     setEndTime(newEnd);
   };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isDragging || !waveformContainerRef.current) return;
+
+    const rect = waveformContainerRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+    const pct = x / rect.width;
+    const time = pct * (audioBuffer?.duration || 0);
+
+    if (audioRef.current) {
+      audioRef.current.currentTime = time;
+    }
+    setCurrentTime(time);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  useEffect(() => {
+    if (isDragging) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    } else {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, audioBuffer?.duration]);
 
   const handleKeyDown = (e: React.KeyboardEvent, type: 'start' | 'end') => {
     if (['ArrowLeft', 'ArrowRight'].includes(e.key)) {
@@ -310,7 +339,7 @@ export const AudioTrimTool: React.FC = () => {
       }
     } catch (err) {
       console.error("Export failed:", err);
-      alert(t.tools.mptrim.exportFailed);
+      alert(t.tools.audiotrim.exportFailed);
     } finally {
       setIsExporting(false);
     }
@@ -338,7 +367,7 @@ export const AudioTrimTool: React.FC = () => {
     if (audioRef.current) audioRef.current.src = "";
 
     // Clear Persistence
-    PersistenceService.saveMPTrimState({
+    PersistenceService.saveAudioTrimState({
       file: null,
       startTime: 0,
       endTime: 0,
@@ -359,54 +388,117 @@ export const AudioTrimTool: React.FC = () => {
     setShowDeleteConfirm(false);
   };
 
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Redraw waveform on canvas
+  const drawWaveform = () => {
+    const canvas = canvasRef.current;
+    if (!canvas || peaks.length === 0) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+
+    // Set display size
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+
+    // Scale all drawing operations by dpr
+    ctx.scale(dpr, dpr);
+
+    const width = rect.width;
+    const height = rect.height;
+    const barCount = peaks.length;
+    const gap = 2; // Consistent gap
+    const barWidth = (width - (barCount - 1) * gap) / barCount;
+
+    ctx.clearRect(0, 0, width, height);
+
+    peaks.forEach((p, i) => {
+      const x = i * (barWidth + gap);
+      const barHeight = Math.max(2, p * height); // Minimum 2px height
+      const y = (height - barHeight) / 2;
+
+      const progress = i / barCount;
+      const startPct = startTime / (audioBuffer?.duration || 1);
+      const endPct = endTime / (audioBuffer?.duration || 1);
+      const isActive = progress >= startPct && progress <= endPct;
+
+      // Drawer colors based on theme
+      if (isActive) {
+        // Linear gradient for active bars
+        const gradient = ctx.createLinearGradient(0, y, 0, y + barHeight);
+        gradient.addColorStop(0, 'rgba(16, 185, 129, 0.8)'); // Light
+        gradient.addColorStop(1, 'rgba(16, 185, 129, 0.4)'); // Darker
+        ctx.fillStyle = gradient;
+      } else {
+        ctx.fillStyle = '#334155'; // slate-700
+      }
+
+      // Draw rounded bar
+      const radius = barWidth / 2;
+      ctx.beginPath();
+      if (ctx.roundRect) {
+        ctx.roundRect(x, y, barWidth, barHeight, radius);
+      } else {
+        // Fallback for older browsers
+        ctx.rect(x, y, barWidth, barHeight);
+      }
+      ctx.fill();
+    });
+  };
+
+  // Redraw when peaks or markers change
+  useEffect(() => {
+    drawWaveform();
+  }, [peaks, startTime, endTime, audioBuffer]);
+
+  // Handle Resize
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      drawWaveform();
+    });
+
+    resizeObserver.observe(canvas);
+    return () => resizeObserver.disconnect();
+  }, [peaks, startTime, endTime]);
+
   return (
     <div className="h-full flex flex-col bg-slate-900 p-8 overflow-y-auto">
       <div className="max-w-5xl w-full mx-auto space-y-8">
         {!file ? (
-          <div
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={handleDrop}
-            className="border-2 border-dashed border-slate-700 bg-slate-800/30 rounded-3xl h-[400px] flex flex-col items-center justify-center transition-all hover:border-emerald-500/50 hover:bg-slate-800/50 group"
-          >
-            <div className="p-6 bg-slate-700 rounded-full mb-6 group-hover:scale-110 transition-transform">
-              <Upload className="w-10 h-10 text-emerald-400" />
-            </div>
-            <h2 className="text-2xl font-bold text-white mb-2 text-center">{t.tools.mptrim.dropZoneTitle}</h2>
-            <p className="text-slate-400 mb-8 text-center px-6 leading-relaxed" dangerouslySetInnerHTML={{ __html: t.tools.mptrim.dropZoneDesc }}>
-            </p>
-            <input
-              type="file"
-              accept="audio/mpeg, audio/mp3, audio/wav"
-              className="hidden"
-              id="audio-input"
-              onChange={handleFileChange}
-            />
-            <label
-              htmlFor="audio-input"
-              className="px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl cursor-pointer shadow-lg shadow-emerald-600/20 transition-all active:scale-95"
-            >
-              {t.tools.mptrim.selectFile}
-            </label>
-          </div>
+          <FileDropZone
+            onFilesSelected={handleDrop}
+            accept="audio/mpeg, audio/mp3, audio/wav, video/mp4, video/webm, video/ogg, video/quicktime"
+            label={t.tools.audiotrim.dropZoneTitle}
+            themeColor="tool-audiotrim"
+          />
         ) : (
           <div className="space-y-6 animate-fadeIn pb-12">
             <div className="flex items-center justify-between bg-slate-800/40 p-4 rounded-2xl border border-slate-700/50 gap-4">
               <div className="flex items-center gap-4 min-w-0">
-                <div className="p-3 bg-emerald-500/10 rounded-xl shrink-0">
-                  <Music className="w-6 h-6 text-emerald-400" />
+                <div className="p-3 bg-tool-audiotrim/10 rounded-xl shrink-0">
+                  <Music className="w-6 h-6 text-tool-audiotrim" />
                 </div>
                 <div className="min-w-0">
                   <h2 className="text-xl font-bold text-white truncate">{file.name}</h2>
                 </div>
               </div>
-              <button onClick={handleDeleteRequest} className="p-3 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all shrink-0" title={t.common.removeFile}>
+              <button onClick={handleDeleteRequest} className="p-3 text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all shrink-0" title={t.common.removeFile}>
                 <Trash2 className="w-5 h-5" />
               </button>
             </div>
 
             {/* Waveform Editor Area */}
             <div className="bg-slate-800 rounded-3xl p-8 border border-slate-700 shadow-2xl relative overflow-hidden group/editor">
-              <div className="h-48 w-full flex items-center gap-[2px] relative cursor-crosshair"
+              <div
+                ref={waveformContainerRef}
+                className="h-48 w-full relative cursor-crosshair"
                 onClick={(e) => {
                   if (!audioRef.current) return;
                   const rect = e.currentTarget.getBoundingClientRect();
@@ -416,38 +508,35 @@ export const AudioTrimTool: React.FC = () => {
                   audioRef.current.currentTime = time;
                   setCurrentTime(time);
                 }}>
-                {/* Waveform Visualization */}
-                {peaks.map((p, i) => (
-                  <div
-                    key={i}
-                    className="flex-1 bg-slate-700 rounded-full relative overflow-hidden"
-                    style={{ height: `${p * 100}%` }}
-                  >
-                    {/* Active Segment Highlight */}
-                    {(i / peaks.length) >= (startTime / (audioBuffer?.duration || 1)) &&
-                      (i / peaks.length) <= (endTime / (audioBuffer?.duration || 1)) && (
-                        <div className="absolute inset-0 bg-emerald-400/60 transition-colors"></div>
-                      )
-                    }
-                  </div>
-                ))}
+
+                {/* Canvas Waveform */}
+                <canvas
+                  ref={canvasRef}
+                  className="w-full h-full block"
+                />
 
                 {/* Overlays for cut sections */}
                 <div
-                  className="absolute inset-y-0 left-0 bg-slate-950/70 pointer-events-none border-r border-emerald-500/30"
+                  className="absolute inset-y-0 left-0 bg-slate-950/70 pointer-events-none border-r border-tool-audiotrim/30"
                   style={{ width: `${(startTime / (audioBuffer?.duration || 1)) * 100}%` }}
                 ></div>
                 <div
-                  className="absolute inset-y-0 right-0 bg-slate-950/70 pointer-events-none border-l border-emerald-500/30"
+                  className="absolute inset-y-0 right-0 bg-slate-950/70 pointer-events-none border-l border-tool-audiotrim/30"
                   style={{ width: `${(1 - endTime / (audioBuffer?.duration || 1)) * 100}%` }}
                 ></div>
 
                 {/* Playback Cursor */}
                 <div
-                  className="absolute inset-y-0 w-0.5 bg-white z-10 shadow-[0_0_15px_rgba(255,255,255,1)]"
+                  className="absolute inset-y-0 w-0.5 bg-white z-10 shadow-[0_0_15px_rgba(255,255,255,1)] pointer-events-none"
                   style={{ left: `${(currentTime / (audioBuffer?.duration || 1)) * 100}%` }}
                 >
-                  <div className="absolute -top-1 -left-[3px] w-2 h-2 bg-white rotate-45"></div>
+                  <div
+                    className="absolute -top-1 -left-[7px] w-4 h-4 bg-white rotate-45 pointer-events-auto cursor-col-resize hover:scale-125 transition-transform"
+                    onMouseDown={(e) => {
+                      e.stopPropagation();
+                      setIsDragging(true);
+                    }}
+                  ></div>
                 </div>
               </div>
 
@@ -464,15 +553,18 @@ export const AudioTrimTool: React.FC = () => {
                     <button
                       onClick={() => togglePlay('all')}
                       className={`w-14 h-14 flex items-center justify-center rounded-2xl transition-all ${isPlaying && playMode === 'all'
-                        ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20 ring-2 ring-white/20'
+                        ? 'bg-tool-audiotrim/80 text-white shadow-lg shadow-tool-audiotrim/20 ring-2 ring-white/20'
                         : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
                         }`}
-                      title={t.tools.mptrim.playFull}
+                      title={t.tools.audiotrim.playFull}
                     >
                       {isPlaying && playMode === 'all' ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1" />}
                     </button>
                     <span className="text-[12px] font-black uppercase tracking-widest text-slate-500">
-                      {t.tools.mptrim.fullTrack}
+                      {t.tools.audiotrim.fullTrack}
+                    </span>
+                    <span className="text-[10px] font-mono text-tool-audiotrim/70 font-bold uppercase tracking-widest">
+                      {formatTime(audioBuffer?.duration || 0)}
                     </span>
                   </div>
 
@@ -480,15 +572,18 @@ export const AudioTrimTool: React.FC = () => {
                     <button
                       onClick={() => togglePlay('selection')}
                       className={`w-14 h-14 flex items-center justify-center rounded-2xl transition-all ${isPlaying && playMode === 'selection'
-                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 ring-2 ring-white/20'
+                        ? 'bg-tool-audiotrim text-white shadow-lg shadow-tool-audiotrim/20 ring-2 ring-white/20'
                         : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
                         }`}
-                      title={t.tools.mptrim.playSelection}
+                      title={t.tools.audiotrim.playSelection}
                     >
                       {isPlaying && playMode === 'selection' ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1" />}
                     </button>
                     <span className="text-[12px] font-black uppercase tracking-widest text-slate-500">
-                      {t.tools.mptrim.selection}
+                      {t.tools.audiotrim.selection}
+                    </span>
+                    <span className="text-[10px] font-mono text-tool-audiotrim/70 font-bold uppercase tracking-widest">
+                      {formatTime(endTime - startTime)}
                     </span>
                   </div>
                 </div>
@@ -502,15 +597,15 @@ export const AudioTrimTool: React.FC = () => {
                 <div className="flex items-center justify-between gap-4">
                   <button
                     onClick={handleSetStart}
-                    className="flex-1 group/btn flex items-center justify-center gap-2 px-5 py-3.5 bg-slate-700 hover:bg-emerald-600/20 hover:text-emerald-400 border border-slate-600 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95"
+                    className="flex-1 group/btn flex items-center justify-center gap-2 px-5 py-3.5 bg-slate-700 hover:bg-tool-audiotrim/20 hover:text-tool-audiotrim border border-slate-600 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95"
                   >
-                    <Flag className="w-3.5 h-3.5 group-hover/btn:scale-110 transition-transform" /> {t.tools.mptrim.setStart}
+                    <Flag className="w-3.5 h-3.5 group-hover/btn:scale-110 transition-transform" /> {t.tools.audiotrim.setStart}
                   </button>
                   <button
                     onClick={handleSetEnd}
-                    className="flex-1 group/btn flex items-center justify-center gap-2 px-5 py-3.5 bg-slate-700 hover:bg-emerald-600/20 hover:text-emerald-400 border border-slate-600 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95"
+                    className="flex-1 group/btn flex items-center justify-center gap-2 px-5 py-3.5 bg-slate-700 hover:bg-tool-audiotrim/20 hover:text-tool-audiotrim border border-slate-600 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95"
                   >
-                    <Flag className="w-3.5 h-3.5 fill-current group-hover/btn:scale-110 transition-transform" /> {t.tools.mptrim.setEnd}
+                    <Flag className="w-3.5 h-3.5 fill-current group-hover/btn:scale-110 transition-transform" /> {t.tools.audiotrim.setEnd}
                   </button>
                 </div>
 
@@ -518,9 +613,9 @@ export const AudioTrimTool: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6">
                   <div className="space-y-3">
                     <div className="flex justify-between items-center px-1">
-                      <label className="text-[12px] font-black uppercase tracking-widest text-slate-500">{t.tools.mptrim.selectionStart}</label>
+                      <label className="text-[12px] font-black uppercase tracking-widest text-slate-500">{t.tools.audiotrim.selectionStart}</label>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-emerald-400">{formatTime(startTime)}</span>
+                        <span className="text-xs font-mono text-tool-audiotrim">{formatTime(startTime)}</span>
                       </div>
                     </div>
                     <div className="relative flex items-center gap-2">
@@ -538,17 +633,16 @@ export const AudioTrimTool: React.FC = () => {
                           setStartTime(Math.min(val, endTime - 0.01));
                           if (audioRef.current) audioRef.current.currentTime = val;
                         }}
-                        className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                        className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-tool-audiotrim"
                       />
                       <button onClick={() => setStartTime(s => Math.min(endTime - 0.01, s + 0.1))} className="p-1 hover:text-white text-slate-500 transition-colors"><ChevronRight className="w-4 h-4" /></button>
                     </div>
-                    <p className="text-[12px] text-slate-600 text-center italic">{t.tools.mptrim.tip}</p>
                   </div>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center px-1">
-                      <label className="text-[12px] font-black uppercase tracking-widest text-slate-500">{t.tools.mptrim.selectionEnd}</label>
+                      <label className="text-[12px] font-black uppercase tracking-widest text-slate-500">{t.tools.audiotrim.selectionEnd}</label>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-emerald-400">{formatTime(endTime)}</span>
+                        <span className="text-xs font-mono text-tool-audiotrim">{formatTime(endTime)}</span>
                       </div>
                     </div>
                     <div className="relative flex items-center gap-2">
@@ -565,49 +659,49 @@ export const AudioTrimTool: React.FC = () => {
                           const val = parseFloat(e.target.value);
                           setEndTime(Math.max(val, startTime + 0.01));
                         }}
-                        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                        className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-tool-audiotrim"
                       />
                       <button onClick={() => setEndTime(s => Math.min(audioBuffer?.duration || 0, s + 0.1))} className="p-1 hover:text-white text-slate-500 transition-colors"><ChevronRight className="w-4 h-4" /></button>
                     </div>
-                    <p className="text-[12px] text-slate-600 text-center italic">{t.tools.mptrim.tip}</p>
                   </div>
                 </div>
+                <p className="text-[12px] text-slate-600 text-center italic mt-4">{t.tools.audiotrim.tip}</p>
               </div>
 
               {/* Export Panel */}
               <div className="bg-slate-800/80 backdrop-blur-sm p-6 rounded-3xl border border-slate-700 flex flex-col justify-center">
                 <div className="flex items-center justify-between mb-4 px-2">
                   <div>
-                    <p className="text-[12px] font-black uppercase text-slate-500 mb-1">{t.tools.mptrim.outputFormat}</p>
+                    <p className="text-[12px] font-black uppercase text-slate-500 mb-1">{t.tools.audiotrim.outputFormat}</p>
                     <div className="flex bg-slate-900/50 p-1 rounded-lg border border-slate-700">
                       <button
                         onClick={() => setExportFormat('wav')}
-                        className={`px-4 py-1 text-[12px] font-black uppercase rounded-md transition-all ${exportFormat === 'wav' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                        className={`px-4 py-1 text-[12px] font-black uppercase rounded-md transition-all ${exportFormat === 'wav' ? 'bg-tool-audiotrim text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
                       >
                         WAV
                       </button>
                       <button
                         onClick={() => setExportFormat('mp3')}
-                        className={`px-4 py-1 text-[12px] font-black uppercase rounded-md transition-all ${exportFormat === 'mp3' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                        className={`px-4 py-1 text-[12px] font-black uppercase rounded-md transition-all ${exportFormat === 'mp3' ? 'bg-tool-audiotrim text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
                       >
                         MP3
                       </button>
                     </div>
                   </div>
                   <div className="flex-1 max-w-[600px] text-right">
-                    <p className="text-[12px] font-black uppercase text-slate-500 mb-1">{t.tools.mptrim.desc}</p>
-                    <p className="text-[12px] text-emerald-400/80 leading-relaxed font-medium whitespace-pre-line">
-                      {exportFormat === 'wav' ? t.tools.mptrim.wavDesc : t.tools.mptrim.mp3Desc}
+                    <p className="text-[12px] font-black uppercase text-slate-500 mb-1">{t.tools.audiotrim.desc}</p>
+                    <p className="text-[12px] text-tool-audiotrim/80 leading-relaxed font-medium whitespace-pre-line">
+                      {exportFormat === 'wav' ? t.tools.audiotrim.wavDesc : t.tools.audiotrim.mp3Desc}
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={handleExport}
                   disabled={isExporting}
-                  className="w-full flex items-center justify-center gap-3 px-8 py-4 bg-white hover:bg-slate-100 text-slate-900 font-black rounded-2xl transition-all disabled:opacity-50 shadow-xl shadow-white/5 active:scale-95"
+                  className="w-full flex items-center justify-center gap-3 px-8 py-4 bg-tool-audiotrim hover:opacity-90 text-white font-black rounded-2xl transition-all disabled:opacity-50 shadow-xl shadow-tool-audiotrim/10 active:scale-95"
                 >
                   {isExporting ? <Clock className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
-                  <span>{t.tools.mptrim.downloadAs} {exportFormat.toUpperCase()}</span>
+                  <span>{t.tools.audiotrim.exportAs} {exportFormat.toUpperCase()}</span>
                 </button>
               </div>
             </div>
@@ -616,24 +710,18 @@ export const AudioTrimTool: React.FC = () => {
 
         <audio ref={audioRef} className="hidden" />
 
-        {/* Description Footer */}
-        <div className="flex justify-center pt-12 border-t border-slate-800/50">
-          <p className="text-xs text-slate-500">
-            <span className="text-white font-bold">{t.tools.mptrim.clientSideTitle}:</span> {t.tools.mptrim.clientSideDesc}
-          </p>
-        </div>
       </div>
 
       <ConfirmationModal
         isOpen={showDeleteConfirm}
         onClose={cancelDelete}
         onConfirm={confirmDelete}
-        title={t.tools.mptrim.removeTrackTitle}
-        message={t.tools.mptrim.removeTrackMsg}
+        title={t.tools.audiotrim.removeTrackTitle}
+        message={t.tools.audiotrim.removeTrackMsg}
         confirmLabel={t.common.yesRemove}
         cancelLabel={t.common.cancel}
         Icon={Trash2}
       />
-    </div>
+    </div >
   );
 };

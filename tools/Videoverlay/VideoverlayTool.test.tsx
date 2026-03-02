@@ -30,14 +30,13 @@ describe('VideoverlayTool', () => {
 
     it('renders the initial state with upload button', () => {
         renderWithContext();
-        expect(screen.getByText(/Select a video/i)).toBeInTheDocument();
-        expect(screen.getByText(/Upload Video/i)).toBeInTheDocument();
+        expect(screen.getByText(/Select or drop a video/i)).toBeInTheDocument();
     });
 
     it('shows the main tool interface after uploading a file', async () => {
         renderWithContext();
         const file = new File([''], 'test.mp4', { type: 'video/mp4' });
-        const input = screen.getByLabelText(/Upload Video/i) as HTMLInputElement;
+        const input = screen.getByTestId('file-input') as HTMLInputElement;
 
         // Mock video metadata loading
         const originalCreateElement = document.createElement.bind(document);

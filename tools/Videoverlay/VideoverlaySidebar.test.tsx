@@ -44,8 +44,7 @@ describe('VideoverlaySidebar', () => {
 
     it('renders upload section when no file is selected', () => {
         renderWithContext();
-        expect(screen.getByText(/Select a video/i)).toBeInTheDocument();
-        expect(screen.getByText(/Upload Video/i)).toBeInTheDocument();
+        expect(screen.getByText(/Select or drop a video/i)).toBeInTheDocument();
     });
 
     it('renders editing controls when file is present', () => {

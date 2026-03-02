@@ -26,8 +26,7 @@ describe('PhotoverlaySidebar', () => {
 
     it('renders upload zone when empty', () => {
         renderWithContext();
-        expect(screen.getByText(/Select a photo/i)).toBeInTheDocument();
-        expect(screen.getByText(/Upload Photo/i)).toBeInTheDocument();
+        expect(screen.getByText(/Select or drop photos/i)).toBeInTheDocument();
     });
 
     it('renders "apply to all" toggle when items exist', () => {

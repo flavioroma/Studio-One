@@ -139,33 +139,12 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
   return (
     <div className="space-y-6 flex flex-col h-full" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
       <div className="flex items-center justify-center">
-        <h3 className="text-md font-bold text-slate-100 uppercase tracking-tight">{t.tools.slidesync.editorPanel}</h3>
+        <h3 className="text-md font-bold text-slate-100 uppercase tracking-tight">{t.tools.slidesync.mediaSettings}</h3>
       </div>
 
       <div className="space-y-6">
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-400">{t.tools.slidesync.uploadPhotos}</label>
-          <div className="relative group">
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              onChange={onImageUpload}
-              className="hidden"
-              id="img-upload"
-            />
-            <label
-              htmlFor="img-upload"
-              className="flex items-center justify-center gap-2 w-full p-3 rounded-xl border-2 border-dashed border-slate-600 hover:border-blue-400 hover:bg-slate-700/50 cursor-pointer transition-all"
-            >
-              <Plus className="w-5 h-5" />
-              <span className="text-sm font-medium">{t.tools.slidesync.addMedia}</span>
-            </label>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-400">{t.tools.slidesync.backgroundMusic}</label>
+          <label className="text-sm font-semibold text-slate-400">{t.tools.slidesync.backgroundMusic}<br />{t.tools.slidesync.backgroundMusicDesc}</label>
           <div className="flex items-center gap-2">
             <input
               type="file"
@@ -176,7 +155,7 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
             />
             <label
               htmlFor="audio-upload"
-              className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border border-slate-600 cursor-pointer hover:bg-slate-700/50 transition-all ${audioFile ? 'bg-blue-600/10 border-blue-400 text-blue-300' : ''}`}
+              className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border border-slate-600 cursor-pointer hover:bg-slate-700/50 transition-all ${audioFile ? 'bg-tool-slidesync/10 border-tool-slidesync/40 text-tool-slidesync/80' : ''}`}
             >
               <Music className="w-4 h-4" />
               <span className="text-sm truncate max-w-[120px]">{audioFile ? audioFile.name : t.tools.slidesync.selectAudio}</span>
@@ -201,7 +180,7 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
                 key={opt.id}
                 onClick={() => onAspectRatioChange(opt.id)}
                 className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${aspectRatio === opt.id
-                  ? 'bg-blue-600/20 border-blue-500 text-blue-300 shadow-[0_0_15px_rgba(59,130,246,0.2)]'
+                  ? 'bg-tool-slidesync/20 border-tool-slidesync text-tool-slidesync shadow-[0_0_15px_rgba(var(--tool-slidesync),0.2)]'
                   : 'bg-slate-700/50 border-slate-600 hover:border-slate-500'
                   }`}
               >
@@ -209,6 +188,27 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
                 <span className="text-[10px] font-bold uppercase">{opt.label}</span>
               </button>
             ))}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-semibold text-slate-400">{t.tools.slidesync.uploadPhotos}</label>
+          <div className="relative group">
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={onImageUpload}
+              className="hidden"
+              id="img-upload"
+            />
+            <label
+              htmlFor="img-upload"
+              className="flex items-center justify-center gap-2 w-full p-3 rounded-xl border-2 border-dashed border-slate-600 hover:border-tool-slidesync/40 hover:bg-slate-700/50 cursor-pointer transition-all"
+            >
+              <Plus className="w-5 h-5" />
+              <span className="text-sm font-medium">{t.tools.slidesync.addMedia}</span>
+            </label>
           </div>
         </div>
       </div>
@@ -223,7 +223,7 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
 
           <div className="space-y-3">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-              <Maximize className="w-3 h-3 text-blue-400" /> {t.tools.slidesync.framingPreview}
+              <Maximize className="w-3 h-3 text-tool-slidesync" /> {t.tools.slidesync.framingPreview}
             </label>
 
             <div
@@ -253,13 +253,13 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
                 </div>
               )}
 
-              <div className="absolute inset-0 border border-blue-500/20 pointer-events-none z-10">
+              <div className="absolute inset-0 border border-tool-slidesync/20 pointer-events-none z-10">
                 <div className="w-full h-full grid grid-cols-3 grid-rows-3 opacity-10">
                   {[...Array(9)].map((_, i) => <div key={i} className="border border-white/20"></div>)}
                 </div>
               </div>
 
-              <div className="absolute top-2 left-2 bg-blue-600/80 backdrop-blur-md px-2 py-0.5 rounded text-[8px] font-black text-white uppercase tracking-tighter z-30">
+              <div className="absolute top-2 left-2 bg-tool-slidesync border border-white/20 backdrop-blur-md px-2 py-0.5 rounded text-[8px] font-black text-white uppercase tracking-tighter z-30">
                 {t.tools.slidesync.output} {aspectRatio}
               </div>
 
@@ -272,7 +272,7 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
               <div className="space-y-1">
                 <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase">
                   <span>{t.tools.slidesync.magnification}</span>
-                  <span className="text-blue-400">{slide.zoom.toFixed(2)}x</span>
+                  <span className="text-tool-slidesync">{slide.zoom.toFixed(2)}x</span>
                 </div>
                 <input
                   type="range"
@@ -281,7 +281,7 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
                   step="0.01"
                   value={slide.zoom}
                   onChange={(e) => onUpdate({ zoom: parseFloat(e.target.value) })}
-                  className="w-full h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  className="w-full h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-tool-slidesync"
                 />
               </div>
 
@@ -316,6 +316,7 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
             onUpdate={onUpdate}
             onAutoCaption={onAutoCaption}
             isProcessing={isProcessing}
+            themeColor="tool-slidesync"
           />
         </div>
       ) : (

@@ -1,7 +1,7 @@
 {
   "name": "slidesync-studio",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,6 +15,7 @@
     "@types/exif-js": "^2.3.1",
     "exif-js": "^2.3.0",
     "idb-keyval": "^6.2.2",
+    "jszip": "^3.10.1",
     "lucide-react": "^0.561.0",
     "mp4-muxer": "^5.2.2",
     "piexifjs": "^1.0.6",
@@ -25,6 +26,7 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
+    "@types/jszip": "^3.4.0",
     "@types/node": "^22.14.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

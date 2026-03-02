@@ -139,7 +139,18 @@ export class MetadataService {
         return new Promise((resolve, reject) => {
             const video = document.createElement('video');
             video.preload = 'metadata';
+
+            // Set a timeout for loading metadata (e.g., 5 seconds)
+            // This handles cases where the browser might stall or not trigger an error event for certain codecs
+            const timeoutId = setTimeout(() => {
+                video.onloadedmetadata = null;
+                video.onerror = null;
+                URL.revokeObjectURL(video.src);
+                reject("Video metadata loading timed out. The format might be unsupported.");
+            }, 5000);
+
             video.onloadedmetadata = async () => {
+                clearTimeout(timeoutId);
                 URL.revokeObjectURL(video.src);
                 const duration = video.duration;
                 // Calculate bitrate: Total Bytes * 8 / Duration (seconds)
@@ -162,7 +173,11 @@ export class MetadataService {
                     creationTime
                 });
             };
-            video.onerror = () => reject("Failed to load video metadata");
+            video.onerror = () => {
+                clearTimeout(timeoutId);
+                URL.revokeObjectURL(video.src);
+                reject("Failed to load video metadata. The format or codec might be unsupported.");
+            };
             video.src = URL.createObjectURL(file);
         });
     }

@@ -238,7 +238,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
       ...dest.stream.getAudioTracks()
     ]);
 
-    const mimeType = exportFormat === ExportFormat.MP4
+    const mimeType = (exportFormat as string) === ExportFormat.MP4
       ? 'video/mp4;codecs=avc1.4d002a'
       : 'video/webm;codecs=vp9';
 
@@ -256,7 +256,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      const ext = exportFormat === ExportFormat.MP4 ? 'mp4' : 'webm';
+      const ext = (exportFormat as string) === ExportFormat.MP4 ? 'mp4' : 'webm';
       a.download = `slidesync-${aspectRatio.replace(':', '-')}.${ext}`;
       a.click();
       URL.revokeObjectURL(url);
@@ -313,8 +313,9 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
         currentTime={currentTime}
         duration={audioDuration}
         isDisabled={isDisabled || isRecording}
+        themeColor="tool-slidesync"
       >
-        <button onClick={handleExport} disabled={isDisabled || isRecording} className={`flex items-center gap-3 px-8 py-3 rounded-full font-black text-xs uppercase tracking-widest transition-all ${isRecording ? 'bg-slate-700 text-slate-400' : 'bg-white hover:bg-slate-200 text-slate-900 shadow-xl shadow-white/5 active:scale-95'}`}>
+        <button onClick={handleExport} disabled={isDisabled || isRecording} className={`flex items-center gap-3 px-8 py-3 rounded-full font-black text-xs uppercase tracking-widest transition-all ${isRecording ? 'bg-slate-700 text-slate-400' : 'bg-tool-slidesync hover:opacity-90 text-white shadow-xl shadow-tool-slidesync/10 active:scale-95'}`}>
           {isRecording ? <><Loader2 className="w-4 h-4 animate-spin" /><span>{t.tools.slidesync.creating}</span></> : <><Download className="w-4 h-4" /><span>{t.tools.slidesync.exportClip}</span></>}
         </button>
 
@@ -323,7 +324,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
             <button
               key={fmt}
               onClick={() => setExportFormat(fmt)}
-              className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-all ${exportFormat === fmt ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
+              className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-all ${exportFormat === fmt ? 'bg-tool-slidesync text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
                 }`}
               title={fmt === ExportFormat.MP4 ? t.tools.slidesync.exportAsMp4 : t.tools.slidesync.exportAsWebm}
             >
