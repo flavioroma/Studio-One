@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Music, Trash2, Image as ImageIcon, Smartphone, Monitor, Square, Smartphone as SmartphoneIcon } from 'lucide-react';
+import { PlayCircle, Trash2 } from 'lucide-react';
 import { Slide, TextPosition, TextColor, AspectRatio, TextSize } from '../../types';
 import { generateCaptionForImage } from '../../services/geminiService';
 import { PersistenceService } from '../../services/PersistenceService';
-import { EditorSidebar } from '../../components/EditorSidebar';
-import { Timeline } from '../../components/Timeline';
+import { SlideSyncSidebar } from './SlideSyncSidebar';
+import { Timeline } from './Timeline';
 import { VideoPreview } from '../../components/VideoPreview';
+import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 export const SlideSyncTool: React.FC = () => {
@@ -18,6 +19,7 @@ export const SlideSyncTool: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>(AspectRatio.Landscape_16_9);
+  const [showEraseConfirm, setShowEraseConfirm] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -193,110 +195,37 @@ export const SlideSyncTool: React.FC = () => {
 
   const activeSlide = slides.find((s) => s.id === activeSlideId);
 
-  const formatOptions = [
-    { id: AspectRatio.Landscape_16_9, label: '16:9', icon: Monitor },
-    { id: AspectRatio.Portrait_9_16, label: '9:16', icon: Smartphone },
-    { id: AspectRatio.Portrait_4_5, label: '4:5', icon: SmartphoneIcon },
-    { id: AspectRatio.Square_1_1, label: '1:1', icon: Square },
-  ];
+  const handleEraseProject = () => {
+    slides.forEach(s => URL.revokeObjectURL(s.previewUrl));
+    setSlides([]);
+    setActiveSlideId(null);
+    setAudioFile(null);
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setShowEraseConfirm(false);
+    PersistenceService.saveState({ slides: [], audioFile: null, aspectRatio });
+  };
+
+
 
   return (
     <div className="flex h-full bg-slate-900 overflow-hidden">
-      {/* Left Sidebar: Settings */}
-      <div className="w-80 border-r border-slate-700 bg-slate-800 flex flex-col p-4 overflow-y-auto z-10">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-bold text-slate-100 uppercase tracking-tight">
-            {t.tools.slidesync.editorPanel}
-          </h2>
-        </div>
-
-        <div className="mb-6 space-y-6">
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-slate-400">{t.tools.slidesync.uploadPhotos}</label>
-            <div className="relative group">
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-                id="img-upload"
-              />
-              <label
-                htmlFor="img-upload"
-                className="flex items-center justify-center gap-2 w-full p-3 rounded-xl border-2 border-dashed border-slate-600 hover:border-blue-400 hover:bg-slate-700/50 cursor-pointer transition-all"
-              >
-                <Plus className="w-5 h-5" />
-                <span className="text-sm font-medium">{t.tools.slidesync.addMedia}</span>
-              </label>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-slate-400">{t.tools.slidesync.backgroundMusic}</label>
-            <div className="flex items-center gap-2">
-              <input
-                type="file"
-                accept="audio/*"
-                onChange={handleAudioUpload}
-                className="hidden"
-                id="audio-upload"
-              />
-              <label
-                htmlFor="audio-upload"
-                className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border border-slate-600 cursor-pointer hover:bg-slate-700/50 transition-all ${audioFile ? 'bg-blue-600/10 border-blue-400 text-blue-300' : ''}`}
-              >
-                <Music className="w-4 h-4" />
-                <span className="text-sm truncate max-w-[120px]">{audioFile ? audioFile.name : t.tools.slidesync.selectAudio}</span>
-              </label>
-              {audioFile && (
-                <button
-                  onClick={() => setAudioFile(null)}
-                  className="p-3 text-red-400 hover:bg-red-900/20 rounded-xl"
-                  title={t.tools.slidesync.removeAudio}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-slate-400">{t.tools.slidesync.videoFormat}</label>
-            <div className="grid grid-cols-2 gap-2">
-              {formatOptions.map((opt) => (
-                <button
-                  key={opt.id}
-                  onClick={() => setAspectRatio(opt.id)}
-                  className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${aspectRatio === opt.id
-                    ? 'bg-blue-600/20 border-blue-500 text-blue-300 shadow-[0_0_15px_rgba(59,130,246,0.2)]'
-                    : 'bg-slate-700/50 border-slate-600 hover:border-slate-500'
-                    }`}
-                >
-                  <opt.icon className="w-4 h-4 mb-1" />
-                  <span className="text-[10px] font-bold uppercase">{opt.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <hr className="border-slate-700 my-4" />
-
-        {activeSlide ? (
-          <EditorSidebar
-            slide={activeSlide}
-            onUpdate={(updates) => updateSlide(activeSlide.id, updates)}
-            onAutoCaption={() => autoCaptionSlide(activeSlide.id)}
-            isProcessing={isProcessing}
-            aspectRatio={aspectRatio}
-          />
-        ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-slate-500 text-center opacity-40">
-            <ImageIcon className="w-12 h-12 mb-4" />
-            <p className="text-sm font-medium">{t.tools.slidesync.noSlideSelected}</p>
-          </div>
-        )}
+      {/* Sidebar: Settings */}
+      <div className="w-80 border-r border-slate-700 bg-slate-800 flex flex-col p-4 overflow-y-auto z-10 shadow-2xl">
+        <SlideSyncSidebar
+          slide={activeSlide || null}
+          onUpdate={(updates) => activeSlide && updateSlide(activeSlide.id, updates)}
+          onAutoCaption={() => activeSlide && autoCaptionSlide(activeSlide.id)}
+          isProcessing={isProcessing}
+          aspectRatio={aspectRatio}
+          onImageUpload={handleImageUpload}
+          audioFile={audioFile}
+          onAudioUpload={handleAudioUpload}
+          onRemoveAudio={() => setAudioFile(null)}
+          onAspectRatioChange={setAspectRatio}
+          hasContent={slides.length > 0 || audioFile !== null}
+          onDeleteAll={() => setShowEraseConfirm(true)}
+        />
       </div>
 
       <div className="flex-1 flex flex-col min-w-0">
@@ -315,10 +244,10 @@ export const SlideSyncTool: React.FC = () => {
 
         <div className="h-48 bg-slate-800/80 backdrop-blur-sm border-t border-slate-700 p-6">
           <div className="flex justify-between items-center mb-4">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">{t.tools.slidesync.timelineSequence}</span>
+            <span className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-500">{t.tools.slidesync.timelineSequence}</span>
             <div className="flex items-center gap-4">
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">{slides.length} {t.tools.slidesync.slidesCount}</span>
-              <span className="text-[10px] text-slate-400 italic">{t.tools.slidesync.timelineTip}</span>
+              <span className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-500">{slides.length} {t.tools.slidesync.slidesCount}</span>
+              <span className="text-[12px] text-slate-400 italic">{t.tools.slidesync.timelineTip}</span>
             </div>
           </div>
           <Timeline
@@ -327,9 +256,21 @@ export const SlideSyncTool: React.FC = () => {
             onSelectSlide={setActiveSlideId}
             onReorder={reorderSlides}
             onDelete={deleteSlide}
+            onImageUpload={handleImageUpload}
           />
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={showEraseConfirm}
+        onClose={() => setShowEraseConfirm(false)}
+        onConfirm={handleEraseProject}
+        title={t.tools.slidesync.removeAllDataTitle}
+        message={t.tools.slidesync.removeAllDataMsg}
+        confirmLabel={t.tools.slidesync.yesRemoveAll}
+        cancelLabel={t.common.cancel}
+        Icon={Trash2}
+      />
     </div>
   );
 };

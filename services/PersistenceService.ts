@@ -1,10 +1,10 @@
 import { get, set, clear } from 'idb-keyval';
-import { Slide, AspectRatio, TextPosition, TextColor, TextSize } from '../types';
+import { Slide, AspectRatio, TextPosition, TextColor, TextSize, Rotation, AudioMode } from '../types';
 
 const SLIDESYNC_KEY = 'slidesync_state_v1';
 const VIDEOVERLAY_KEY = 'videoverlay_state_v1';
 const PHOTOVERLAY_KEY = 'photoverlay_state_v1';
-const MPTRIM_KEY = 'mptrim_state_v1';
+const AUDIOTRIM_KEY = 'audiotrim_state_v1';
 
 export interface SlideSyncState {
     slides: Slide[];
@@ -21,9 +21,35 @@ export interface VideoverlayState {
     isItalic?: boolean;
     watermarkFile?: File | null;
     watermarkPosition?: TextPosition;
+    aspectRatio?: AspectRatio;
+    rotation?: Rotation;
+    audioMode?: AudioMode;
+    audioFile?: File | null;
+    startTime?: number;
+    endTime?: number;
+}
+
+export interface PhotoItemState {
+    id: string;
+    file: File;
+    caption: string;
+    color: TextColor;
+    position: TextPosition;
+    textSize: TextSize;
+    isItalic?: boolean;
+    watermarkFile?: File | null;
+    watermarkPosition?: TextPosition;
 }
 
 export interface PhotoverlayState {
+    items: PhotoItemState[];
+    selectedId: string | null;
+    applyToAll: boolean;
+    exportAsArchive?: boolean;
+}
+
+// For backward compatibility
+export interface LegacyPhotoverlayState {
     file: File | null;
     caption: string;
     color: TextColor;
@@ -34,7 +60,7 @@ export interface PhotoverlayState {
     watermarkPosition?: TextPosition;
 }
 
-export interface MPTrimState {
+export interface AudioTrimState {
     file: File | null;
     startTime: number;
     endTime: number;
@@ -90,27 +116,53 @@ export class PersistenceService {
 
     static async loadPhotoverlayState(): Promise<PhotoverlayState | null> {
         try {
-            return (await get<PhotoverlayState>(PHOTOVERLAY_KEY)) || null;
+            const state = await get<any>(PHOTOVERLAY_KEY);
+            if (!state) return null;
+
+            // Migrate legacy state
+            if ('file' in state) {
+                const legacy = state as LegacyPhotoverlayState;
+                if (!legacy.file) return null;
+
+                const id = Math.random().toString(36).substr(2, 9);
+                return {
+                    items: [{
+                        id,
+                        file: legacy.file,
+                        caption: legacy.caption || '',
+                        color: legacy.color || TextColor.White,
+                        position: legacy.position || TextPosition.BottomLeft,
+                        textSize: legacy.textSize || TextSize.Small,
+                        isItalic: legacy.isItalic || false,
+                        watermarkFile: legacy.watermarkFile || null,
+                        watermarkPosition: legacy.watermarkPosition || TextPosition.TopRight
+                    }],
+                    selectedId: id,
+                    applyToAll: true
+                };
+            }
+
+            return state as PhotoverlayState;
         } catch (error) {
             console.error('Failed to load Photoverlay state:', error);
             return null;
         }
     }
 
-    // MPTrim
-    static async saveMPTrimState(state: MPTrimState): Promise<void> {
+    // AudioTrim
+    static async saveAudioTrimState(state: AudioTrimState): Promise<void> {
         try {
-            await set(MPTRIM_KEY, state);
+            await set(AUDIOTRIM_KEY, state);
         } catch (error) {
-            console.error('Failed to save MPTrim state:', error);
+            console.error('Failed to save AudioTrim state:', error);
         }
     }
 
-    static async loadMPTrimState(): Promise<MPTrimState | null> {
+    static async loadAudioTrimState(): Promise<AudioTrimState | null> {
         try {
-            return (await get<MPTrimState>(MPTRIM_KEY)) || null;
+            return (await get<AudioTrimState>(AUDIOTRIM_KEY)) || null;
         } catch (error) {
-            console.error('Failed to load MPTrim state:', error);
+            console.error('Failed to load AudioTrim state:', error);
             return null;
         }
     }

@@ -13,35 +13,35 @@ export const Home: React.FC<HomeProps> = ({ onSelectTool }) => {
 
   const tools = [
     {
-      id: 'mptrim' as ToolId,
-      name: 'MP(3)trim',
-      description: t.home.mptrim.description,
+      id: 'audiotrim' as ToolId,
+      name: t.tools.audiotrim.title,
+      description: t.home.audiotrim.description,
       icon: Scissors,
-      color: 'bg-emerald-500',
+      color: 'bg-tool-audiotrim',
       badge: t.home.badges.updated
     },
     {
       id: 'slidesync' as ToolId,
-      name: 'SlideSync',
+      name: t.tools.slidesync.title,
       description: t.home.slidesync.description,
       icon: Video,
-      color: 'bg-blue-500',
+      color: 'bg-tool-slidesync',
       badge: t.home.badges.popular
     },
     {
       id: 'videoverlay' as ToolId,
-      name: 'Videoverlay',
+      name: t.tools.videoverlay.title,
       description: t.home.videoverlay.description,
       icon: Layers,
-      color: 'bg-purple-500',
+      color: 'bg-tool-videoverlay',
       badge: t.home.badges.new
     },
     {
       id: 'photoverlay' as ToolId,
-      name: 'Photoverlay',
+      name: t.tools.photoverlay.title,
       description: t.home.photoverlay.description,
       icon: ImageIcon,
-      color: 'bg-pink-500',
+      color: 'bg-tool-photoverlay',
       badge: t.home.badges.new
     }
   ];
@@ -73,9 +73,9 @@ export const Home: React.FC<HomeProps> = ({ onSelectTool }) => {
 
             <div className="flex items-center gap-3 mb-2">
               <h2 className="text-xl font-bold text-slate-100">{tool.name}</h2>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-700 text-slate-400">
+              {/* <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-700 text-slate-400">
                 {tool.badge}
-              </span>
+              </span> */}
             </div>
 
             <p className="text-slate-400 text-sm leading-relaxed mb-8 flex-1">
@@ -92,9 +92,19 @@ export const Home: React.FC<HomeProps> = ({ onSelectTool }) => {
         ))}
       </div>
 
-      <div className="mt-16 flex items-center gap-2 text-slate-500 text-sm italic">
-        <Sparkles className="w-4 h-4" />
-        <span>{t.common.moreTools}</span>
+      <div className="mt-12 text-center flex flex-col items-center">
+        <p className="text-white font-bold">{t.home.clientSideTitle}</p>
+        <p className="text-slate-500 text-sm">{t.home.clientSideDesc}</p>
+      </div>
+
+      <div className="mt-12 flex flex-col items-center gap-2 text-slate-500 text-xs italic">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4" />
+          <span>{t.home.credits}</span>
+        </div>
+        <div className="text-[10px] opacity-40 font-mono mt-1">
+          v{__APP_VERSION__}
+        </div>
       </div>
     </div>
   );

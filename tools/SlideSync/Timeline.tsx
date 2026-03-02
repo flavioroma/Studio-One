@@ -1,7 +1,7 @@
-import React, { useRef } from 'react';
-import { Slide } from '../types';
-import { GripVertical, Trash2 } from 'lucide-react';
-import { useLanguage } from '../contexts/LanguageContext';
+import React, { useRef, useEffect } from 'react';
+import { Slide } from '../../types';
+import { GripVertical, Trash2, Plus } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface TimelineProps {
   slides: Slide[];
@@ -9,9 +9,10 @@ interface TimelineProps {
   onSelectSlide: (id: string) => void;
   onReorder: (fromIndex: number, toIndex: number) => void;
   onDelete: (id: string) => void;
+  onImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-export const Timeline: React.FC<TimelineProps> = ({ slides, activeSlideId, onSelectSlide, onReorder, onDelete }) => {
+export const Timeline: React.FC<TimelineProps> = ({ slides, activeSlideId, onSelectSlide, onReorder, onDelete, onImageUpload }) => {
   const { t } = useLanguage();
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -41,6 +42,19 @@ export const Timeline: React.FC<TimelineProps> = ({ slides, activeSlideId, onSel
       scrollRef.current.scrollLeft += e.deltaY;
     }
   };
+
+  useEffect(() => {
+    if (activeSlideId && scrollRef.current) {
+      const element = document.getElementById(`timeline-slide-${activeSlideId}`);
+      if (element) {
+        element.scrollIntoView({
+          behavior: 'smooth',
+          inline: 'center',
+          block: 'nearest',
+        });
+      }
+    }
+  }, [activeSlideId]);
 
   return (
     <div
@@ -76,12 +90,13 @@ export const Timeline: React.FC<TimelineProps> = ({ slides, activeSlideId, onSel
       {slides.map((slide, index) => (
         <div
           key={slide.id}
+          id={`timeline-slide-${slide.id}`}
           draggable
           onDragStart={(e) => handleDragStart(e, index)}
           onDragOver={handleDragOver}
           onDrop={(e) => handleDrop(e, index)}
           onClick={() => onSelectSlide(slide.id)}
-          className={`relative group h-24 aspect-video flex-shrink-0 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${activeSlideId === slide.id ? 'border-blue-500 shadow-lg shadow-blue-500/20 scale-105 z-10' : 'border-slate-600 hover:border-slate-400'
+          className={`relative group h-24 aspect-square flex-shrink-0 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${activeSlideId === slide.id ? 'border-tool-slidesync shadow-lg shadow-tool-slidesync/20 scale-105 z-10' : 'border-slate-600 hover:border-slate-400'
             }`}
         >
           {/* Drag Handle Overlay */}
@@ -109,12 +124,19 @@ export const Timeline: React.FC<TimelineProps> = ({ slides, activeSlideId, onSel
               onDelete(slide.id);
             }}
             className="absolute bottom-1 right-1 p-1.5 bg-red-500/90 text-white rounded-md hover:bg-red-600 transition-all opacity-0 group-hover:opacity-100 z-30 shadow-sm hover:scale-110"
-            title={t.tools.slidesync.removeFile}
+            title={t.common.removeFile}
           >
             <Trash2 className="w-3 h-3" />
           </button>
         </div>
       ))}
+
+      {/* Add More Photos slot at the end */}
+      <label className="flex-shrink-0 h-24 aspect-square rounded-lg border-2 border-dashed border-slate-700 hover:border-tool-slidesync/50 hover:bg-slate-800/50 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all">
+        <Plus className="w-5 h-5 text-slate-500" />
+        <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter">{t.common.addMore}</span>
+        <input type="file" accept="image/*" multiple onChange={onImageUpload} className="hidden" />
+      </label>
     </div>
   );
 };

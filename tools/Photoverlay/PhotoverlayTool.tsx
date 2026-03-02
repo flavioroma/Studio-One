@@ -1,49 +1,35 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, Image as ImageIcon, Download, Trash2, Loader2, AlertTriangle, Move, Calendar, MapPin, Monitor } from 'lucide-react';
-import { TextPosition, TextColor, TextSize } from '../../types';
+import { Upload, Image as ImageIcon, Download, Trash2, Loader2, Move, Calendar, MapPin, Monitor, Plus, Check } from 'lucide-react';
+import { TextPosition, TextColor, TextSize, PhotoItem, CaptionSettings, WatermarkSettings } from '../../types';
 import { PersistenceService } from '../../services/PersistenceService';
-import { CaptionSettingsPanel, CaptionSettings } from '../../components/CaptionSettingsPanel';
-import { WatermarkSettingsPanel, WatermarkSettings } from '../../components/WatermarkSettingsPanel';
 import { calculateCaptionMetrics, calculateCaptionPosition, calculateWatermarkPosition } from '../../utils/captionUtils';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { MetadataService, PhotoMetadata } from '../../services/MetadataService';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { PhotoverlaySidebar } from './PhotoverlaySidebar';
+import JSZip from 'jszip';
+
 
 export const PhotoverlayTool: React.FC = () => {
     const { t } = useLanguage();
-    const [file, setFile] = useState<File | null>(null);
-    const [imageUrl, setImageUrl] = useState<string | null>(null);
-
-    // Consolidated Caption Settings State
-    const [captionSettings, setCaptionSettings] = useState<CaptionSettings>({
-        text: '',
-        color: TextColor.White,
-        position: TextPosition.BottomLeft,
-        textSize: TextSize.Small, // Default
-        isItalic: false
-    });
-
-    // Watermark Settings State
-    const [watermarkSettings, setWatermarkSettings] = useState<WatermarkSettings>({
-        file: null,
-        position: TextPosition.TopRight,
-        opacity: 0.2, // Default 20%
-        scale: 0.2 // Default 20%
-    });
+    const [items, setItems] = useState<PhotoItem[]>([]);
+    const [selectedId, setSelectedId] = useState<string | null>(null);
+    const [applyToAll, setApplyToAll] = useState(false);
 
     const [isExporting, setIsExporting] = useState(false);
-    const [metadata, setMetadata] = useState<{ width: number; height: number } | null>(null);
-    const [exifData, setExifData] = useState<PhotoMetadata | null>(null);
-
-    // Delete Confirmation
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showApplyAllConfirm, setShowApplyAllConfirm] = useState(false);
+    const [exportAsArchive, setExportAsArchive] = useState(false);
 
     // Preview Sizing
     const [containerSize, setContainerSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
     const imageRef = useRef<HTMLImageElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const scrollRef = useRef<HTMLDivElement>(null);
 
-    // ResizeObserver to track container size for WYSIWYG preview
+    const selectedItem = items.find(item => item.id === selectedId) || null;
+
+    // ResizeObserver to track container size
     useEffect(() => {
         if (!containerRef.current) return;
 
@@ -57,268 +43,410 @@ export const PhotoverlayTool: React.FC = () => {
         });
 
         resizeObserver.observe(containerRef.current);
+        return () => resizeObserver.disconnect();
+    }, [selectedItem?.imageUrl]);
 
-        return () => {
-            resizeObserver.disconnect();
-        };
-    }, [imageUrl]);
+    // Keyboard Navigation
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (items.length === 0 || !selectedId) return;
+            if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return;
 
-    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const selectedFile = e.target.files[0];
-            const url = URL.createObjectURL(selectedFile);
-            setFile(selectedFile);
-            setImageUrl(url);
+            const currentIndex = items.findIndex(item => item.id === selectedId);
 
-            // Fetch Metadata
-            try {
-                const data = await MetadataService.getPhotoMetadata(selectedFile);
-                setExifData(data);
-            } catch (err) {
-                console.warn("Could not read metadata", err);
-                setExifData(null);
+            if (e.key === 'ArrowLeft') {
+                const nextIndex = Math.max(0, currentIndex - 1);
+                setSelectedId(items[nextIndex].id);
+            } else if (e.key === 'ArrowRight') {
+                const nextIndex = Math.min(items.length - 1, currentIndex + 1);
+                setSelectedId(items[nextIndex].id);
             }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [items, selectedId]);
+
+    // Scroll active thumbnail into view
+    useEffect(() => {
+        if (selectedId && scrollRef.current) {
+            const element = document.getElementById(`photo-thumb-${selectedId}`);
+            if (element) {
+                element.scrollIntoView({
+                    behavior: 'smooth',
+                    inline: 'center',
+                    block: 'nearest',
+                });
+            }
+        }
+    }, [selectedId]);
+
+    const handleWheel = (e: React.WheelEvent) => {
+        if (scrollRef.current) {
+            scrollRef.current.scrollLeft += e.deltaY;
         }
     };
 
-    // Persistence Logic
+    const processFiles = async (files: FileList) => {
+        const newItems: PhotoItem[] = [];
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const url = URL.createObjectURL(file);
+            const id = Math.random().toString(36).substr(2, 9);
+
+            let exif: PhotoMetadata | null = null;
+            try {
+                exif = await MetadataService.getPhotoMetadata(file);
+            } catch (err) {
+                console.warn("Could not read metadata", err);
+            }
+
+            // Create temporary image to get dimensions
+            const dimensions = await new Promise<{ width: number; height: number }>((resolve) => {
+                const img = new Image();
+                img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+                img.src = url;
+            });
+
+            newItems.push({
+                id,
+                file,
+                imageUrl: url,
+                captionSettings: applyToAll && selectedItem ? { ...selectedItem.captionSettings } : {
+                    text: '',
+                    color: TextColor.White,
+                    position: TextPosition.BottomLeft,
+                    textSize: TextSize.Small,
+                    isItalic: false
+                },
+                watermarkSettings: applyToAll && selectedItem ? { ...selectedItem.watermarkSettings } : {
+                    file: null,
+                    position: TextPosition.TopRight,
+                    opacity: 0.2,
+                    scale: 0.2
+                },
+                metadata: dimensions,
+                exifData: exif
+            });
+        }
+
+        setItems(prev => {
+            const updated = [...prev, ...newItems];
+            if (!selectedId && updated.length > 0) {
+                setSelectedId(updated[0].id);
+            }
+            return updated;
+        });
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            processFiles(e.target.files);
+        }
+    };
+
+    // Persistence logic
     const isLoadedRef = useRef(false);
 
-    // Load State
     useEffect(() => {
         const load = async () => {
             const state = await PersistenceService.loadPhotoverlayState();
-            if (state) {
-                setFile(state.file);
-                setCaptionSettings({
-                    text: state.caption,
-                    color: state.color,
-                    position: state.position,
-                    textSize: (state as any).textSize || TextSize.Small,
-                    isItalic: (state as any).isItalic || false,
-                });
+            if (state && state.items.length > 0) {
+                const hydratedItems = state.items.map(item => ({
+                    ...item,
+                    imageUrl: URL.createObjectURL(item.file),
+                    captionSettings: {
+                        text: item.caption,
+                        color: item.color,
+                        position: item.position,
+                        textSize: item.textSize,
+                        isItalic: item.isItalic || false
+                    },
+                    watermarkSettings: {
+                        file: item.watermarkFile || null,
+                        position: item.watermarkPosition || TextPosition.TopRight,
+                        opacity: 0.2,
+                        scale: 0.2
+                    },
+                    metadata: null,
+                    exifData: null
+                }));
 
-                // Load Watermark State
-                if (state.watermarkFile) {
-                    setWatermarkSettings(prev => ({
-                        ...prev,
-                        file: state.watermarkFile || null,
-                        position: state.watermarkPosition || TextPosition.TopRight
-                    }));
-                }
+                // Fetch metadata/dimensions for all
+                const finalItems = await Promise.all(hydratedItems.map(async item => {
+                    let exif = null;
+                    try { exif = await MetadataService.getPhotoMetadata(item.file); } catch (e) { }
 
-                if (state.file) {
-                    setImageUrl(URL.createObjectURL(state.file));
-                    // Fetch Metadata for loaded file
-                    try {
-                        const data = await MetadataService.getPhotoMetadata(state.file);
-                        setExifData(data);
-                    } catch (err) {
-                        console.warn("Could not read metadata", err);
-                    }
-                }
+                    const dimensions = await new Promise<{ width: number; height: number } | null>((resolve) => {
+                        const img = new Image();
+                        img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+                        img.onerror = () => resolve(null);
+                        img.src = item.imageUrl;
+                    });
+
+                    return {
+                        id: item.id,
+                        file: item.file,
+                        imageUrl: item.imageUrl,
+                        captionSettings: item.captionSettings,
+                        watermarkSettings: item.watermarkSettings,
+                        metadata: dimensions,
+                        exifData: exif
+                    };
+                }));
+
+                setItems(finalItems);
+                setSelectedId(state.selectedId || finalItems[0].id);
+                setApplyToAll(state.applyToAll || false);
+                setExportAsArchive(state.exportAsArchive || false);
             }
             isLoadedRef.current = true;
         };
         load();
     }, []);
 
-    // Save State
     useEffect(() => {
         if (!isLoadedRef.current) return;
-
         const timeoutId = setTimeout(() => {
             PersistenceService.savePhotoverlayState({
-                file,
-                caption: captionSettings.text,
-                color: captionSettings.color,
-                position: captionSettings.position,
-                textSize: captionSettings.textSize,
-                isItalic: captionSettings.isItalic,
-                watermarkFile: watermarkSettings.file,
-                watermarkPosition: watermarkSettings.position
+                items: items.map(item => ({
+                    id: item.id,
+                    file: item.file,
+                    caption: item.captionSettings.text,
+                    color: item.captionSettings.color,
+                    position: item.captionSettings.position,
+                    textSize: item.captionSettings.textSize,
+                    isItalic: item.captionSettings.isItalic,
+                    watermarkFile: item.watermarkSettings.file,
+                    watermarkPosition: item.watermarkSettings.position
+                })),
+                selectedId,
+                applyToAll,
+                exportAsArchive
             });
         }, 2000);
-
         return () => clearTimeout(timeoutId);
-    }, [file, captionSettings, watermarkSettings]);
+    }, [items, selectedId, applyToAll]);
 
-    const onImageLoad = () => {
-        if (imageRef.current) {
-            setMetadata({
-                width: imageRef.current.naturalWidth,
-                height: imageRef.current.naturalHeight
-            });
+    const handleCaptionUpdate = (updates: Partial<CaptionSettings>) => {
+        setItems(prev => prev.map(item => {
+            if (applyToAll || item.id === selectedId) {
+                return { ...item, captionSettings: { ...item.captionSettings, ...updates } };
+            }
+            return item;
+        }));
+    };
+
+    const handleWatermarkUpdate = (updates: Partial<WatermarkSettings>) => {
+        setItems(prev => prev.map(item => {
+            if (applyToAll || item.id === selectedId) {
+                return { ...item, watermarkSettings: { ...item.watermarkSettings, ...updates } };
+            }
+            return item;
+        }));
+    };
+
+    const handleApplyToAllChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newValue = e.target.checked;
+        if (newValue) {
+            // Check if there are other photos with different settings
+            const hasOtherCustomSettings = items.some(item =>
+                item.id !== selectedId &&
+                (item.captionSettings.text !== selectedItem?.captionSettings.text ||
+                    item.watermarkSettings.file !== selectedItem?.watermarkSettings.file)
+            );
+
+            if (hasOtherCustomSettings && items.length > 1) {
+                setShowApplyAllConfirm(true);
+            } else {
+                confirmApplyToAll(true);
+            }
+        } else {
+            setApplyToAll(false);
         }
     };
 
-    const handleExport = async () => {
-        if (!file || !imageRef.current || !metadata) return;
+    const confirmApplyToAll = (value: boolean) => {
+        if (value && selectedItem) {
+            setItems(prev => prev.map(item => ({
+                ...item,
+                captionSettings: { ...selectedItem.captionSettings },
+                watermarkSettings: { ...selectedItem.watermarkSettings }
+            })));
+            setApplyToAll(true);
+        } else {
+            // If rejected, don't set applyToAll to true
+            setApplyToAll(false);
+        }
+        setShowApplyAllConfirm(false);
+    };
 
+    const handleExport = async () => {
+        if (items.length === 0) return;
         setIsExporting(true);
+        const zip = new JSZip();
 
         try {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            if (!ctx) throw new Error("Could not get canvas context");
+            for (const item of items) {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                if (!ctx || !item.metadata) continue;
 
-            // Set canvas dimensions to match original image
-            canvas.width = metadata.width;
-            canvas.height = metadata.height;
+                canvas.width = item.metadata.width;
+                canvas.height = item.metadata.height;
 
-            // Draw Image
-            ctx.drawImage(imageRef.current, 0, 0, metadata.width, metadata.height);
-
-            // Draw Watermark
-            if (watermarkSettings.file) {
-                const img = new Image();
-                const url = URL.createObjectURL(watermarkSettings.file);
-                await new Promise((resolve, reject) => {
-                    img.onload = resolve;
+                // Load image correctly for canvas
+                const imgElement = await new Promise<HTMLImageElement>((resolve, reject) => {
+                    const img = new Image();
+                    img.onload = () => resolve(img);
                     img.onerror = reject;
-                    img.src = url;
+                    img.src = item.imageUrl;
                 });
 
-                // Watermark logic
-                const w = metadata.width * watermarkSettings.scale;
-                const aspectRatio = img.width / img.height;
-                const h = w / aspectRatio;
+                ctx.drawImage(imgElement, 0, 0, item.metadata.width, item.metadata.height);
 
-                const pos = calculateWatermarkPosition(metadata.width, metadata.height, w, h, watermarkSettings.position);
-                ctx.globalAlpha = watermarkSettings.opacity;
-                ctx.drawImage(img, pos.x, pos.y, w, h);
-                ctx.globalAlpha = 1.0; // Reset opacity
+                // Watermark
+                if (item.watermarkSettings.file) {
+                    const wImg = await new Promise<HTMLImageElement>((resolve, reject) => {
+                        const img = new Image();
+                        img.onload = () => resolve(img);
+                        img.onerror = reject;
+                        img.src = URL.createObjectURL(item.watermarkSettings.file!);
+                    });
 
-                URL.revokeObjectURL(url);
-            }
+                    const w = item.metadata.width * item.watermarkSettings.scale;
+                    const aspectRatio = wImg.width / wImg.height;
+                    const h = w / aspectRatio;
+                    const pos = calculateWatermarkPosition(item.metadata.width, item.metadata.height, w, h, item.watermarkSettings.position);
 
-            // Calculate Metrics and Position for the full size image
-            const metrics = calculateCaptionMetrics(metadata.width, metadata.height, {
-                text: captionSettings.text,
-                textSize: captionSettings.textSize
-            });
+                    ctx.globalAlpha = item.watermarkSettings.opacity;
+                    ctx.drawImage(wImg, pos.x, pos.y, w, h);
+                    ctx.globalAlpha = 1.0;
+                    URL.revokeObjectURL(wImg.src);
+                }
 
-            const position = calculateCaptionPosition(metadata.width, metadata.height, metrics, captionSettings.position);
+                // Caption
+                const metrics = calculateCaptionMetrics(item.metadata.width, item.metadata.height, {
+                    text: item.captionSettings.text,
+                    textSize: item.captionSettings.textSize
+                });
+                const position = calculateCaptionPosition(item.metadata.width, item.metadata.height, metrics, item.captionSettings.position);
 
-            // Configure Text
-            const fontStyle = captionSettings.isItalic ? 'italic' : 'normal';
-            ctx.font = `${fontStyle} bold ${metrics.fontSize}px Inter, sans-serif`;
-            ctx.fillStyle = captionSettings.color;
-            ctx.textAlign = position.textAlign as CanvasTextAlign;
-            ctx.textBaseline = 'alphabetic';
+                const fontStyle = item.captionSettings.isItalic ? 'italic' : 'normal';
+                ctx.font = `${fontStyle} bold ${metrics.fontSize}px Inter, sans-serif`;
+                ctx.fillStyle = item.captionSettings.color;
+                ctx.textAlign = position.textAlign as CanvasTextAlign;
+                ctx.textBaseline = 'alphabetic';
+                ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                ctx.shadowBlur = metrics.fontSize * 0.15;
+                ctx.shadowOffsetX = metrics.fontSize * 0.04;
+                ctx.shadowOffsetY = metrics.fontSize * 0.04;
 
-            // Text Shadow
-            ctx.shadowColor = 'rgba(0,0,0,0.8)';
-            ctx.shadowBlur = metrics.fontSize * 0.15; // Scale shadow blur with font size slightly
-            ctx.shadowOffsetX = metrics.fontSize * 0.04;
-            ctx.shadowOffsetY = metrics.fontSize * 0.04;
+                metrics.lines.forEach((line, i) => {
+                    ctx.fillText(line, position.x, position.y + (i * metrics.lineHeight));
+                });
 
-            // Draw Each Line
-            metrics.lines.forEach((line, i) => {
-                ctx.fillText(line, position.x, position.y + (i * metrics.lineHeight));
-            });
-
-            // Export
-            canvas.toBlob(async (blob) => {
+                // Export blob
+                const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
                 if (blob) {
                     let finalBlob = blob;
-                    // Transfer Metadata if available
-                    if (file) {
-                        try {
-                            finalBlob = await MetadataService.transferPhotoMetadata(file, blob);
-                        } catch (e) {
-                            console.warn("Failed to transfer metadata", e);
-                        }
+                    try {
+                        finalBlob = await MetadataService.transferPhotoMetadata(item.file, blob);
+                    } catch (e) {
+                        console.warn("Failed to transfer metadata", e);
                     }
 
-                    const url = URL.createObjectURL(finalBlob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    const originalName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-                    // Use original extension if possible or default to type
-                    const ext = file.type.split('/')[1] || 'jpg';
-                    a.download = `photoverlay-${originalName}.${ext}`;
-                    a.click();
-                    URL.revokeObjectURL(url);
+                    if (exportAsArchive && items.length > 1) {
+                        const originalName = item.file.name.substring(0, item.file.name.lastIndexOf('.')) || item.file.name;
+                        zip.file(`photoverlay-${originalName}.jpg`, finalBlob);
+                    } else {
+                        const url = URL.createObjectURL(finalBlob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        const originalName = item.file.name.substring(0, item.file.name.lastIndexOf('.')) || item.file.name;
+                        const ext = 'jpg'; // Force jpeg for metadata support
+                        a.download = `photoverlay-${originalName}.${ext}`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        // Add small delay between downloads to ensure browser triggers all
+                        await new Promise(r => setTimeout(r, 400));
+                    }
                 }
-                setIsExporting(false);
-            }, 'image/jpeg', 0.95); // Force JPEG for EXIF support
+            }
 
+            if (exportAsArchive && items.length > 1) {
+                const content = await zip.generateAsync({ type: 'blob' });
+                const url = URL.createObjectURL(content);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `photoverlay-archive-${new Date().getTime()}.zip`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
         } catch (error) {
             console.error("Export failed:", error);
             alert(t.tools.photoverlay.exportFailed);
+        } finally {
             setIsExporting(false);
         }
     };
 
-    // Delete Handling
-    const handleDeleteRequest = () => {
-        setShowDeleteConfirm(true);
-    };
-
-    const cancelDelete = () => {
-        setShowDeleteConfirm(false);
-    };
-
-    const confirmDelete = () => {
-        // 1. Reset State
-        setFile(null);
-        setImageUrl(null);
-        setMetadata(null);
-        setExifData(null);
-        setCaptionSettings(prev => ({ ...prev, text: '' }));
-        setWatermarkSettings(prev => ({ ...prev, file: null }));
-
-        // 2. Immediately Clear Persistence
-        PersistenceService.savePhotoverlayState({
-            file: null,
-            caption: '',
-            color: TextColor.White,
-            position: TextPosition.BottomLeft,
-            textSize: TextSize.Small,
-            isItalic: false,
-            watermarkFile: null,
-            watermarkPosition: TextPosition.TopRight
+    const handleDeleteItem = (id: string) => {
+        setItems(prev => {
+            const updated = prev.filter(item => item.id !== id);
+            if (selectedId === id) {
+                setSelectedId(updated.length > 0 ? updated[0].id : null);
+            }
+            return updated;
         });
-
-        setShowDeleteConfirm(false);
+        // Clear object URL
+        const itemToRemove = items.find(item => item.id === id);
+        if (itemToRemove) URL.revokeObjectURL(itemToRemove.imageUrl);
     };
 
-    // Calculate CSS styles using shared metrics
+    const confirmDeleteAll = () => {
+        items.forEach(item => URL.revokeObjectURL(item.imageUrl));
+        setItems([]);
+        setSelectedId(null);
+        setShowDeleteConfirm(false);
+
+        PersistenceService.savePhotoverlayState({
+            items: [],
+            selectedId: null,
+            applyToAll: false
+        });
+    };
+
     const getPreviewStyle = (): React.CSSProperties => {
-        if (containerSize.height === 0 || containerSize.width === 0) return { display: 'none' };
+        if (!selectedItem || containerSize.height === 0 || containerSize.width === 0) return { display: 'none' };
 
         const metrics = calculateCaptionMetrics(containerSize.width, containerSize.height, {
-            text: captionSettings.text,
-            textSize: captionSettings.textSize
+            text: selectedItem.captionSettings.text,
+            textSize: selectedItem.captionSettings.textSize
         });
 
         return {
-            color: captionSettings.color,
+            color: selectedItem.captionSettings.color,
             textShadow: '2px 2px 8px rgba(0,0,0,0.8)',
             fontSize: `${metrics.fontSize}px`,
             lineHeight: `${metrics.lineHeight}px`,
             fontWeight: 'bold',
-            fontStyle: captionSettings.isItalic ? 'italic' : 'normal',
+            fontStyle: selectedItem.captionSettings.isItalic ? 'italic' : 'normal',
             fontFamily: 'Inter, sans-serif',
-
-            // Flex positioning
             display: 'flex',
             width: '100%',
             height: '100%',
             padding: `${metrics.padding}px`,
-
-            justifyContent: captionSettings.position.includes('Left') ? 'flex-start' : captionSettings.position.includes('Right') ? 'flex-end' : 'center',
-            alignItems: captionSettings.position.includes('Top') ? 'flex-start' : captionSettings.position.includes('Bottom') ? 'flex-end' : 'center',
-            textAlign: captionSettings.position.includes('Left') ? 'left' : captionSettings.position.includes('Right') ? 'right' : 'center'
+            justifyContent: selectedItem.captionSettings.position.includes('Left') ? 'flex-start' : selectedItem.captionSettings.position.includes('Right') ? 'flex-end' : 'center',
+            alignItems: selectedItem.captionSettings.position.includes('Top') ? 'flex-start' : selectedItem.captionSettings.position.includes('Bottom') ? 'flex-end' : 'center',
+            textAlign: selectedItem.captionSettings.position.includes('Left') ? 'left' : selectedItem.captionSettings.position.includes('Right') ? 'right' : 'center'
         };
     };
 
-    // Watermark Preview Logic
     const getWatermarkStyle = (): React.CSSProperties => {
-        if (!watermarkSettings.file || containerSize.width === 0) return { display: 'none' };
+        if (!selectedItem?.watermarkSettings.file || containerSize.width === 0) return { display: 'none' };
 
-        const widthPercent = (watermarkSettings.scale * 100) + '%';
+        const widthPercent = (selectedItem.watermarkSettings.scale * 100) + '%';
         const paddingPercent = '5%';
 
         const style: React.CSSProperties = {
@@ -326,42 +454,18 @@ export const PhotoverlayTool: React.FC = () => {
             width: widthPercent,
             height: 'auto',
             pointerEvents: 'none',
-            zIndex: 20, // Above text
-            opacity: watermarkSettings.opacity
+            zIndex: 20,
+            opacity: selectedItem.watermarkSettings.opacity
         };
 
-        switch (watermarkSettings.position) {
-            case TextPosition.TopLeft:
-                style.top = paddingPercent;
-                style.left = paddingPercent;
-                break;
-            case TextPosition.TopRight:
-                style.top = paddingPercent;
-                style.right = paddingPercent;
-                break;
-            case TextPosition.BottomLeft:
-                style.bottom = paddingPercent;
-                style.left = paddingPercent;
-                break;
-            case TextPosition.BottomRight:
-                style.bottom = paddingPercent;
-                style.right = paddingPercent;
-                break;
-            case TextPosition.Center:
-                style.top = '50%';
-                style.left = '50%';
-                style.transform = 'translate(-50%, -50%)';
-                break;
-            case TextPosition.TopCenter:
-                style.top = paddingPercent;
-                style.left = '50%';
-                style.transform = 'translate(-50%, 0)';
-                break;
-            case TextPosition.BottomCenter:
-                style.bottom = paddingPercent;
-                style.left = '50%';
-                style.transform = 'translate(-50%, 0)';
-                break;
+        switch (selectedItem.watermarkSettings.position) {
+            case TextPosition.TopLeft: style.top = paddingPercent; style.left = paddingPercent; break;
+            case TextPosition.TopRight: style.top = paddingPercent; style.right = paddingPercent; break;
+            case TextPosition.BottomLeft: style.bottom = paddingPercent; style.left = paddingPercent; break;
+            case TextPosition.BottomRight: style.bottom = paddingPercent; style.right = paddingPercent; break;
+            case TextPosition.Center: style.top = '50%'; style.left = '50%'; style.transform = 'translate(-50%, -50%)'; break;
+            case TextPosition.TopCenter: style.top = paddingPercent; style.left = '50%'; style.transform = 'translate(-50%, 0)'; break;
+            case TextPosition.BottomCenter: style.bottom = paddingPercent; style.left = '50%'; style.transform = 'translate(-50%, 0)'; break;
         }
 
         return style;
@@ -369,47 +473,22 @@ export const PhotoverlayTool: React.FC = () => {
 
     return (
         <div className="h-full flex bg-slate-900 overflow-hidden">
-            {/* Settings Sidebar */}
-            <div className="w-80 border-r border-slate-700 bg-slate-800 flex flex-col p-6 overflow-y-auto z-10 shadow-2xl">
-                <h2 className="text-lg font-bold mb-8 text-slate-100 uppercase tracking-widest text-center">
-                    {t.tools.photoverlay.overlaySettings}
-                </h2>
-
-                {!file ? (
-                    <div className="space-y-6">
-                        <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-2xl">
-                            <p className="text-md text-purple-400 leading-relaxed text-center">
-                                {t.tools.photoverlay.selectPhoto}
-                            </p>
-                        </div>
-                        <label className="flex flex-col items-center justify-center gap-4 w-full h-48 rounded-3xl border-2 border-dashed border-slate-600 hover:border-pink-500 hover:bg-slate-700/50 cursor-pointer transition-all group">
-                            <div className="p-4 bg-slate-700 rounded-full group-hover:scale-110 transition-transform">
-                                <Upload className="w-8 h-8 text-pink-400" />
-                            </div>
-                            <span className="text-sm font-bold text-slate-400">{t.tools.photoverlay.uploadPhoto}</span>
-                            <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-                        </label>
-                    </div>
-                ) : (
-                    <div className="space-y-8 animate-fadeIn">
-                        <CaptionSettingsPanel
-                            settings={captionSettings}
-                            onUpdate={(updates) => setCaptionSettings(prev => ({ ...prev, ...updates }))}
-                        />
-
-                        <WatermarkSettingsPanel
-                            settings={watermarkSettings}
-                            onUpdate={(updates) => setWatermarkSettings(prev => ({ ...prev, ...updates }))}
-                        />
-
-                    </div>
-                )}
-            </div>
+            <PhotoverlaySidebar
+                itemsCount={items.length}
+                selectedItem={selectedItem}
+                applyToAll={applyToAll}
+                onApplyToAllChange={handleApplyToAllChange}
+                onFileChange={handleFileChange}
+                onCaptionUpdate={handleCaptionUpdate}
+                onWatermarkUpdate={handleWatermarkUpdate}
+                onDeleteAll={() => setShowDeleteConfirm(true)}
+            />
 
             {/* Main Preview / Viewport */}
+
             <div className="flex-1 flex flex-col min-w-0 bg-slate-950">
-                <div className="flex-1 relative flex items-center justify-center p-12 overflow-hidden">
-                    {!imageUrl ? (
+                <div className="flex-1 relative flex flex-col items-center justify-center pt-8 px-4 pb-0 overflow-hidden">
+                    {items.length === 0 ? (
                         <div className="flex flex-col items-center gap-4 text-slate-600 animate-pulse">
                             <ImageIcon className="w-24 h-24 stroke-[1px]" />
                             <p className="font-bold uppercase tracking-[0.3em] text-xs">{t.tools.photoverlay.awaitingSource}</p>
@@ -418,103 +497,156 @@ export const PhotoverlayTool: React.FC = () => {
                         <>
                             <div
                                 ref={containerRef}
-                                className="relative group shadow-2xl rounded-2xl overflow-hidden border-4 border-slate-800 max-h-[70vh]"
+                                className="relative group shadow-2xl rounded-2xl overflow-hidden border-4 border-slate-800 max-h-[60vh] mb-14"
                                 style={{
-                                    aspectRatio: metadata ? `${metadata.width} / ${metadata.height}` : 'auto'
+                                    aspectRatio: selectedItem?.metadata ? `${selectedItem.metadata.width} / ${selectedItem.metadata.height}` : 'auto'
                                 }}
                             >
                                 <img
                                     ref={imageRef}
-                                    src={imageUrl}
-                                    onLoad={onImageLoad}
-                                    className="max-h-[70vh] w-auto pointer-events-none object-contain"
+                                    src={selectedItem?.imageUrl}
+                                    className="max-h-[60vh] w-auto pointer-events-none object-contain"
                                     alt="Preview"
                                 />
 
-                                {/* Watermark Overlay (DOM) */}
-                                {watermarkSettings.file && (
+                                {selectedItem?.watermarkSettings.file && (
                                     <img
-                                        src={URL.createObjectURL(watermarkSettings.file)}
+                                        src={URL.createObjectURL(selectedItem.watermarkSettings.file)}
                                         style={getWatermarkStyle()}
                                         alt="watermark"
+                                        onLoad={(e) => URL.revokeObjectURL((e.target as HTMLImageElement).src)}
                                     />
                                 )}
 
-                                {/* Preview Layer Overlay */}
                                 <div className="absolute inset-0 pointer-events-none">
                                     <div
                                         className="absolute inset-0 z-10"
                                         style={getPreviewStyle()}
                                     >
                                         <div style={{ whiteSpace: 'pre-wrap' }}>
-                                            {captionSettings.text}
+                                            {selectedItem?.captionSettings.text}
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Remove Button - Positioned in Corner of Enclosing Area */}
-                            <button
-                                onClick={handleDeleteRequest}
-                                disabled={isExporting}
-                                className="absolute bottom-6 right-6 p-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl border border-red-500/20 transition-all shadow-lg backdrop-blur-sm z-30 group"
-                                title={t.tools.photoverlay.removePhoto}
-                            >
-                                <Trash2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                            </button>
+                            {/* Thumbnails Bar */}
+                            <div className="w-full px-6 pb-4">
+                                <div
+                                    ref={scrollRef}
+                                    onWheel={handleWheel}
+                                    className="flex items-center gap-6 overflow-x-auto py-4 px-4 hide-scrollbar select-none"
+                                >
+                                    <style>{`
+                                        .hide-scrollbar::-webkit-scrollbar {
+                                          display: none;
+                                        }
+                                        .hide-scrollbar {
+                                          -ms-overflow-style: none;
+                                          scrollbar-width: none;
+                                        }
+                                    `}</style>
+                                    {items.map((item) => (
+                                        <div
+                                            key={item.id}
+                                            id={`photo-thumb-${item.id}`}
+                                            onClick={() => setSelectedId(item.id)}
+                                            className={`relative group h-24 aspect-square flex-shrink-0 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${selectedId === item.id ? 'border-tool-photoverlay shadow-lg shadow-tool-photoverlay/20 scale-105 z-10' : 'border-slate-600 hover:border-slate-400'
+                                                }`}
+                                        >
+                                            <img
+                                                src={item.imageUrl}
+                                                className="w-full h-full object-cover pointer-events-none"
+                                                alt="Thumb"
+                                            />
+
+                                            {(item.captionSettings.text || item.watermarkSettings.file) && (
+                                                <div className="absolute top-2 right-2 z-10">
+                                                    <div className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" title={t.tools.slidesync.hasText}></div>
+                                                </div>
+                                            )}
+
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteItem(item.id);
+                                                }}
+                                                className="absolute bottom-1 right-1 p-1.5 bg-red-500/90 text-white rounded-md hover:bg-red-600 transition-all opacity-0 group-hover:opacity-100 z-30 shadow-sm hover:scale-110"
+                                                title={t.common.removeFile}
+                                            >
+                                                <Trash2 className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    <label className="flex-shrink-0 h-24 aspect-square rounded-lg border-2 border-dashed border-slate-700 hover:border-tool-photoverlay/50 hover:bg-slate-800/50 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all">
+                                        <Plus className="w-5 h-5 text-slate-500" />
+                                        <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter">{t.common.addMore}</span>
+                                        <input type="file" accept="image/*" multiple onChange={handleFileChange} className="hidden" />
+                                    </label>
+                                </div>
+                            </div>
+
                         </>
                     )}
                 </div>
 
                 {/* Controls Bar */}
-                {file && (
+                {selectedItem && (
                     <div className="bg-slate-800/80 backdrop-blur-md border-t border-slate-700 p-6 flex items-center justify-between">
                         <div className="flex items-center gap-8">
                             <div className="flex flex-col">
                                 <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
-                                    <Monitor className="w-3 h-3" /> {t.tools.photoverlay.resolution}
+                                    <Monitor className="w-3 h-3" /> {t.common.resolution}
                                 </p>
                                 <p className="text-sm font-bold text-white">
-                                    {metadata ? `${metadata.width} x ${metadata.height}` : '...'}
+                                    {selectedItem.metadata ? `${selectedItem.metadata.width} x ${selectedItem.metadata.height}` : '...'}
                                 </p>
                             </div>
 
-                            {exifData?.creationTime && (
+                            {selectedItem.exifData?.creationTime && (
                                 <div className="flex flex-col">
                                     <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
-                                        <Calendar className="w-3 h-3" /> {t.tools.photoverlay.mediaCreated}
+                                        <Calendar className="w-3 h-3" /> {t.common.mediaCreated}
                                     </p>
                                     <p className="text-sm font-bold text-white">
-                                        {exifData.creationTime.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                                        {selectedItem.exifData.creationTime.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
                                     </p>
                                 </div>
                             )}
 
-                            {exifData?.latitude && exifData?.longitude && (
+                            {selectedItem.exifData?.latitude && selectedItem.exifData?.longitude && (
                                 <div className="flex flex-col">
                                     <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
                                         <MapPin className="w-3 h-3" /> {t.tools.photoverlay.location}
                                     </p>
                                     <p className="text-sm font-bold text-white">
-                                        {exifData.latitude.toFixed(4)}, {exifData.longitude.toFixed(4)}
+                                        {selectedItem.exifData.latitude.toFixed(4)}, {selectedItem.exifData.longitude.toFixed(4)}
                                     </p>
                                 </div>
                             )}
                         </div>
 
                         <div className="flex items-center gap-4">
-                            <div className="hidden lg:flex flex-col items-end mr-4">
-                                <p className="text-[12px] font-black uppercase text-slate-500 tracking-widest">
-                                    100% client-side
-                                </p>
-                                <p className="text-[10px] text-slate-400 font-bold">
-                                    All processing happens directly in your browser, keeping your data private
-                                </p>
-                            </div>
+                            {items.length > 1 && (
+                                <div className="flex bg-slate-900/50 p-1 rounded-xl border border-slate-700/50 mr-2">
+                                    <button
+                                        onClick={() => setExportAsArchive(false)}
+                                        className={`px-4 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${!exportAsArchive ? 'bg-tool-photoverlay text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                                    >
+                                        {t.tools.photoverlay.individualFiles}
+                                    </button>
+                                    <button
+                                        onClick={() => setExportAsArchive(true)}
+                                        className={`px-4 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${exportAsArchive ? 'bg-tool-photoverlay text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
+                                    >
+                                        {t.tools.photoverlay.singleArchive}
+                                    </button>
+                                </div>
+                            )}
                             <button
                                 onClick={handleExport}
                                 disabled={isExporting}
-                                className="flex items-center gap-3 px-8 py-3.5 bg-white hover:bg-slate-100 text-slate-900 font-black rounded-2xl transition-all shadow-xl shadow-white/5 active:scale-95 disabled:opacity-50"
+                                className="flex items-center gap-3 px-8 py-3.5 bg-tool-photoverlay hover:opacity-90 text-white font-black rounded-2xl transition-all shadow-xl shadow-tool-photoverlay/10 active:scale-95 disabled:opacity-50"
                             >
                                 {isExporting ? (
                                     <>
@@ -524,7 +656,7 @@ export const PhotoverlayTool: React.FC = () => {
                                 ) : (
                                     <>
                                         <Download className="w-5 h-5" />
-                                        <span>{t.tools.photoverlay.exportPhoto}</span>
+                                        <span>{items.length > 1 ? t.tools.photoverlay.exportAllPhotos : t.tools.photoverlay.exportPhoto}</span>
                                     </>
                                 )}
                             </button>
@@ -533,18 +665,28 @@ export const PhotoverlayTool: React.FC = () => {
                 )}
             </div>
 
-            {/* Delete Confirmation Modal */}
+            {/* Global Modals */}
             <ConfirmationModal
                 isOpen={showDeleteConfirm}
-                onClose={cancelDelete}
-                onConfirm={confirmDelete}
-                title={t.tools.photoverlay.removePhotoTitle}
-                message={t.tools.photoverlay.removePhotoMsg}
-                confirmLabel={t.tools.photoverlay.yesRemove}
-                cancelLabel={t.tools.photoverlay.cancel}
+                onClose={() => setShowDeleteConfirm(false)}
+                onConfirm={confirmDeleteAll}
+                title={t.tools.photoverlay.removeAllPhotosTitle}
+                message={t.tools.photoverlay.removeAllPhotosMsg}
+                confirmLabel={t.tools.photoverlay.yesRemoveAll}
+                cancelLabel={t.common.cancel}
                 Icon={Trash2}
+            />
+
+            <ConfirmationModal
+                isOpen={showApplyAllConfirm}
+                onClose={() => confirmApplyToAll(false)}
+                onConfirm={() => confirmApplyToAll(true)}
+                title={t.tools.photoverlay.applyToAllTitle}
+                message={t.tools.photoverlay.applyToAllMsg}
+                confirmLabel={t.tools.photoverlay.yesApply}
+                cancelLabel={t.common.cancel}
+                Icon={Check}
             />
         </div>
     );
 };
-
