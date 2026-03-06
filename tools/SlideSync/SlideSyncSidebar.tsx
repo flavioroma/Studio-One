@@ -155,7 +155,7 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
             />
             <label
               htmlFor="audio-upload"
-              className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border border-slate-600 cursor-pointer hover:bg-slate-700/50 transition-all ${audioFile ? 'bg-tool-slidesync/10 border-tool-slidesync/40 text-tool-slidesync/80' : ''}`}
+              className={`flex items-center justify-center gap-2 w-full p-3 rounded-xl border border-slate-600 hover:border-tool-slidesync/40 hover:bg-slate-700/50 cursor-pointer transition-all ${audioFile ? 'bg-tool-slidesync/10 border-tool-slidesync/40 text-tool-slidesync/80' : ''}`}
             >
               <Music className="w-4 h-4" />
               <span className="text-sm truncate max-w-[120px]">{audioFile ? audioFile.name : t.tools.slidesync.selectAudio}</span>
@@ -185,10 +185,10 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
             />
             <label
               htmlFor="img-upload"
-              className="flex items-center justify-center gap-2 w-full p-3 rounded-xl border-2 border-dashed border-slate-600 hover:border-tool-slidesync/40 hover:bg-slate-700/50 cursor-pointer transition-all"
+              className="flex items-center justify-center gap-2 w-full p-3 rounded-xl border border-slate-600 hover:border-tool-slidesync/40 hover:bg-slate-700/50 cursor-pointer transition-all"
             >
               <Plus className="w-5 h-5" />
-              <span className="text-sm font-medium">{t.tools.slidesync.addMedia}</span>
+              <span className="text-sm font-medium">{t.tools.slidesync.addPhotos}</span>
             </label>
           </div>
         </div>
