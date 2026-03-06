@@ -43,14 +43,14 @@ describe('SlideSyncSidebar', () => {
 
     it('renders basic upload controls', () => {
         renderWithContext();
-        expect(screen.getByText(/Upload Photos/i)).toBeInTheDocument();
-        expect(screen.getByText(/Background Music/i)).toBeInTheDocument();
-        expect(screen.getByText(/Video Format/i)).toBeInTheDocument();
+        expect(screen.getByText(/1\. Background music/i)).toBeInTheDocument();
+        expect(screen.getByText(/2\. Photos/i)).toBeInTheDocument();
+        expect(screen.getByText(/3\. Choose video format/i)).toBeInTheDocument();
     });
 
     it('shows empty state when no slide is selected', () => {
         renderWithContext();
-        expect(screen.getByText(/Select a thumbnail/i)).toBeInTheDocument();
+        expect(screen.getByText(/Select a slide/i)).toBeInTheDocument();
     });
 
     it('calls onAspectRatioChange when a format button is clicked', () => {
