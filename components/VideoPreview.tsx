@@ -1,8 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Slide, TextPosition, AspectRatio, TextSize, ExportFormat } from '../types';
+import { Slide, AspectRatio, ExportFormat } from '../types';
 import { calculateCaptionMetrics, calculateCaptionPosition } from '../utils/captionUtils';
 import { Mp4ExportService } from '../services/Mp4ExportService';
-import { Download, Loader2, AlertCircle, RotateCcw, FileVideo } from 'lucide-react';
+import { Download, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
 import { PlaybackControls } from './PlaybackControls';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -69,7 +69,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
       ctx.font = 'bold 40px Inter, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(
-        slides.length === 0 ? t.tools.slidesync.addImagesToStart : t.tools.slidesync.addAudioToStart,
+        slides.length === 0 ? t.tools.slidesync.addMediaToStart : t.tools.slidesync.addAudioToStart,
         CANVAS_WIDTH / 2,
         CANVAS_HEIGHT / 2
       );
@@ -152,7 +152,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
     };
     loop();
     return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
-  }, [isPlaying, slides, audioDuration, currentTime, aspectRatio]);
+  }, [isPlaying, slides, audioDuration, currentTime, aspectRatio, t]);
 
   const togglePlay = () => {
     if (!audioRef.current || slides.length === 0) return;
