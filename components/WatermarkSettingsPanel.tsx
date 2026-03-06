@@ -37,7 +37,7 @@ export const WatermarkSettingsPanel: React.FC<WatermarkSettingsPanelProps> = ({
                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                     <ImageIcon className="w-3 h-3" /> {t.watermark.title}
                 </h3>
-                <label className={`flex flex-col items-center justify-center gap-3 w-full h-24 rounded-2xl border-2 border-dashed border-slate-700 hover:border-${themeColor} hover:bg-slate-700/30 cursor-pointer transition-all group`}>
+                <label className={`flex flex-col items-center justify-center gap-3 w-full h-24 rounded-2xl border-2 border-slate-700 hover:border-${themeColor} hover:bg-slate-700/30 cursor-pointer transition-all group`}>
                     <div className="p-2 bg-slate-800 rounded-full group-hover:scale-110 transition-transform">
                         <Upload className={`w-4 h-4 text-${themeColor}`} />
                     </div>

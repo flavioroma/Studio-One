@@ -56,6 +56,38 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
         }
     };
 
+    const themeClasses = {
+        'tool-audiotrim': {
+            border: 'border-tool-audiotrim',
+            bg: 'bg-tool-audiotrim/10',
+            hoverBorder: 'hover:border-tool-audiotrim',
+            text: 'text-tool-audiotrim'
+        },
+        'tool-slidesync': {
+            border: 'border-tool-slidesync',
+            bg: 'bg-tool-slidesync/10',
+            hoverBorder: 'hover:border-tool-slidesync',
+            text: 'text-tool-slidesync'
+        },
+        'tool-photoverlay': {
+            border: 'border-tool-photoverlay',
+            bg: 'bg-tool-photoverlay/10',
+            hoverBorder: 'hover:border-tool-photoverlay',
+            text: 'text-tool-photoverlay'
+        },
+        'tool-videoverlay': {
+            border: 'border-tool-videoverlay',
+            bg: 'bg-tool-videoverlay/10',
+            hoverBorder: 'hover:border-tool-videoverlay',
+            text: 'text-tool-videoverlay'
+        }
+    }[themeColor] || {
+        border: 'border-slate-600',
+        bg: 'bg-slate-700/10',
+        hoverBorder: 'hover:border-slate-500',
+        text: 'text-slate-400'
+    };
+
     return (
         <div
             onDragOver={handleDragOver}
@@ -64,14 +96,14 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
             onClick={handleClick}
             className={`flex flex-col items-center justify-center gap-4 w-full rounded-3xl border-2 border-dashed transition-all cursor-pointer group ${!hasHeight ? 'h-48' : ''
                 } ${isDragging
-                    ? `border-${themeColor} bg-${themeColor}/10`
-                    : `border-slate-600 hover:border-${themeColor} hover:bg-slate-700/50`
+                    ? `${themeClasses.border} ${themeClasses.bg}`
+                    : `border-slate-600 ${themeClasses.hoverBorder} hover:bg-slate-700/50`
                 } ${className}`}
         >
             {children ? children : (
                 <>
                     <div className={`p-4 bg-slate-700 rounded-full transition-transform group-hover:scale-110 ${isDragging ? 'scale-110 bg-slate-600' : ''}`}>
-                        <Upload className={`w-8 h-8 text-${themeColor}`} />
+                        <Upload className={`w-8 h-8 ${themeClasses.text}`} />
                     </div>
                     {label && (
                         <span className="text-sm font-bold text-slate-400 group-hover:text-slate-200 transition-colors px-4 text-center">

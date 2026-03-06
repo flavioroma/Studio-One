@@ -1,6 +1,15 @@
+@import "tailwindcss";
+
 :root {
   --tool-audiotrim: 16 185 129;   /* Emerald 500 */
   --tool-slidesync: 59 130 246;   /* Blue 500 */
   --tool-photoverlay: 236 72 153; /* Pink 500 */
   --tool-videoverlay: 168 85 247; /* Purple 500 */
+}
+
+@theme {
+  --color-tool-audiotrim: rgb(var(--tool-audiotrim));
+  --color-tool-slidesync: rgb(var(--tool-slidesync));
+  --color-tool-photoverlay: rgb(var(--tool-photoverlay));
+  --color-tool-videoverlay: rgb(var(--tool-videoverlay));
 }
