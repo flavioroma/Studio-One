@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   Video,
-  Box,
   ArrowRight,
   Sparkles,
   Scissors,
@@ -26,6 +25,7 @@ export const Home: React.FC<HomeProps> = ({ onSelectTool }) => {
       description: t.home.audiotrim.description,
       icon: Scissors,
       color: 'bg-tool-audiotrim',
+      hoverBorder: 'hover:border-tool-audiotrim/50',
       badge: t.home.badges.updated,
     },
     {
@@ -34,6 +34,7 @@ export const Home: React.FC<HomeProps> = ({ onSelectTool }) => {
       description: t.home.slidesync.description,
       icon: Video,
       color: 'bg-tool-slidesync',
+      hoverBorder: 'hover:border-tool-slidesync/50',
       badge: t.home.badges.popular,
     },
     {
@@ -42,6 +43,7 @@ export const Home: React.FC<HomeProps> = ({ onSelectTool }) => {
       description: t.home.videoverlay.description,
       icon: Layers,
       color: 'bg-tool-videoverlay',
+      hoverBorder: 'hover:border-tool-videoverlay/50',
       badge: t.home.badges.new,
     },
     {
@@ -50,6 +52,7 @@ export const Home: React.FC<HomeProps> = ({ onSelectTool }) => {
       description: t.home.photoverlay.description,
       icon: ImageIcon,
       color: 'bg-tool-photoverlay',
+      hoverBorder: 'hover:border-tool-photoverlay/50',
       badge: t.home.badges.new,
     },
   ];
@@ -73,7 +76,7 @@ export const Home: React.FC<HomeProps> = ({ onSelectTool }) => {
           <button
             key={tool.id}
             onClick={() => onSelectTool(tool.id)}
-            className="group relative flex flex-col items-start text-left p-6 bg-slate-800/40 border border-slate-700 rounded-3xl hover:border-blue-500/50 hover:bg-slate-800/60 transition-all duration-300 shadow-xl"
+            className={`group relative flex flex-col items-start text-left p-6 bg-slate-800/40 border border-slate-700 rounded-3xl ${tool.hoverBorder} hover:bg-slate-800/60 transition-all duration-300 shadow-xl`}
           >
             <div
               className={`p-3 rounded-2xl ${tool.color} mb-6 group-hover:scale-110 transition-transform duration-300`}
@@ -90,7 +93,7 @@ export const Home: React.FC<HomeProps> = ({ onSelectTool }) => {
 
             <p className="text-slate-400 text-sm leading-relaxed mb-8 flex-1">{tool.description}</p>
 
-            <div className="flex items-center gap-2 text-blue-400 text-sm font-bold group-hover:gap-4 transition-all">
+            <div className="flex items-center gap-2 text-slate-400 text-sm font-bold group-hover:gap-4 transition-all">
               <span>{t.common.openTool}</span>
               <ArrowRight className="w-4 h-4" />
             </div>
