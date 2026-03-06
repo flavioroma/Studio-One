@@ -1,5 +1,13 @@
 import React from 'react';
-import { Video, Box, ArrowRight, Sparkles, Scissors, Layers, Image as ImageIcon } from 'lucide-react';
+import {
+  Video,
+  Box,
+  ArrowRight,
+  Sparkles,
+  Scissors,
+  Layers,
+  Image as ImageIcon,
+} from 'lucide-react';
 import { ToolId } from '../App';
 import { useLanguage } from '../contexts/LanguageContext';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
@@ -18,7 +26,7 @@ export const Home: React.FC<HomeProps> = ({ onSelectTool }) => {
       description: t.home.audiotrim.description,
       icon: Scissors,
       color: 'bg-tool-audiotrim',
-      badge: t.home.badges.updated
+      badge: t.home.badges.updated,
     },
     {
       id: 'slidesync' as ToolId,
@@ -26,7 +34,7 @@ export const Home: React.FC<HomeProps> = ({ onSelectTool }) => {
       description: t.home.slidesync.description,
       icon: Video,
       color: 'bg-tool-slidesync',
-      badge: t.home.badges.popular
+      badge: t.home.badges.popular,
     },
     {
       id: 'videoverlay' as ToolId,
@@ -34,7 +42,7 @@ export const Home: React.FC<HomeProps> = ({ onSelectTool }) => {
       description: t.home.videoverlay.description,
       icon: Layers,
       color: 'bg-tool-videoverlay',
-      badge: t.home.badges.new
+      badge: t.home.badges.new,
     },
     {
       id: 'photoverlay' as ToolId,
@@ -42,8 +50,8 @@ export const Home: React.FC<HomeProps> = ({ onSelectTool }) => {
       description: t.home.photoverlay.description,
       icon: ImageIcon,
       color: 'bg-tool-photoverlay',
-      badge: t.home.badges.new
-    }
+      badge: t.home.badges.new,
+    },
   ];
 
   return (
@@ -67,7 +75,9 @@ export const Home: React.FC<HomeProps> = ({ onSelectTool }) => {
             onClick={() => onSelectTool(tool.id)}
             className="group relative flex flex-col items-start text-left p-6 bg-slate-800/40 border border-slate-700 rounded-3xl hover:border-blue-500/50 hover:bg-slate-800/60 transition-all duration-300 shadow-xl"
           >
-            <div className={`p-3 rounded-2xl ${tool.color} mb-6 group-hover:scale-110 transition-transform duration-300`}>
+            <div
+              className={`p-3 rounded-2xl ${tool.color} mb-6 group-hover:scale-110 transition-transform duration-300`}
+            >
               <tool.icon className="w-6 h-6 text-white" />
             </div>
 
@@ -78,9 +88,7 @@ export const Home: React.FC<HomeProps> = ({ onSelectTool }) => {
               </span> */}
             </div>
 
-            <p className="text-slate-400 text-sm leading-relaxed mb-8 flex-1">
-              {tool.description}
-            </p>
+            <p className="text-slate-400 text-sm leading-relaxed mb-8 flex-1">{tool.description}</p>
 
             <div className="flex items-center gap-2 text-blue-400 text-sm font-bold group-hover:gap-4 transition-all">
               <span>{t.common.openTool}</span>
@@ -102,9 +110,7 @@ export const Home: React.FC<HomeProps> = ({ onSelectTool }) => {
           <Sparkles className="w-4 h-4" />
           <span>{t.home.credits}</span>
         </div>
-        <div className="text-[10px] opacity-40 font-mono mt-1">
-          v{__APP_VERSION__}
-        </div>
+        <div className="text-[10px] opacity-40 font-mono mt-1">v{__APP_VERSION__}</div>
       </div>
     </div>
   );

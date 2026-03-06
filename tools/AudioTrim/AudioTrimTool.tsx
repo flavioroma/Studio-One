@@ -1,5 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Music, Play, Pause, Download, Trash2, Clock, Flag, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  Music,
+  Play,
+  Pause,
+  Download,
+  Trash2,
+  Clock,
+  Flag,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 import { FileDropZone } from '../../components/FileDropZone';
 import { PersistenceService } from '../../services/PersistenceService';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -83,7 +93,7 @@ export const AudioTrimTool: React.FC = () => {
       }
 
       const multiplier = Math.pow(Math.max(...filteredData), -1);
-      setPeaks(filteredData.map(n => n * multiplier));
+      setPeaks(filteredData.map((n) => n * multiplier));
 
       setAudioBuffer(buffer);
       setFile(selectedFile);
@@ -96,12 +106,10 @@ export const AudioTrimTool: React.FC = () => {
         audioRef.current.currentTime = 0;
       }
     } catch (e) {
-      console.error("Decoding error:", e);
+      console.error('Decoding error:', e);
       alert(t.tools.audiotrim.decodeError);
     }
   };
-
-
 
   // Persistence Logic
   const isLoadedRef = useRef(false);
@@ -132,7 +140,7 @@ export const AudioTrimTool: React.FC = () => {
         file,
         startTime,
         endTime,
-        exportFormat
+        exportFormat,
       });
     }, 2000);
 
@@ -242,17 +250,19 @@ export const AudioTrimTool: React.FC = () => {
   const handleKeyDown = (e: React.KeyboardEvent, type: 'start' | 'end') => {
     if (['ArrowLeft', 'ArrowRight'].includes(e.key)) {
       e.preventDefault();
-      const step = e.shiftKey ? 1.0 : (e.altKey ? 0.01 : 0.1);
+      const step = e.shiftKey ? 1.0 : e.altKey ? 0.01 : 0.1;
       const delta = e.key === 'ArrowLeft' ? -step : step;
 
       if (type === 'start') {
-        setStartTime(prev => {
+        setStartTime((prev) => {
           const next = Math.max(0, Math.min(prev + delta, endTime - 0.01));
           if (audioRef.current) audioRef.current.currentTime = next;
           return next;
         });
       } else {
-        setEndTime(prev => Math.max(startTime + 0.01, Math.min(prev + delta, audioBuffer?.duration || 0)));
+        setEndTime((prev) =>
+          Math.max(startTime + 0.01, Math.min(prev + delta, audioBuffer?.duration || 0))
+        );
       }
     }
   };
@@ -291,7 +301,11 @@ export const AudioTrimTool: React.FC = () => {
     for (let i = 0; i < buffer.length; i++) {
       for (let channel = 0; channel < numChannels; channel++) {
         const sample = Math.max(-1, Math.min(1, buffer.getChannelData(channel)[i]));
-        view.setInt16(offset + (i * numChannels + channel) * 2, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+        view.setInt16(
+          offset + (i * numChannels + channel) * 2,
+          sample < 0 ? sample * 0x8000 : sample * 0x7fff,
+          true
+        );
       }
     }
 
@@ -314,7 +328,7 @@ export const AudioTrimTool: React.FC = () => {
         const endByte = audioDataOffset + Math.floor(endPct * audioPayloadSize);
 
         const blob = file.slice(startByte, endByte, file.type);
-        downloadBlob(blob, `trimmed_${file.name.replace(/\.[^/.]+$/, "")}.mp3`);
+        downloadBlob(blob, `trimmed_${file.name.replace(/\.[^/.]+$/, '')}.mp3`);
       } else {
         // High-fidelity PCM Render for WAV
         const frameStart = Math.floor(startTime * audioBuffer.sampleRate);
@@ -335,10 +349,10 @@ export const AudioTrimTool: React.FC = () => {
         const renderedBuffer = await offlineCtx.startRendering();
         const wavData = bufferToWav(renderedBuffer);
         const blob = new Blob([wavData], { type: 'audio/wav' });
-        downloadBlob(blob, `trimmed_${file.name.replace(/\.[^/.]+$/, "")}.wav`);
+        downloadBlob(blob, `trimmed_${file.name.replace(/\.[^/.]+$/, '')}.wav`);
       }
     } catch (err) {
-      console.error("Export failed:", err);
+      console.error('Export failed:', err);
       alert(t.tools.audiotrim.exportFailed);
     } finally {
       setIsExporting(false);
@@ -364,14 +378,14 @@ export const AudioTrimTool: React.FC = () => {
     setAudioDataOffset(0);
     setStartTime(0);
     setEndTime(0);
-    if (audioRef.current) audioRef.current.src = "";
+    if (audioRef.current) audioRef.current.src = '';
 
     // Clear Persistence
     PersistenceService.saveAudioTrimState({
       file: null,
       startTime: 0,
       endTime: 0,
-      exportFormat: 'wav'
+      exportFormat: 'wav',
     });
   };
 
@@ -489,7 +503,11 @@ export const AudioTrimTool: React.FC = () => {
                   <h2 className="text-xl font-bold text-white truncate">{file.name}</h2>
                 </div>
               </div>
-              <button onClick={handleDeleteRequest} className="p-3 text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all shrink-0" title={t.common.removeFile}>
+              <button
+                onClick={handleDeleteRequest}
+                className="p-3 text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all shrink-0"
+                title={t.common.removeFile}
+              >
                 <Trash2 className="w-5 h-5" />
               </button>
             </div>
@@ -507,13 +525,10 @@ export const AudioTrimTool: React.FC = () => {
                   const time = pct * (audioBuffer?.duration || 0);
                   audioRef.current.currentTime = time;
                   setCurrentTime(time);
-                }}>
-
+                }}
+              >
                 {/* Canvas Waveform */}
-                <canvas
-                  ref={canvasRef}
-                  className="w-full h-full block"
-                />
+                <canvas ref={canvasRef} className="w-full h-full block" />
 
                 {/* Overlays for cut sections */}
                 <div
@@ -552,13 +567,18 @@ export const AudioTrimTool: React.FC = () => {
                   <div className="flex flex-col items-center gap-2">
                     <button
                       onClick={() => togglePlay('all')}
-                      className={`w-14 h-14 flex items-center justify-center rounded-2xl transition-all ${isPlaying && playMode === 'all'
-                        ? 'bg-tool-audiotrim/80 text-white shadow-lg shadow-tool-audiotrim/20 ring-2 ring-white/20'
-                        : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
-                        }`}
+                      className={`w-14 h-14 flex items-center justify-center rounded-2xl transition-all ${
+                        isPlaying && playMode === 'all'
+                          ? 'bg-tool-audiotrim/80 text-white shadow-lg shadow-tool-audiotrim/20 ring-2 ring-white/20'
+                          : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+                      }`}
                       title={t.tools.audiotrim.playFull}
                     >
-                      {isPlaying && playMode === 'all' ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1" />}
+                      {isPlaying && playMode === 'all' ? (
+                        <Pause className="w-6 h-6" />
+                      ) : (
+                        <Play className="w-6 h-6 ml-1" />
+                      )}
                     </button>
                     <span className="text-[12px] font-black uppercase tracking-widest text-slate-500">
                       {t.tools.audiotrim.fullTrack}
@@ -571,13 +591,18 @@ export const AudioTrimTool: React.FC = () => {
                   <div className="flex flex-col items-center gap-2">
                     <button
                       onClick={() => togglePlay('selection')}
-                      className={`w-14 h-14 flex items-center justify-center rounded-2xl transition-all ${isPlaying && playMode === 'selection'
-                        ? 'bg-tool-audiotrim text-white shadow-lg shadow-tool-audiotrim/20 ring-2 ring-white/20'
-                        : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
-                        }`}
+                      className={`w-14 h-14 flex items-center justify-center rounded-2xl transition-all ${
+                        isPlaying && playMode === 'selection'
+                          ? 'bg-tool-audiotrim text-white shadow-lg shadow-tool-audiotrim/20 ring-2 ring-white/20'
+                          : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+                      }`}
                       title={t.tools.audiotrim.playSelection}
                     >
-                      {isPlaying && playMode === 'selection' ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6 ml-1" />}
+                      {isPlaying && playMode === 'selection' ? (
+                        <Pause className="w-6 h-6" />
+                      ) : (
+                        <Play className="w-6 h-6 ml-1" />
+                      )}
                     </button>
                     <span className="text-[12px] font-black uppercase tracking-widest text-slate-500">
                       {t.tools.audiotrim.selection}
@@ -599,13 +624,15 @@ export const AudioTrimTool: React.FC = () => {
                     onClick={handleSetStart}
                     className="flex-1 group/btn flex items-center justify-center gap-2 px-5 py-3.5 bg-slate-700 hover:bg-tool-audiotrim/20 hover:text-tool-audiotrim border border-slate-600 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95"
                   >
-                    <Flag className="w-3.5 h-3.5 group-hover/btn:scale-110 transition-transform" /> {t.tools.audiotrim.setStart}
+                    <Flag className="w-3.5 h-3.5 group-hover/btn:scale-110 transition-transform" />{' '}
+                    {t.tools.audiotrim.setStart}
                   </button>
                   <button
                     onClick={handleSetEnd}
                     className="flex-1 group/btn flex items-center justify-center gap-2 px-5 py-3.5 bg-slate-700 hover:bg-tool-audiotrim/20 hover:text-tool-audiotrim border border-slate-600 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95"
                   >
-                    <Flag className="w-3.5 h-3.5 fill-current group-hover/btn:scale-110 transition-transform" /> {t.tools.audiotrim.setEnd}
+                    <Flag className="w-3.5 h-3.5 fill-current group-hover/btn:scale-110 transition-transform" />{' '}
+                    {t.tools.audiotrim.setEnd}
                   </button>
                 </div>
 
@@ -613,13 +640,22 @@ export const AudioTrimTool: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6">
                   <div className="space-y-3">
                     <div className="flex justify-between items-center px-1">
-                      <label className="text-[12px] font-black uppercase tracking-widest text-slate-500">{t.tools.audiotrim.selectionStart}</label>
+                      <label className="text-[12px] font-black uppercase tracking-widest text-slate-500">
+                        {t.tools.audiotrim.selectionStart}
+                      </label>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-tool-audiotrim">{formatTime(startTime)}</span>
+                        <span className="text-xs font-mono text-tool-audiotrim">
+                          {formatTime(startTime)}
+                        </span>
                       </div>
                     </div>
                     <div className="relative flex items-center gap-2">
-                      <button onClick={() => setStartTime(s => Math.max(0, s - 0.1))} className="p-1 hover:text-white text-slate-500 transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+                      <button
+                        onClick={() => setStartTime((s) => Math.max(0, s - 0.1))}
+                        className="p-1 hover:text-white text-slate-500 transition-colors"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
                       <input
                         ref={startInputRef}
                         type="range"
@@ -635,18 +671,32 @@ export const AudioTrimTool: React.FC = () => {
                         }}
                         className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-tool-audiotrim"
                       />
-                      <button onClick={() => setStartTime(s => Math.min(endTime - 0.01, s + 0.1))} className="p-1 hover:text-white text-slate-500 transition-colors"><ChevronRight className="w-4 h-4" /></button>
+                      <button
+                        onClick={() => setStartTime((s) => Math.min(endTime - 0.01, s + 0.1))}
+                        className="p-1 hover:text-white text-slate-500 transition-colors"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center px-1">
-                      <label className="text-[12px] font-black uppercase tracking-widest text-slate-500">{t.tools.audiotrim.selectionEnd}</label>
+                      <label className="text-[12px] font-black uppercase tracking-widest text-slate-500">
+                        {t.tools.audiotrim.selectionEnd}
+                      </label>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-tool-audiotrim">{formatTime(endTime)}</span>
+                        <span className="text-xs font-mono text-tool-audiotrim">
+                          {formatTime(endTime)}
+                        </span>
                       </div>
                     </div>
                     <div className="relative flex items-center gap-2">
-                      <button onClick={() => setEndTime(s => Math.max(startTime + 0.01, s - 0.1))} className="p-1 hover:text-white text-slate-500 transition-colors"><ChevronLeft className="w-4 h-4" /></button>
+                      <button
+                        onClick={() => setEndTime((s) => Math.max(startTime + 0.01, s - 0.1))}
+                        className="p-1 hover:text-white text-slate-500 transition-colors"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
                       <input
                         ref={endInputRef}
                         type="range"
@@ -661,18 +711,29 @@ export const AudioTrimTool: React.FC = () => {
                         }}
                         className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-tool-audiotrim"
                       />
-                      <button onClick={() => setEndTime(s => Math.min(audioBuffer?.duration || 0, s + 0.1))} className="p-1 hover:text-white text-slate-500 transition-colors"><ChevronRight className="w-4 h-4" /></button>
+                      <button
+                        onClick={() =>
+                          setEndTime((s) => Math.min(audioBuffer?.duration || 0, s + 0.1))
+                        }
+                        className="p-1 hover:text-white text-slate-500 transition-colors"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                 </div>
-                <p className="text-[12px] text-slate-600 text-center italic mt-4">{t.tools.audiotrim.tip}</p>
+                <p className="text-[12px] text-slate-600 text-center italic mt-4">
+                  {t.tools.audiotrim.tip}
+                </p>
               </div>
 
               {/* Export Panel */}
               <div className="bg-slate-800/80 backdrop-blur-sm p-6 rounded-3xl border border-slate-700 flex flex-col justify-center">
                 <div className="flex items-center justify-between mb-4 px-2">
                   <div>
-                    <p className="text-[12px] font-black uppercase text-slate-500 mb-1">{t.tools.audiotrim.outputFormat}</p>
+                    <p className="text-[12px] font-black uppercase text-slate-500 mb-1">
+                      {t.tools.audiotrim.outputFormat}
+                    </p>
                     <div className="flex bg-slate-900/50 p-1 rounded-lg border border-slate-700">
                       <button
                         onClick={() => setExportFormat('wav')}
@@ -689,9 +750,13 @@ export const AudioTrimTool: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex-1 max-w-[600px] text-right">
-                    <p className="text-[12px] font-black uppercase text-slate-500 mb-1">{t.tools.audiotrim.desc}</p>
+                    <p className="text-[12px] font-black uppercase text-slate-500 mb-1">
+                      {t.tools.audiotrim.desc}
+                    </p>
                     <p className="text-[12px] text-tool-audiotrim/80 leading-relaxed font-medium whitespace-pre-line">
-                      {exportFormat === 'wav' ? t.tools.audiotrim.wavDesc : t.tools.audiotrim.mp3Desc}
+                      {exportFormat === 'wav'
+                        ? t.tools.audiotrim.wavDesc
+                        : t.tools.audiotrim.mp3Desc}
                     </p>
                   </div>
                 </div>
@@ -700,8 +765,14 @@ export const AudioTrimTool: React.FC = () => {
                   disabled={isExporting}
                   className="w-full flex items-center justify-center gap-3 px-8 py-4 bg-tool-audiotrim hover:opacity-90 text-white font-black rounded-2xl transition-all disabled:opacity-50 shadow-xl shadow-tool-audiotrim/10 active:scale-95"
                 >
-                  {isExporting ? <Clock className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
-                  <span>{t.tools.audiotrim.exportAs} {exportFormat.toUpperCase()}</span>
+                  {isExporting ? (
+                    <Clock className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Download className="w-5 h-5" />
+                  )}
+                  <span>
+                    {t.tools.audiotrim.exportAs} {exportFormat.toUpperCase()}
+                  </span>
                 </button>
               </div>
             </div>
@@ -709,7 +780,6 @@ export const AudioTrimTool: React.FC = () => {
         )}
 
         <audio ref={audioRef} className="hidden" />
-
       </div>
 
       <ConfirmationModal
@@ -722,6 +792,6 @@ export const AudioTrimTool: React.FC = () => {
         cancelLabel={t.common.cancel}
         Icon={Trash2}
       />
-    </div >
+    </div>
   );
 };

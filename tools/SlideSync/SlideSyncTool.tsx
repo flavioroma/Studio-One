@@ -29,7 +29,7 @@ export const SlideSyncTool: React.FC = () => {
       if (slides.length === 0 || !activeSlideId) return;
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return;
 
-      const currentIndex = slides.findIndex(s => s.id === activeSlideId);
+      const currentIndex = slides.findIndex((s) => s.id === activeSlideId);
 
       if (e.key === 'ArrowLeft') {
         const nextIndex = Math.max(0, currentIndex - 1);
@@ -55,7 +55,7 @@ export const SlideSyncTool: React.FC = () => {
             audio.ontimeupdate = null;
             audio.currentTime = 0;
             setAudioDuration(audio.duration);
-          }
+          };
         } else {
           setAudioDuration(audio.duration);
         }
@@ -71,7 +71,6 @@ export const SlideSyncTool: React.FC = () => {
     }
   }, [audioFile]);
 
-
   // Persistence Logic
   const isLoadedRef = useRef(false);
 
@@ -81,9 +80,9 @@ export const SlideSyncTool: React.FC = () => {
       const state = await PersistenceService.loadState();
       if (state) {
         // Restore slides with new Object URLs
-        const restoredSlides = state.slides.map(s => ({
+        const restoredSlides = state.slides.map((s) => ({
           ...s,
-          previewUrl: URL.createObjectURL(s.file)
+          previewUrl: URL.createObjectURL(s.file),
         }));
 
         setSlides(restoredSlides);
@@ -105,7 +104,7 @@ export const SlideSyncTool: React.FC = () => {
       PersistenceService.saveState({
         slides,
         audioFile,
-        aspectRatio
+        aspectRatio,
       });
     }, 2000); // 2 seconds debounce
 
@@ -114,7 +113,7 @@ export const SlideSyncTool: React.FC = () => {
   useEffect(() => {
     if (!activeSlideId || slides.length === 0 || audioDuration === 0) return;
 
-    const index = slides.findIndex(s => s.id === activeSlideId);
+    const index = slides.findIndex((s) => s.id === activeSlideId);
     if (index !== -1) {
       const slideDuration = audioDuration / slides.length;
       const startTime = index * slideDuration;
@@ -186,7 +185,7 @@ export const SlideSyncTool: React.FC = () => {
       const caption = await generateCaptionForImage(slide.file);
       updateSlide(id, { text: caption });
     } catch (error) {
-      console.error("Failed to generate caption", error);
+      console.error('Failed to generate caption', error);
       alert(t.tools.slidesync.captionError);
     } finally {
       setIsProcessing(false);
@@ -196,7 +195,7 @@ export const SlideSyncTool: React.FC = () => {
   const activeSlide = slides.find((s) => s.id === activeSlideId);
 
   const handleEraseProject = () => {
-    slides.forEach(s => URL.revokeObjectURL(s.previewUrl));
+    slides.forEach((s) => URL.revokeObjectURL(s.previewUrl));
     setSlides([]);
     setActiveSlideId(null);
     setAudioFile(null);
@@ -205,8 +204,6 @@ export const SlideSyncTool: React.FC = () => {
     setShowEraseConfirm(false);
     PersistenceService.saveState({ slides: [], audioFile: null, aspectRatio });
   };
-
-
 
   return (
     <div className="flex h-full bg-slate-900 overflow-hidden">
@@ -244,10 +241,16 @@ export const SlideSyncTool: React.FC = () => {
 
         <div className="h-48 bg-slate-800/80 backdrop-blur-sm border-t border-slate-700 p-6">
           <div className="flex justify-between items-center mb-4">
-            <span className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-500">{t.tools.slidesync.timelineSequence}</span>
+            <span className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-500">
+              {t.tools.slidesync.timelineSequence}
+            </span>
             <div className="flex items-center gap-4">
-              <span className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-500">{slides.length} {t.tools.slidesync.slidesCount}</span>
-              <span className="text-[12px] text-slate-400 italic">{t.tools.slidesync.timelineTip}</span>
+              <span className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-500">
+                {slides.length} {t.tools.slidesync.slidesCount}
+              </span>
+              <span className="text-[12px] text-slate-400 italic">
+                {t.tools.slidesync.timelineTip}
+              </span>
             </div>
           </div>
           <Timeline
