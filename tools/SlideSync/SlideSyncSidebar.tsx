@@ -155,7 +155,7 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
             />
             <label
               htmlFor="audio-upload"
-              className={`flex items-center justify-center gap-2 w-full p-3 rounded-xl border border-slate-600 hover:border-tool-slidesync/40 hover:bg-slate-700/50 cursor-pointer transition-all ${audioFile ? 'bg-tool-slidesync/10 border-tool-slidesync/40 text-tool-slidesync/80' : ''}`}
+              className={`flex items-center justify-center gap-2 w-full p-3 rounded-xl border border-slate-600 hover:border-tool-slidesync/40 bg-slate-700/50 cursor-pointer transition-all ${audioFile ? 'bg-tool-slidesync/10 border-tool-slidesync/40 text-tool-slidesync/80' : ''}`}
             >
               <Music className="w-4 h-4" />
               <span className="text-sm truncate max-w-[120px]">{audioFile ? audioFile.name : t.tools.slidesync.selectAudio}</span>
@@ -185,7 +185,7 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
             />
             <label
               htmlFor="img-upload"
-              className="flex items-center justify-center gap-2 w-full p-3 rounded-xl border border-slate-600 hover:border-tool-slidesync/40 hover:bg-slate-700/50 cursor-pointer transition-all"
+              className="flex items-center justify-center gap-2 w-full p-3 rounded-xl border border-slate-600 hover:border-tool-slidesync/40 bg-slate-700/50 cursor-pointer transition-all"
             >
               <Plus className="w-5 h-5" />
               <span className="text-sm font-medium">{t.tools.slidesync.addPhotos}</span>
@@ -202,7 +202,7 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
                 onClick={() => onAspectRatioChange(opt.id)}
                 className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${aspectRatio === opt.id
                   ? 'bg-tool-slidesync/20 border-tool-slidesync text-tool-slidesync shadow-[0_0_15px_rgba(59,130,246,0.2)]'
-                  : 'bg-transparent border-slate-600 hover:border-tool-slidesync/40 hover:bg-slate-700/50'
+                  : 'bg-slate-700/50 border-slate-600 hover:border-tool-slidesync/40'
                   }`}
               >
                 <opt.icon className="w-4 h-4 mb-1" />

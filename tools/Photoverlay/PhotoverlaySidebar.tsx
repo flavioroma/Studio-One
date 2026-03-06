@@ -30,15 +30,15 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
     const { t } = useLanguage();
 
     return (
-        <div className="w-80 border-r border-slate-700 bg-slate-800 flex flex-col p-6 overflow-y-auto z-10 shadow-2xl">
+        <div className="w-80 border-r border-slate-700 bg-slate-800 flex flex-col p-6 overflow-y-auto z-10 shadow-2xl space-y-6">
             {itemsCount > 0 && (
-                <h2 className="text-lg font-bold mb-4 text-slate-100 uppercase tracking-widest text-center">
+                <h2 className="text-lg font-bold text-slate-100 uppercase tracking-widest text-center">
                     {t.tools.photoverlay.overlaySettings}
                 </h2>
             )}
 
             {itemsCount > 0 && (
-                <div className="mb-8 p-4 bg-slate-700/50 rounded-2xl border border-slate-600">
+                <div className="p-4 bg-slate-700/50 rounded-2xl border border-slate-600 hover:border-tool-photoverlay/40 hover:bg-slate-700/50 transition-all">
                     <label className="flex items-center gap-3 cursor-pointer group">
                         <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${applyToAll ? 'bg-tool-photoverlay border-tool-photoverlay' : 'border-slate-500 group-hover:border-tool-photoverlay/80'}`}>
                             {applyToAll && <Check className="w-3.5 h-3.5 text-white stroke-[3px]" />}
@@ -67,7 +67,7 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
                     />
                 </div>
             ) : (
-                <div className="space-y-8 animate-fadeIn">
+                <div className="space-y-8 animate-fadeIn pb-8">
                     <CaptionSettingsPanel
                         settings={selectedItem?.captionSettings || { text: '', color: TextColor.White, position: TextPosition.BottomLeft, textSize: TextSize.Small, isItalic: false }}
                         onUpdate={onCaptionUpdate}

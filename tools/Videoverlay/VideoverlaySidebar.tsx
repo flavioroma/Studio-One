@@ -1,6 +1,6 @@
 import React from 'react';
-import { Upload, Trash2, Monitor, Smartphone, Smartphone as SmartphoneIcon, Square, Volume2, VolumeX, Music, Video as VideoIcon } from 'lucide-react';
-import { AspectRatio, Rotation, AudioMode, TextColor, TextPosition, TextSize, CaptionSettings, WatermarkSettings } from '../../types';
+import { Trash2, Volume2, VolumeX, Music } from 'lucide-react';
+import { Rotation, AudioMode, CaptionSettings, WatermarkSettings } from '../../types';
 import { CaptionSettingsPanel } from '../../components/CaptionSettingsPanel';
 import { WatermarkSettingsPanel } from '../../components/WatermarkSettingsPanel';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -8,7 +8,6 @@ import { FileDropZone } from '../../components/FileDropZone';
 
 interface VideoverlaySidebarProps {
     file: File | null;
-    metadata: { width: number; height: number; duration?: number; bitrate?: number } | null;
     rotation: Rotation;
     audioMode: AudioMode;
     audioFile: File | null;
@@ -26,7 +25,6 @@ interface VideoverlaySidebarProps {
 
 export const VideoverlaySidebar: React.FC<VideoverlaySidebarProps> = ({
     file,
-    metadata,
     rotation,
     audioMode,
     audioFile,
@@ -57,7 +55,7 @@ export const VideoverlaySidebar: React.FC<VideoverlaySidebarProps> = ({
     ];
 
     return (
-        <div className="w-80 border-r border-slate-700 bg-slate-800 flex flex-col p-6 overflow-y-auto z-10 shadow-2xl">
+        <div className="w-80 border-r border-slate-700 bg-slate-800 flex flex-col p-6 overflow-y-auto z-10 shadow-2xl space-y-6">
             {!file ? (
                 <div className="space-y-6">
                     <FileDropZone
@@ -73,7 +71,7 @@ export const VideoverlaySidebar: React.FC<VideoverlaySidebarProps> = ({
                     />
                 </div>
             ) : (
-                <div className="space-y-8 animate-fadeIn">
+                <div className="space-y-8 animate-fadeIn pb-8">
                     {/* Rotation Settings */}
                     <div className="space-y-4">
                         <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">{t.tools.videoverlay.rotation}</h3>
@@ -84,7 +82,7 @@ export const VideoverlaySidebar: React.FC<VideoverlaySidebarProps> = ({
                                     onClick={() => onRotationChange(opt.id as Rotation)}
                                     className={`flex items-center justify-center gap-2 p-2 rounded-xl border transition-all ${rotation === opt.id
                                         ? 'bg-tool-videoverlay/20 border-tool-videoverlay text-tool-videoverlay shadow-[0_0_15px_rgba(168,85,247,0.2)]'
-                                        : 'bg-slate-700/50 border-slate-600 hover:border-slate-500'
+                                        : 'bg-slate-700/50 border-slate-600 hover:border-tool-videoverlay/40 hover:bg-slate-700/50'
                                         }`}
                                 >
                                     <span className="text-[10px] font-bold uppercase">{opt.label}</span>
@@ -103,7 +101,7 @@ export const VideoverlaySidebar: React.FC<VideoverlaySidebarProps> = ({
                                     onClick={() => onAudioModeChange(opt.id as AudioMode)}
                                     className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${audioMode === opt.id
                                         ? 'bg-tool-videoverlay/20 border-tool-videoverlay text-tool-videoverlay shadow-[0_0_15px_rgba(168,85,247,0.2)]'
-                                        : 'bg-slate-700/50 border-slate-600 hover:border-slate-500'
+                                        : 'bg-slate-700/50 border-slate-600 hover:border-tool-videoverlay/40 hover:bg-slate-700/50'
                                         }`}
                                 >
                                     <opt.icon className="w-4 h-4 mb-1" />
@@ -123,7 +121,7 @@ export const VideoverlaySidebar: React.FC<VideoverlaySidebarProps> = ({
                                 />
                                 <label
                                     htmlFor="audio-upload"
-                                    className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border border-slate-600 cursor-pointer hover:bg-slate-700/50 transition-all ${audioFile ? 'bg-tool-videoverlay/10 border-tool-videoverlay text-tool-videoverlay' : ''}`}
+                                    className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border border-slate-600 cursor-pointer hover:border-tool-videoverlay/40 bg-slate-700/50 transition-all ${audioFile ? 'bg-tool-videoverlay/10 border-tool-videoverlay text-tool-videoverlay' : ''}`}
                                 >
                                     <Music className="w-4 h-4" />
                                     <span className="text-sm truncate max-w-[120px]">{audioFile ? audioFile.name : t.tools.videoverlay.selectAudio}</span>
