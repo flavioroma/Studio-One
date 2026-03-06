@@ -31,17 +31,49 @@ export const WatermarkSettingsPanel: React.FC<WatermarkSettingsPanelProps> = ({
         }
     };
 
+    const themeClasses = {
+        'tool-audiotrim': {
+            borderHover: 'hover:border-tool-audiotrim',
+            text: 'text-tool-audiotrim',
+            accent: 'accent-tool-audiotrim',
+            ring: 'focus:ring-tool-audiotrim'
+        },
+        'tool-slidesync': {
+            borderHover: 'hover:border-tool-slidesync',
+            text: 'text-tool-slidesync',
+            accent: 'accent-tool-slidesync',
+            ring: 'focus:ring-tool-slidesync'
+        },
+        'tool-photoverlay': {
+            borderHover: 'hover:border-tool-photoverlay',
+            text: 'text-tool-photoverlay',
+            accent: 'accent-tool-photoverlay',
+            ring: 'focus:ring-tool-photoverlay'
+        },
+        'tool-videoverlay': {
+            borderHover: 'hover:border-tool-videoverlay',
+            text: 'text-tool-videoverlay',
+            accent: 'accent-tool-videoverlay',
+            ring: 'focus:ring-tool-videoverlay'
+        }
+    }[themeColor] || {
+        borderHover: 'hover:border-blue-500',
+        text: 'text-blue-500',
+        accent: 'accent-blue-500',
+        ring: 'focus:ring-blue-500'
+    };
+
     if (!settings.file) {
         return (
             <div className="space-y-4 pt-4 border-t border-slate-700 animate-fadeIn">
                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                     <ImageIcon className="w-3 h-3" /> {t.watermark.title}
                 </h3>
-                <label className={`flex flex-col items-center justify-center gap-3 w-full h-24 rounded-2xl border-2 border-slate-700 hover:border-${themeColor} hover:bg-slate-700/30 cursor-pointer transition-all group`}>
+                <label className={`flex flex-col items-center justify-center gap-3 w-full h-24 rounded-2xl border-1 border-slate-700 ${themeClasses.borderHover} hover:bg-slate-700/30 cursor-pointer transition-all group`}>
                     <div className="p-2 bg-slate-800 rounded-full group-hover:scale-110 transition-transform">
-                        <Upload className={`w-4 h-4 text-${themeColor}`} />
+                        <Upload className={`w-4 h-4 ${themeClasses.text}`} />
                     </div>
-                    <span className={`text-[10px] font-bold text-slate-500 group-hover:text-${themeColor} uppercase tracking-wider`}>{t.watermark.upload}</span>
+                    <span className={`text-[10px] font-bold text-slate-500 group-hover:${themeClasses.text} uppercase tracking-wider`}>{t.watermark.upload}</span>
                     <input
                         ref={fileInputRef}
                         type="file"
@@ -91,7 +123,7 @@ export const WatermarkSettingsPanel: React.FC<WatermarkSettingsPanelProps> = ({
                     <select
                         value={settings.position}
                         onChange={(e) => onUpdate({ position: e.target.value as TextPosition })}
-                        className={`w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-[11px] font-bold focus:ring-2 focus:ring-${themeColor} focus:outline-none appearance-none`}
+                        className={`w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-[11px] font-bold focus:ring-2 ${themeClasses.ring} focus:outline-none appearance-none`}
                     >
                         {Object.values(TextPosition).map((pos) => (
                             <option key={pos} value={pos}>{t.captions.textPositions[pos]}</option>
@@ -112,7 +144,7 @@ export const WatermarkSettingsPanel: React.FC<WatermarkSettingsPanelProps> = ({
                         step="1"
                         value={settings.scale * 100}
                         onChange={(e) => onUpdate({ scale: parseInt(e.target.value) / 100 })}
-                        className={`w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-${themeColor}`}
+                        className={`w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer ${themeClasses.accent}`}
                     />
                 </div>
 
@@ -129,7 +161,7 @@ export const WatermarkSettingsPanel: React.FC<WatermarkSettingsPanelProps> = ({
                         step="1"
                         value={settings.opacity * 100}
                         onChange={(e) => onUpdate({ opacity: parseInt(e.target.value) / 100 })}
-                        className={`w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-${themeColor}`}
+                        className={`w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer ${themeClasses.accent}`}
                     />
                 </div>
             </div>

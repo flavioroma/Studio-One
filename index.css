@@ -8,8 +8,8 @@
 }
 
 @theme {
-  --color-tool-audiotrim: rgb(var(--tool-audiotrim));
-  --color-tool-slidesync: rgb(var(--tool-slidesync));
-  --color-tool-photoverlay: rgb(var(--tool-photoverlay));
-  --color-tool-videoverlay: rgb(var(--tool-videoverlay));
+  --color-tool-audiotrim: #10b981;
+  --color-tool-slidesync: #3b82f6;
+  --color-tool-photoverlay: #ec4899;
+  --color-tool-videoverlay: #a855f7;
 }

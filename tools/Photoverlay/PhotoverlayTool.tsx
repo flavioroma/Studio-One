@@ -578,7 +578,7 @@ export const PhotoverlayTool: React.FC = () => {
                                             </button>
                                         </div>
                                     ))}
-                                    <label className="flex-shrink-0 h-24 aspect-square rounded-lg border-2 border-dashed border-slate-700 hover:border-tool-photoverlay/50 hover:bg-slate-800/50 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all">
+                                    <label className="flex-shrink-0 h-24 aspect-square rounded-lg border-2 border-slate-700 hover:border-tool-photoverlay/50 hover:bg-slate-800/50 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all">
                                         <Plus className="w-5 h-5 text-slate-500" />
                                         <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter">{t.common.addMore}</span>
                                         <input type="file" accept="image/*" multiple onChange={handleFileChange} className="hidden" />

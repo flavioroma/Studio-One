@@ -201,7 +201,7 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
                 key={opt.id}
                 onClick={() => onAspectRatioChange(opt.id)}
                 className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${aspectRatio === opt.id
-                  ? 'bg-tool-slidesync/20 border-tool-slidesync text-tool-slidesync shadow-[0_0_15px_rgb(var(--tool-slidesync)/0.2)]'
+                  ? 'bg-tool-slidesync/20 border-tool-slidesync text-tool-slidesync shadow-[0_0_15px_rgba(59,130,246,0.2)]'
                   : 'bg-transparent border-slate-600 hover:border-tool-slidesync/40 hover:bg-slate-700/50'
                   }`}
               >

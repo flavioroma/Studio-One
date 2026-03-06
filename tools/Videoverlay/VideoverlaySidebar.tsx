@@ -83,7 +83,7 @@ export const VideoverlaySidebar: React.FC<VideoverlaySidebarProps> = ({
                                     key={opt.id}
                                     onClick={() => onRotationChange(opt.id as Rotation)}
                                     className={`flex items-center justify-center gap-2 p-2 rounded-xl border transition-all ${rotation === opt.id
-                                        ? 'bg-tool-videoverlay/20 border-tool-videoverlay text-tool-videoverlay shadow-[0_0_15px_rgba(var(--tool-videoverlay),0.2)]'
+                                        ? 'bg-tool-videoverlay/20 border-tool-videoverlay text-tool-videoverlay shadow-[0_0_15px_rgba(168,85,247,0.2)]'
                                         : 'bg-slate-700/50 border-slate-600 hover:border-slate-500'
                                         }`}
                                 >
@@ -102,7 +102,7 @@ export const VideoverlaySidebar: React.FC<VideoverlaySidebarProps> = ({
                                     key={opt.id}
                                     onClick={() => onAudioModeChange(opt.id as AudioMode)}
                                     className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${audioMode === opt.id
-                                        ? 'bg-tool-videoverlay/20 border-tool-videoverlay text-tool-videoverlay shadow-[0_0_15px_rgba(var(--tool-videoverlay),0.2)]'
+                                        ? 'bg-tool-videoverlay/20 border-tool-videoverlay text-tool-videoverlay shadow-[0_0_15px_rgba(168,85,247,0.2)]'
                                         : 'bg-slate-700/50 border-slate-600 hover:border-slate-500'
                                         }`}
                                 >
