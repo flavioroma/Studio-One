@@ -173,25 +173,6 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-400">{t.tools.slidesync.videoFormat}</label>
-          <div className="grid grid-cols-2 gap-2">
-            {formatOptions.map((opt) => (
-              <button
-                key={opt.id}
-                onClick={() => onAspectRatioChange(opt.id)}
-                className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${aspectRatio === opt.id
-                  ? 'bg-tool-slidesync/20 border-tool-slidesync text-tool-slidesync shadow-[0_0_15px_rgba(var(--tool-slidesync),0.2)]'
-                  : 'bg-slate-700/50 border-slate-600 hover:border-slate-500'
-                  }`}
-              >
-                <opt.icon className="w-4 h-4 mb-1" />
-                <span className="text-[10px] font-bold uppercase">{opt.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-2">
           <label className="text-sm font-semibold text-slate-400">{t.tools.slidesync.uploadPhotos}</label>
           <div className="relative group">
             <input
@@ -209,6 +190,25 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
               <Plus className="w-5 h-5" />
               <span className="text-sm font-medium">{t.tools.slidesync.addMedia}</span>
             </label>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-semibold text-slate-400">{t.tools.slidesync.videoFormat}</label>
+          <div className="grid grid-cols-2 gap-2">
+            {formatOptions.map((opt) => (
+              <button
+                key={opt.id}
+                onClick={() => onAspectRatioChange(opt.id)}
+                className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${aspectRatio === opt.id
+                  ? 'bg-tool-slidesync/20 border-tool-slidesync text-tool-slidesync shadow-[0_0_15px_rgba(var(--tool-slidesync),0.2)]'
+                  : 'bg-slate-700/50 border-slate-600 hover:border-slate-500'
+                  }`}
+              >
+                <opt.icon className="w-4 h-4 mb-1" />
+                <span className="text-[10px] font-bold uppercase">{opt.label}</span>
+              </button>
+            ))}
           </div>
         </div>
       </div>
