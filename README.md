@@ -1,6 +1,7 @@
 # Studio One
 Created by Flavio Biundo - powered by Google Antigravity.
-**Studio One** is a sleek, modern suite of media tools providing a seamless experience for processing photos, videos, and audio directly in your browser.
+
+**Studio One** is a sleek, modern suite of tools for processing photos, videos, and audio directly in your browser.
 
 ## 🛠️ Built With
 
