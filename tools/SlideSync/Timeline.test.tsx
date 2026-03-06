@@ -96,8 +96,15 @@ describe('Timeline', () => {
         expect(screen.getAllByTitle(/Has text/i).length).toBe(1);
     });
 
-    it('renders the "Add More" button at the end', () => {
-        renderWithContext();
+    it('renders the "Add More" button only when slides are present', () => {
+        const { rerender } = renderWithContext({ ...defaultProps, slides: [] });
+        expect(screen.queryByText(/Add More/i)).not.toBeInTheDocument();
+
+        rerender(
+            <LanguageProvider>
+                <Timeline {...defaultProps} />
+            </LanguageProvider>
+        );
         expect(screen.getByText(/Add More/i)).toBeInTheDocument();
     });
 });
