@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, Image as ImageIcon, Download, Trash2, Loader2, Move, Calendar, MapPin, Monitor, Plus, Check } from 'lucide-react';
+import { Image as ImageIcon, Download, Trash2, Loader2, Calendar, MapPin, Monitor, Plus, Check } from 'lucide-react';
 import { TextPosition, TextColor, TextSize, PhotoItem, CaptionSettings, WatermarkSettings } from '../../types';
 import { PersistenceService } from '../../services/PersistenceService';
 import { calculateCaptionMetrics, calculateCaptionPosition, calculateWatermarkPosition } from '../../utils/captionUtils';

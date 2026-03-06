@@ -1,11 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, Video as VideoIcon, Download, Trash2, RotateCcw, Loader2, AlertTriangle, Calendar, Monitor, Smartphone, Smartphone as SmartphoneIcon, Square, Volume2, VolumeX, Music, RotateCw, Flag, ChevronLeft, ChevronRight, Play, Pause } from 'lucide-react';
-import { PlaybackControls } from '../../components/PlaybackControls';
+import { Video as VideoIcon, Download, Trash2, RotateCcw, Loader2, AlertTriangle, Calendar, Flag, ChevronLeft, ChevronRight, Play, Pause } from 'lucide-react';
 import { MetadataService, VideoMetadata } from '../../services/MetadataService';
-import { TextPosition, TextColor, TextSize, AspectRatio, Rotation, AudioMode, CaptionSettings, WatermarkSettings } from '../../types';
+import { TextPosition, TextColor, TextSize, Rotation, AudioMode, CaptionSettings, WatermarkSettings } from '../../types';
 import { PersistenceService } from '../../services/PersistenceService';
 import { Mp4ExportService } from '../../services/Mp4ExportService';
-import { calculateCaptionMetrics, calculateCaptionPosition, calculateWatermarkPosition } from '../../utils/captionUtils';
+import { calculateCaptionMetrics } from '../../utils/captionUtils';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { VideoverlaySidebar } from './VideoverlaySidebar';

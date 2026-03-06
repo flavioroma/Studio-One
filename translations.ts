@@ -327,7 +327,7 @@ export const translations = {
                 centerX: 'Centra X',
                 centerY: 'Centra Y',
                 resetFraming: 'Ripristina Inquadratura',
-                noSlidesAdded: 'Nessuna foito aggiunta. Trascina le immagini per iniziare.',
+                noSlidesAdded: 'Nessuna foto aggiunta. Trascina le immagini per iniziare.',
                 hasText: 'Contiene testo',
                 addMediaToStart: 'Aggiungi media per iniziare',
                 addAudioToStart: 'Aggiungi audio per iniziare',
