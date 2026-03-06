@@ -1,4 +1,5 @@
 # Studio One
+
 Created by Flavio Biundo - powered by Google Antigravity.
 
 **Studio One** is a sleek, modern suite of tools for processing photos, videos, and audio directly in your browser.
@@ -20,12 +21,14 @@ You will need [Node.js](https://nodejs.org/) (LTS version recommended).
 ### Installation
 
 1. **Clone the repository:**
+
    ```bash
    git clone <repository-url>
    cd StudioOne
    ```
 
 2. **Install dependencies:**
+
    ```bash
    npm install
    ```

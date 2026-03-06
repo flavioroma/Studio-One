@@ -239,10 +239,11 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
               <button
                 key={opt.id}
                 onClick={() => onAspectRatioChange(opt.id)}
-                className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${aspectRatio === opt.id
-                  ? 'bg-tool-slidesync/20 border-tool-slidesync text-tool-slidesync shadow-[0_0_15px_rgba(59,130,246,0.2)]'
-                  : 'bg-slate-700/50 border-slate-600 hover:border-tool-slidesync/40'
-                  }`}
+                className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${
+                  aspectRatio === opt.id
+                    ? 'bg-tool-slidesync/20 border-tool-slidesync text-tool-slidesync shadow-[0_0_15px_rgba(59,130,246,0.2)]'
+                    : 'bg-slate-700/50 border-slate-600 hover:border-tool-slidesync/40'
+                }`}
               >
                 <opt.icon className="w-4 h-4 mb-1" />
                 <span className="text-[10px] font-bold uppercase">{opt.label}</span>

@@ -1,12 +1,5 @@
 import React from 'react';
-import {
-  Video,
-  ArrowRight,
-  Sparkles,
-  Scissors,
-  Layers,
-  Image as ImageIcon,
-} from 'lucide-react';
+import { Video, ArrowRight, Sparkles, Scissors, Layers, Image as ImageIcon } from 'lucide-react';
 import { ToolId } from '../App';
 import { useLanguage } from '../contexts/LanguageContext';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
