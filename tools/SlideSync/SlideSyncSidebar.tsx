@@ -172,7 +172,7 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
       </div>
 
       <div className="space-y-6">
-        <div className="space-y-2">
+        <div className="flex flex-col gap-4">
           <label className="text-sm font-semibold text-slate-400">
             {t.tools.slidesync.backgroundMusic}
             <br />
@@ -207,9 +207,9 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="flex flex-col gap-4">
           <label className="text-sm font-semibold text-slate-400">
-            {t.tools.slidesync.uploadPhotos}
+            {t.tools.slidesync.uploadImages}
           </label>
           <div className="relative group">
             <input
@@ -225,12 +225,12 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
               className="flex items-center justify-center gap-2 w-full p-3 rounded-xl border border-slate-600 hover:border-tool-slidesync/40 bg-slate-700/50 cursor-pointer transition-all"
             >
               <Plus className="w-5 h-5" />
-              <span className="text-sm font-medium">{t.tools.slidesync.addPhotos}</span>
+              <span className="text-sm font-medium">{t.tools.slidesync.addImages}</span>
             </label>
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="flex flex-col gap-4">
           <label className="text-sm font-semibold text-slate-400">
             {t.tools.slidesync.videoFormat}
           </label>
@@ -239,11 +239,10 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
               <button
                 key={opt.id}
                 onClick={() => onAspectRatioChange(opt.id)}
-                className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${
-                  aspectRatio === opt.id
-                    ? 'bg-tool-slidesync/20 border-tool-slidesync text-tool-slidesync shadow-[0_0_15px_rgba(59,130,246,0.2)]'
-                    : 'bg-slate-700/50 border-slate-600 hover:border-tool-slidesync/40'
-                }`}
+                className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${aspectRatio === opt.id
+                  ? 'bg-tool-slidesync/20 border-tool-slidesync text-tool-slidesync shadow-[0_0_15px_rgba(59,130,246,0.2)]'
+                  : 'bg-slate-700/50 border-slate-600 hover:border-tool-slidesync/40'
+                  }`}
               >
                 <opt.icon className="w-4 h-4 mb-1" />
                 <span className="text-[10px] font-bold uppercase">{opt.label}</span>

@@ -74,7 +74,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
       ctx.font = 'bold 40px Inter, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(
-        slides.length === 0 ? t.tools.slidesync.addMediaToStart : t.tools.slidesync.addAudioToStart,
+        slides.length === 0 ? audioRef.current ? t.tools.slidesync.addImagesToStart : t.tools.slidesync.addMediaToStart : t.tools.slidesync.addAudioToStart,
         CANVAS_WIDTH / 2,
         CANVAS_HEIGHT / 2
       );
@@ -110,7 +110,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
       const userY = (offsetY / 100) * CANVAS_HEIGHT;
 
       ctx.drawImage(img, baseX + userX, baseY + userY, w, h);
-    } catch (e) {}
+    } catch (e) { }
 
     if (currentSlide.text) {
       ctx.fillStyle = currentSlide.color;
@@ -372,11 +372,10 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
             <button
               key={fmt}
               onClick={() => setExportFormat(fmt)}
-              className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-all ${
-                exportFormat === fmt
-                  ? 'bg-tool-slidesync text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
+              className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-all ${exportFormat === fmt
+                ? 'bg-tool-slidesync text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+                }`}
               title={
                 fmt === ExportFormat.MP4
                   ? t.tools.slidesync.exportAsMp4

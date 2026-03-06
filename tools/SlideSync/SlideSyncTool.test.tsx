@@ -36,7 +36,7 @@ describe('SlideSyncTool', () => {
   it('shows the editor after uploading images', async () => {
     renderWithContext();
     const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
-    const input = screen.getByLabelText(/Add Photos/i) as HTMLInputElement;
+    const input = screen.getByLabelText(/Add Images/i) as HTMLInputElement;
 
     fireEvent.change(input, { target: { files: [file] } });
 

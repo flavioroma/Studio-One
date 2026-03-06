@@ -44,7 +44,7 @@ describe('SlideSyncSidebar', () => {
   it('renders basic upload controls', () => {
     renderWithContext();
     expect(screen.getByText(/1\. Background music/i)).toBeInTheDocument();
-    expect(screen.getByText(/2\. Photos/i)).toBeInTheDocument();
+    expect(screen.getByText(/2\. Images/i)).toBeInTheDocument();
     expect(screen.getByText(/3\. Choose video format/i)).toBeInTheDocument();
   });
 
