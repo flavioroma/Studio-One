@@ -81,6 +81,12 @@ export const FileDropZone: React.FC<FileDropZoneProps> = ({
       hoverBorder: 'hover:border-tool-videoverlay',
       text: 'text-tool-videoverlay',
     },
+    'tool-picollage': {
+      border: 'border-tool-picollage',
+      bg: 'bg-tool-picollage/10',
+      hoverBorder: 'hover:border-tool-picollage',
+      text: 'text-tool-picollage',
+    },
   }[themeColor] || {
     border: 'border-slate-600',
     bg: 'bg-slate-700/10',

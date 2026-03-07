@@ -1,5 +1,13 @@
 import React from 'react';
-import { Video, ArrowRight, Sparkles, Scissors, Layers, Image as ImageIcon } from 'lucide-react';
+import {
+  Video,
+  ArrowRight,
+  Sparkles,
+  Scissors,
+  Layers,
+  Image as ImageIcon,
+  LayoutGrid,
+} from 'lucide-react';
 import { ToolId } from '../App';
 import { useLanguage } from '../contexts/LanguageContext';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
@@ -46,6 +54,15 @@ export const Home: React.FC<HomeProps> = ({ onSelectTool }) => {
       icon: ImageIcon,
       color: 'bg-tool-photoverlay',
       hoverBorder: 'hover:border-tool-photoverlay/50',
+      badge: t.home.badges.new,
+    },
+    {
+      id: 'picollage' as ToolId,
+      name: t.tools.picollage.title,
+      description: t.home.picollage.description,
+      icon: LayoutGrid,
+      color: 'bg-tool-picollage',
+      hoverBorder: 'hover:border-tool-picollage/50',
       badge: t.home.badges.new,
     },
   ];

@@ -5,6 +5,7 @@
   --tool-slidesync: 59 130 246; /* Blue 500 */
   --tool-photoverlay: 236 72 153; /* Pink 500 */
   --tool-videoverlay: 168 85 247; /* Purple 500 */
+  --tool-picollage: 234 179 8; /* Yellow 500 (eab308) */
 }
 
 @theme {
@@ -12,4 +13,5 @@
   --color-tool-slidesync: #3b82f6;
   --color-tool-photoverlay: #ec4899;
   --color-tool-videoverlay: #a855f7;
+  --color-tool-picollage: #eab308;
 }

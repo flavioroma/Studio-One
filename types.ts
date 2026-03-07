@@ -110,3 +110,43 @@ export interface PhotoItem {
   metadata: { width: number; height: number } | null;
   exifData: any | null;
 }
+
+export enum BorderSize {
+  None = 0,
+  Small = 8,
+  Medium = 16,
+  Large = 32,
+}
+
+export enum FilterMode {
+  Normal = 'normal',
+  Grayscale = 'grayscale',
+  Sepia = 'sepia',
+}
+
+export interface PiCollagePicture {
+  id: string;
+  file: File;
+  previewUrl: string;
+
+  // Transform and Framing
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  scaleX: number;
+  scaleY: number;
+  zoom: number; // For the image inside its frame
+  offsetX: number; // Pan center X
+  offsetY: number; // Pan center Y
+
+  // Properties
+  borderSize: BorderSize;
+  borderColor: TextColor;
+  filter: FilterMode;
+
+  // State
+  zIndex: number;
+  isVisible: boolean;
+}
