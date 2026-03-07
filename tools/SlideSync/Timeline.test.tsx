@@ -59,7 +59,7 @@ describe('Timeline', () => {
 
   it('shows "no slides" message when empty', () => {
     renderWithContext({ ...defaultProps, slides: [] });
-    expect(screen.getByText(/No slides added yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/No slides yet. Add images to start/i)).toBeInTheDocument();
   });
 
   it('calls onSelectSlide when a slide is clicked', () => {

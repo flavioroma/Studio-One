@@ -30,7 +30,7 @@ describe('SlideSyncTool', () => {
 
   it('renders the initial empty state', () => {
     renderWithContext();
-    expect(screen.getByText(/No slides added|Nessuna slide/i)).toBeInTheDocument();
+    expect(screen.getByText(/No slides yet. Add images to start/i)).toBeInTheDocument();
   });
 
   it('shows the editor after uploading images', async () => {
