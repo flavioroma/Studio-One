@@ -81,6 +81,11 @@ export const translations = {
       clientSideTitle: '100% Client-Side',
       clientSideDesc:
         'No servers involved - All processing happens directly in your browser, keeping your data private',
+      donation: {
+        title: 'More tools coming soon',
+        description: 'Please feel free to help this project with voluntary donations',
+        link: 'Help the project',
+      },
     },
     tools: {
       audiotrim: {
@@ -340,6 +345,11 @@ export const translations = {
       clientSideTitle: '100% Lato Client',
       clientSideDesc:
         "Nessun server coinvolto - L'elaborazione avviene localmente nel browser, mantenendo i tuoi dati privati",
+      donation: {
+        title: 'Altri strumenti in arrivo presto',
+        description: 'Sentiti libero di aiutare questo progetto con donazioni volontarie',
+        link: 'Aiuta il progetto',
+      },
     },
     tools: {
       audiotrim: {

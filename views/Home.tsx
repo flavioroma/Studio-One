@@ -7,6 +7,7 @@ import {
   Layers,
   Image as ImageIcon,
   LayoutGrid,
+  Heart,
 } from 'lucide-react';
 import { ToolId } from '../App';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -65,6 +66,16 @@ export const Home: React.FC<HomeProps> = ({ onSelectTool }) => {
       hoverBorder: 'hover:border-tool-picollage/50',
       badge: t.home.badges.new,
     },
+    {
+      id: 'donation' as ToolId,
+      name: t.home.donation.title,
+      description: t.home.donation.description,
+      icon: Heart,
+      color: 'bg-orange-500',
+      hoverBorder: 'hover:border-orange-500/50',
+      badge: '', // No badge needed
+      linkText: t.home.donation.link,
+    },
   ];
 
   return (
@@ -81,7 +92,7 @@ export const Home: React.FC<HomeProps> = ({ onSelectTool }) => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl w-full">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl w-full">
         {tools.map((tool) => (
           <button
             key={tool.id}
@@ -104,7 +115,7 @@ export const Home: React.FC<HomeProps> = ({ onSelectTool }) => {
             <p className="text-slate-400 text-sm leading-relaxed mb-8 flex-1">{tool.description}</p>
 
             <div className="flex items-center gap-2 text-slate-400 text-sm font-bold group-hover:gap-4 transition-all">
-              <span>{t.common.openTool}</span>
+              <span>{tool.linkText || t.common.openTool}</span>
               <ArrowRight className="w-4 h-4" />
             </div>
 
