@@ -14,6 +14,7 @@ import { FileDropZone } from '../../components/FileDropZone';
 import { PersistenceService } from '../../services/PersistenceService';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
+import * as lamejs from '@breezystack/lamejs';
 
 type ExportFormat = 'wav' | 'mp3';
 
@@ -33,7 +34,10 @@ export const AudioTrimTool: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
+  const startTimeRef = useRef(0);
+
   const animationRef = useRef<number | null>(null);
   const startInputRef = useRef<HTMLInputElement>(null);
   const endInputRef = useRef<HTMLInputElement>(null);
@@ -44,6 +48,13 @@ export const AudioTrimTool: React.FC = () => {
     const secs = Math.floor(seconds % 60);
     const ms = Math.floor((seconds % 1) * 100);
     return `${mins}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+  };
+
+  const formatTimeForFilename = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    const ms = Math.floor((seconds % 1) * 100);
+    return `${mins}m${secs.toString().padStart(2, '0')}s${ms.toString().padStart(2, '0')}`;
   };
 
   /**
@@ -101,9 +112,9 @@ export const AudioTrimTool: React.FC = () => {
       setEndTime(buffer.duration);
       setCurrentTime(0);
 
-      if (audioRef.current) {
-        audioRef.current.src = URL.createObjectURL(selectedFile);
-        audioRef.current.currentTime = 0;
+      // Initialize AudioContext
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       }
     } catch (e) {
       console.error('Decoding error:', e);
@@ -153,40 +164,63 @@ export const AudioTrimTool: React.FC = () => {
     }
   };
 
-  const togglePlay = (mode: 'selection' | 'all') => {
-    if (!audioRef.current) return;
+  const stopAudio = () => {
+    if (sourceNodeRef.current) {
+      try {
+        sourceNodeRef.current.stop();
+      } catch (e) { }
+      sourceNodeRef.current.disconnect();
+      sourceNodeRef.current = null;
+    }
+    setIsPlaying(false);
+  };
 
+  const startPlayback = (time: number, mode: 'selection' | 'all') => {
+    stopAudio();
+    if (!audioCtxRef.current || !audioBuffer) return;
+
+    if (audioCtxRef.current.state === 'suspended') {
+      audioCtxRef.current.resume();
+    }
+
+    const source = audioCtxRef.current.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(audioCtxRef.current.destination);
+
+    source.start(0, time);
+    sourceNodeRef.current = source;
+    startTimeRef.current = audioCtxRef.current.currentTime - time;
+    setIsPlaying(true);
+    setPlayMode(mode);
+  };
+
+  const togglePlay = (mode: 'selection' | 'all') => {
     if (isPlaying && mode === playMode) {
-      audioRef.current.pause();
-      setIsPlaying(false);
+      stopAudio();
     } else {
-      setPlayMode(mode);
-      if (mode === 'selection') {
-        if (audioRef.current.currentTime >= endTime || audioRef.current.currentTime < startTime) {
-          audioRef.current.currentTime = startTime;
-        }
+      let startPosition = mode === 'selection' ? Math.max(startTime, currentTime) : currentTime;
+      if (mode === 'selection' && startPosition >= endTime) {
+        startPosition = startTime;
       }
-      audioRef.current.play();
-      setIsPlaying(true);
+      if (mode === 'all' && startPosition >= (audioBuffer?.duration || 0)) {
+        startPosition = 0;
+      }
+      startPlayback(startPosition, mode);
     }
   };
 
   useEffect(() => {
-    if (!audioRef.current) return;
-
     const updateProgress = () => {
-      if (audioRef.current) {
-        const time = audioRef.current.currentTime;
-        setCurrentTime(time);
+      if (isPlaying && audioCtxRef.current && sourceNodeRef.current) {
+        const elapsed = audioCtxRef.current.currentTime - startTimeRef.current;
+        setCurrentTime(elapsed);
 
-        if (playMode === 'selection' && time >= endTime) {
-          audioRef.current.pause();
-          setIsPlaying(false);
-          audioRef.current.currentTime = startTime;
-        } else if (playMode === 'all' && time >= (audioBuffer?.duration || 0)) {
-          audioRef.current.pause();
-          setIsPlaying(false);
-          audioRef.current.currentTime = 0;
+        if (playMode === 'selection' && elapsed >= endTime) {
+          stopAudio();
+          setCurrentTime(startTime);
+        } else if (playMode === 'all' && elapsed >= (audioBuffer?.duration || 0)) {
+          stopAudio();
+          setCurrentTime(0);
         }
       }
       animationRef.current = requestAnimationFrame(updateProgress);
@@ -204,14 +238,12 @@ export const AudioTrimTool: React.FC = () => {
   }, [isPlaying, startTime, endTime, playMode, audioBuffer]);
 
   const handleSetStart = () => {
-    if (!audioRef.current) return;
-    const newStart = Math.min(audioRef.current.currentTime, endTime - 0.01);
+    const newStart = Math.min(currentTime, endTime - 0.01);
     setStartTime(newStart);
   };
 
   const handleSetEnd = () => {
-    if (!audioRef.current) return;
-    const newEnd = Math.max(audioRef.current.currentTime, startTime + 0.01);
+    const newEnd = Math.max(currentTime, startTime + 0.01);
     setEndTime(newEnd);
   };
 
@@ -223,10 +255,11 @@ export const AudioTrimTool: React.FC = () => {
     const pct = x / rect.width;
     const time = pct * (audioBuffer?.duration || 0);
 
-    if (audioRef.current) {
-      audioRef.current.currentTime = time;
+    if (isPlaying) {
+      startPlayback(time, playMode);
+    } else {
+      setCurrentTime(time);
     }
-    setCurrentTime(time);
   };
 
   const handleMouseUp = () => {
@@ -256,7 +289,7 @@ export const AudioTrimTool: React.FC = () => {
       if (type === 'start') {
         setStartTime((prev) => {
           const next = Math.max(0, Math.min(prev + delta, endTime - 0.01));
-          if (audioRef.current) audioRef.current.currentTime = next;
+          if (!isPlaying) setCurrentTime(next); // Preview position to new start if not playing
           return next;
         });
       } else {
@@ -316,40 +349,80 @@ export const AudioTrimTool: React.FC = () => {
     if (!file || !audioBuffer) return;
     setIsExporting(true);
 
+    const baseName = file.name.replace(/\.[^/.]+$/, '');
+    const startStr = formatTimeForFilename(startTime);
+    const endStr = formatTimeForFilename(endTime);
+    const fileName = `${baseName}_trim_${startStr}_${endStr}.${exportFormat}`;
+
     try {
+      // 1. Render exactly the offline segment for WAV or MP3
+      const frameStart = Math.floor(startTime * audioBuffer.sampleRate);
+      const frameEnd = Math.floor(endTime * audioBuffer.sampleRate);
+      const frameCount = frameEnd - frameStart;
+
+      const offlineCtx = new OfflineAudioContext(
+        audioBuffer.numberOfChannels,
+        frameCount,
+        audioBuffer.sampleRate
+      );
+
+      const source = offlineCtx.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(offlineCtx.destination);
+      source.start(0, startTime, endTime - startTime);
+
+      const renderedBuffer = await offlineCtx.startRendering();
+
       if (exportFormat === 'mp3') {
-        // High-precision Bitstream Slice for MP3
-        // We subtract the metadata header size from the calculation to ensure accurate mapping.
-        const audioPayloadSize = file.size - audioDataOffset;
-        const startPct = startTime / audioBuffer.duration;
-        const endPct = endTime / audioBuffer.duration;
+        // High-precision MP3 generation using lamejs
+        const channels = renderedBuffer.numberOfChannels;
+        const sampleRate = renderedBuffer.sampleRate;
+        const mp3encoder = new lamejs.Mp3Encoder(channels, sampleRate, 128);
+        const mp3Data: Uint8Array[] = [];
 
-        const startByte = audioDataOffset + Math.floor(startPct * audioPayloadSize);
-        const endByte = audioDataOffset + Math.floor(endPct * audioPayloadSize);
+        // Convert Float32 to Int16
+        const samplesL = new Int16Array(renderedBuffer.length);
+        const samplesR = channels > 1 ? new Int16Array(renderedBuffer.length) : samplesL;
 
-        const blob = file.slice(startByte, endByte, file.type);
-        downloadBlob(blob, `trimmed_${file.name.replace(/\.[^/.]+$/, '')}.mp3`);
+        const leftData = renderedBuffer.getChannelData(0);
+        const rightData = channels > 1 ? renderedBuffer.getChannelData(1) : leftData;
+
+        for (let i = 0; i < renderedBuffer.length; i++) {
+          samplesL[i] = leftData[i] < 0 ? leftData[i] * 32768 : leftData[i] * 32767;
+          if (channels > 1) {
+            samplesR[i] = rightData[i] < 0 ? rightData[i] * 32768 : rightData[i] * 32767;
+          }
+        }
+
+        const sampleBlockSize = 1152; // Can be anything, but 1152 is standard for MP3
+
+        for (let i = 0; i < renderedBuffer.length; i += sampleBlockSize) {
+          const leftChunk = samplesL.subarray(i, i + sampleBlockSize);
+          const rightChunk = channels > 1 ? samplesR.subarray(i, i + sampleBlockSize) : leftChunk;
+
+          let mp3buf;
+          if (channels === 2) {
+            mp3buf = mp3encoder.encodeBuffer(leftChunk, rightChunk);
+          } else {
+            mp3buf = mp3encoder.encodeBuffer(leftChunk);
+          }
+          if (mp3buf.length > 0) {
+            mp3Data.push(new Uint8Array(mp3buf));
+          }
+        }
+
+        const mp3buf = mp3encoder.flush();
+        if (mp3buf.length > 0) {
+          mp3Data.push(new Uint8Array(mp3buf));
+        }
+
+        const blob = new Blob(mp3Data as unknown as BlobPart[], { type: 'audio/mp3' });
+        downloadBlob(blob, fileName);
       } else {
         // High-fidelity PCM Render for WAV
-        const frameStart = Math.floor(startTime * audioBuffer.sampleRate);
-        const frameEnd = Math.floor(endTime * audioBuffer.sampleRate);
-        const frameCount = frameEnd - frameStart;
-
-        const offlineCtx = new OfflineAudioContext(
-          audioBuffer.numberOfChannels,
-          frameCount,
-          audioBuffer.sampleRate
-        );
-
-        const source = offlineCtx.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(offlineCtx.destination);
-        source.start(0, startTime, endTime - startTime);
-
-        const renderedBuffer = await offlineCtx.startRendering();
         const wavData = bufferToWav(renderedBuffer);
         const blob = new Blob([wavData], { type: 'audio/wav' });
-        downloadBlob(blob, `trimmed_${file.name.replace(/\.[^/.]+$/, '')}.wav`);
+        downloadBlob(blob, fileName);
       }
     } catch (err) {
       console.error('Export failed:', err);
@@ -378,7 +451,7 @@ export const AudioTrimTool: React.FC = () => {
     setAudioDataOffset(0);
     setStartTime(0);
     setEndTime(0);
-    if (audioRef.current) audioRef.current.src = '';
+    stopAudio();
 
     // Clear Persistence
     PersistenceService.saveAudioTrimState({
@@ -518,13 +591,15 @@ export const AudioTrimTool: React.FC = () => {
                 ref={waveformContainerRef}
                 className="h-48 w-full relative cursor-crosshair"
                 onClick={(e) => {
-                  if (!audioRef.current) return;
                   const rect = e.currentTarget.getBoundingClientRect();
                   const x = e.clientX - rect.left;
                   const pct = x / rect.width;
                   const time = pct * (audioBuffer?.duration || 0);
-                  audioRef.current.currentTime = time;
-                  setCurrentTime(time);
+                  if (isPlaying) {
+                    startPlayback(time, playMode);
+                  } else {
+                    setCurrentTime(time);
+                  }
                 }}
               >
                 {/* Canvas Waveform */}
@@ -558,7 +633,7 @@ export const AudioTrimTool: React.FC = () => {
               {/* Marker Controls Overlay */}
               <div className="mt-8 space-y-8">
                 <div className="flex justify-center">
-                  <div className="font-mono text-lg text-white bg-black/40 px-6 py-2 rounded-xl border border-slate-700 tabular-nums shadow-inner">
+                  <div className="font-mono text-md text-white bg-black/40 px-6 py-2 rounded-xl border border-slate-700 tabular-nums shadow-inner">
                     {formatTime(currentTime)}
                   </div>
                 </div>
@@ -567,11 +642,10 @@ export const AudioTrimTool: React.FC = () => {
                   <div className="flex flex-col items-center gap-2">
                     <button
                       onClick={() => togglePlay('all')}
-                      className={`w-14 h-14 flex items-center justify-center rounded-2xl transition-all ${
-                        isPlaying && playMode === 'all'
-                          ? 'bg-tool-audiotrim/80 text-white shadow-lg shadow-tool-audiotrim/20 ring-2 ring-white/20'
-                          : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
-                      }`}
+                      className={`w-14 h-14 flex items-center justify-center rounded-2xl transition-all ${isPlaying && playMode === 'all'
+                        ? 'bg-tool-audiotrim/80 text-white shadow-lg shadow-tool-audiotrim/20 ring-2 ring-white/20'
+                        : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+                        }`}
                       title={t.tools.audiotrim.playFull}
                     >
                       {isPlaying && playMode === 'all' ? (
@@ -583,7 +657,7 @@ export const AudioTrimTool: React.FC = () => {
                     <span className="text-[12px] font-black uppercase tracking-widest text-slate-500">
                       {t.tools.audiotrim.fullTrack}
                     </span>
-                    <span className="text-[10px] font-mono text-tool-audiotrim/70 font-bold uppercase tracking-widest">
+                    <span className="text-[12px] font-mono text-tool-audiotrim/70 font-bold uppercase tracking-widest">
                       {formatTime(audioBuffer?.duration || 0)}
                     </span>
                   </div>
@@ -591,11 +665,10 @@ export const AudioTrimTool: React.FC = () => {
                   <div className="flex flex-col items-center gap-2">
                     <button
                       onClick={() => togglePlay('selection')}
-                      className={`w-14 h-14 flex items-center justify-center rounded-2xl transition-all ${
-                        isPlaying && playMode === 'selection'
-                          ? 'bg-tool-audiotrim text-white shadow-lg shadow-tool-audiotrim/20 ring-2 ring-white/20'
-                          : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
-                      }`}
+                      className={`w-14 h-14 flex items-center justify-center rounded-2xl transition-all ${isPlaying && playMode === 'selection'
+                        ? 'bg-tool-audiotrim text-white shadow-lg shadow-tool-audiotrim/20 ring-2 ring-white/20'
+                        : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+                        }`}
                       title={t.tools.audiotrim.playSelection}
                     >
                       {isPlaying && playMode === 'selection' ? (
@@ -607,7 +680,7 @@ export const AudioTrimTool: React.FC = () => {
                     <span className="text-[12px] font-black uppercase tracking-widest text-slate-500">
                       {t.tools.audiotrim.selection}
                     </span>
-                    <span className="text-[10px] font-mono text-tool-audiotrim/70 font-bold uppercase tracking-widest">
+                    <span className="text-[12px] font-mono text-tool-audiotrim/70 font-bold uppercase tracking-widest">
                       {formatTime(endTime - startTime)}
                     </span>
                   </div>
@@ -667,7 +740,7 @@ export const AudioTrimTool: React.FC = () => {
                         onChange={(e) => {
                           const val = parseFloat(e.target.value);
                           setStartTime(Math.min(val, endTime - 0.01));
-                          if (audioRef.current) audioRef.current.currentTime = val;
+                          if (!isPlaying) setCurrentTime(val); // Update preview cursor
                         }}
                         className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-tool-audiotrim"
                       />
@@ -778,8 +851,6 @@ export const AudioTrimTool: React.FC = () => {
             </div>
           </div>
         )}
-
-        <audio ref={audioRef} className="hidden" />
       </div>
 
       <ConfirmationModal

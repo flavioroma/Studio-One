@@ -96,13 +96,12 @@ export const translations = {
         outputFormat: 'Output Format',
         desc: 'Description',
         smartSlice: 'Smart Bitstream Slice',
-        losslessMaster: 'Lossless PCM Master',
         exportAs: 'Export as',
         exportFailed: 'Failed to export audio. Try again.',
         wavDesc:
-          'Standard lossless PCM format.\nRecommended for absolute millisecond-perfect precision.',
+          'Standard lossless PCM format.\nHighly recommended to preserve audio quality. Use MP3 for exporting smaller files.',
         mp3Desc:
-          'Compressed audio format.\nNote: For variable bit rate files, selection points might differ slightly, use WAV for absolute accuracy.',
+          'Compressed lossy audio format.\nExporting to MP3 introduces quality loss. Use WAV for best quality.',
         removeTrackTitle: 'Remove Audio Track?',
         removeTrackMsg:
           'Are you sure you want to remove this audio track? This action cannot be undone.',
@@ -318,13 +317,12 @@ export const translations = {
         outputFormat: 'Formato di Output',
         desc: 'Descrizione',
         smartSlice: 'Taglio Intelligente Bitstream',
-        losslessMaster: 'Master PCM Lossless',
         exportAs: 'Esporta',
         exportFailed: 'Esportazione audio fallita. Riprova.',
         wavDesc:
-          "Formato PCM lossless standard.\nConsigliato per un'accuratezza millimetrica assoluta.",
+          "Formato PCM standard.\nAltamente consigliato per preservare la qualità audio. Usa MP3 per esportare file più piccoli.",
         mp3Desc:
-          'Formato audio compresso.\nNota: per i file con bitrate variabile, i punti di selezione potrebbero differire leggermente, usa WAV per la massima precisione.',
+          "Formato audio compresso.\nL'esportazione in MP3 introduce perdite di qualità. Usa WAV per la qualità massima.",
         removeTrackTitle: 'Rimuovere Traccia Audio?',
         removeTrackMsg:
           "Sei sicuro di voler rimuovere questa traccia audio? L'azione non può essere annullata.",
