@@ -168,6 +168,13 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
     return style;
   };
 
+  const formatDuration = (seconds: number) => {
+    if (!seconds || seconds <= 0 || !isFinite(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
     <div
       className="space-y-6 flex flex-col h-full"
@@ -249,10 +256,13 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
                             onSelectAudioTrimTrack(track);
                             setShowAudioTrimMenu(false);
                           }}
-                          className="w-full text-left px-4 py-3 text-xs text-slate-300 hover:bg-tool-slidesync/10 hover:text-tool-slidesync border-b border-slate-700 last:border-0 transition-colors truncate"
+                          className="w-full flex items-center justify-between px-4 py-3 text-xs text-slate-300 hover:bg-tool-slidesync/10 hover:text-tool-slidesync border-b border-slate-700 last:border-0 transition-colors"
                           title={track.file.name}
                         >
-                          {track.file.name}
+                          <span className="truncate mr-4">{track.file.name}</span>
+                          <span className="shrink-0 text-slate-500 font-mono">
+                            {formatDuration(track.endTime - track.startTime)}
+                          </span>
                         </button>
                       ))}
                     </div>
@@ -379,7 +389,7 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
                   step="0.01"
                   value={slide.zoom}
                   onChange={(e) => onUpdate({ zoom: parseFloat(e.target.value) })}
-                  className="w-full h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-tool-slidesync"
+                  className="w-full h-1 bg-slate-700 rounded-lg cursor-pointer range-sm text-tool-slidesync accent-tool-slidesync transition-all"
                 />
               </div>
 

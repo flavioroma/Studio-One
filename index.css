@@ -13,3 +13,32 @@
   --color-tool-photoverlay: #ec4899;
   --color-tool-videoverlay: #a855f7;
 }
+
+@utility range-sm {
+  appearance: none;
+  background: transparent;
+
+  &::-webkit-slider-thumb {
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 99px;
+    background: currentColor;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  &::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 99px;
+    background: currentColor;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  &:active::-webkit-slider-thumb {
+    transform: scale(1.2);
+  }
+}
