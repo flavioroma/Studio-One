@@ -28,6 +28,8 @@ describe('SlideSyncSidebar', () => {
     audioFile: null,
     onAudioUpload: vi.fn(),
     onRemoveAudio: vi.fn(),
+    audioTrimTracks: [],
+    onSelectAudioTrimTrack: vi.fn(),
     onAspectRatioChange: vi.fn(),
     hasContent: false,
     onDeleteAll: vi.fn(),
@@ -79,5 +81,56 @@ describe('SlideSyncSidebar', () => {
     const eraseBtn = screen.getByText(/Erase the project/i);
     fireEvent.click(eraseBtn);
     expect(defaultProps.onDeleteAll).toHaveBeenCalled();
+  });
+
+  describe('AudioTrim Integration', () => {
+    it('does not show Select from AudioTrim button when no tracks are available', () => {
+      renderWithContext({ ...defaultProps, audioTrimTracks: [] });
+      expect(screen.queryByText(/Select from AudioTrim/i)).not.toBeInTheDocument();
+    });
+
+    it('shows Select from AudioTrim button when tracks are available', () => {
+      const tracks = [{ id: '1', file: new File([], 'music.mp3'), startTime: 0, endTime: 10, exportFormat: 'wav' as const }];
+      renderWithContext({ ...defaultProps, audioTrimTracks: tracks });
+      expect(screen.getByText(/Select from AudioTrim/i)).toBeInTheDocument();
+    });
+
+    it('calls onSelectAudioTrimTrack immediately when there is only one track', () => {
+      const track = { id: '1', file: new File([], 'music.mp3'), startTime: 0, endTime: 10, exportFormat: 'wav' as const };
+      renderWithContext({ ...defaultProps, audioTrimTracks: [track] });
+      
+      const btn = screen.getByText(/Select from AudioTrim/i);
+      fireEvent.click(btn);
+      
+      expect(defaultProps.onSelectAudioTrimTrack).toHaveBeenCalledWith(track);
+    });
+
+    it('shows a list of tracks when multiple tracks are available', () => {
+      const tracks = [
+        { id: '1', file: new File([], 'music1.mp3'), startTime: 0, endTime: 10, exportFormat: 'wav' as const },
+        { id: '2', file: new File([], 'music2.mp3'), startTime: 5, endTime: 15, exportFormat: 'wav' as const },
+      ];
+      renderWithContext({ ...defaultProps, audioTrimTracks: tracks });
+      
+      const btn = screen.getByText(/Select from AudioTrim/i);
+      fireEvent.click(btn);
+      
+      expect(screen.getByText('music1.mp3')).toBeInTheDocument();
+      expect(screen.getByText('music2.mp3')).toBeInTheDocument();
+    });
+
+    it('calls onSelectAudioTrimTrack when a track is clicked in the multi-track list', () => {
+      const tracks = [
+        { id: '1', file: new File([], 'music1.mp3'), startTime: 0, endTime: 10, exportFormat: 'wav' as const },
+        { id: '2', file: new File([], 'music2.mp3'), startTime: 5, endTime: 15, exportFormat: 'wav' as const },
+      ];
+      renderWithContext({ ...defaultProps, audioTrimTracks: tracks });
+      
+      fireEvent.click(screen.getByText(/Select from AudioTrim/i));
+      fireEvent.click(screen.getByText('music2.mp3'));
+      
+      expect(defaultProps.onSelectAudioTrimTrack).toHaveBeenCalledWith(tracks[1]);
+      expect(screen.queryByText('music1.mp3')).not.toBeInTheDocument();
+    });
   });
 });

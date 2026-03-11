@@ -2,12 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { PlayCircle, Trash2 } from 'lucide-react';
 import { Slide, TextPosition, TextColor, AspectRatio, TextSize } from '../../types';
 import { generateCaptionForImage } from '../../services/geminiService';
-import { PersistenceService } from '../../services/PersistenceService';
+import { PersistenceService, AudioTrackItem } from '../../services/PersistenceService';
 import { SlideSyncSidebar } from './SlideSyncSidebar';
 import { Timeline } from './Timeline';
 import { VideoPreview } from '../../components/VideoPreview';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { renderTrimmedAudioToFile } from '../../utils/audioUtils';
 
 export const SlideSyncTool: React.FC = () => {
   const { t } = useLanguage();
@@ -16,10 +17,12 @@ export const SlideSyncTool: React.FC = () => {
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [audioDuration, setAudioDuration] = useState<number>(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isAudioRendering, setIsAudioRendering] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>(AspectRatio.Landscape_16_9);
   const [showEraseConfirm, setShowEraseConfirm] = useState(false);
+  const [audioTrimTracks, setAudioTrimTracks] = useState<AudioTrackItem[]>([]);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -91,6 +94,12 @@ export const SlideSyncTool: React.FC = () => {
         setAspectRatio(state.aspectRatio);
         setAudioFile(state.audioFile);
       }
+
+      const trimState = await PersistenceService.loadAudioTrimState();
+      if (trimState) {
+        setAudioTrimTracks(trimState.tracks);
+      }
+
       isLoadedRef.current = true;
     };
     load();
@@ -205,6 +214,23 @@ export const SlideSyncTool: React.FC = () => {
     PersistenceService.saveState({ slides: [], audioFile: null, aspectRatio });
   };
 
+  const handleSelectAudioTrimTrack = async (track: AudioTrackItem) => {
+    setIsAudioRendering(true);
+    try {
+      const renderedFile = await renderTrimmedAudioToFile(
+        track.file,
+        track.startTime,
+        track.endTime
+      );
+      setAudioFile(renderedFile);
+    } catch (error) {
+      console.error('Failed to render trimmed audio', error);
+      alert(t.tools.audiotrim.exportFailed);
+    } finally {
+      setIsAudioRendering(false);
+    }
+  };
+
   return (
     <div className="flex h-full bg-slate-900 overflow-hidden">
       {/* Sidebar: Settings */}
@@ -219,7 +245,10 @@ export const SlideSyncTool: React.FC = () => {
           audioFile={audioFile}
           onAudioUpload={handleAudioUpload}
           onRemoveAudio={() => setAudioFile(null)}
+          audioTrimTracks={audioTrimTracks}
+          onSelectAudioTrimTrack={handleSelectAudioTrimTrack}
           onAspectRatioChange={setAspectRatio}
+          isAudioRendering={isAudioRendering}
           hasContent={slides.length > 0 || audioFile !== null}
           onDeleteAll={() => setShowEraseConfirm(true)}
         />

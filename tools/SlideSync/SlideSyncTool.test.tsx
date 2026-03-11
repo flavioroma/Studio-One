@@ -7,6 +7,7 @@ import { LanguageProvider } from '../../contexts/LanguageContext';
 vi.mock('../../services/PersistenceService', () => ({
   PersistenceService: {
     loadState: vi.fn().mockResolvedValue(null),
+    loadAudioTrimState: vi.fn().mockResolvedValue({ tracks: [], selectedId: null }),
     saveState: vi.fn(),
   },
 }));
