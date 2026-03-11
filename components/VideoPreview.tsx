@@ -35,13 +35,38 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
   const [supportedFormats, setSupportedFormats] = useState<ExportFormat[]>([ExportFormat.WebM]);
 
   useEffect(() => {
-    const formats = [ExportFormat.WebM];
-    // Check for MP4 support
-    if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1.4d002a')) {
-      formats.push(ExportFormat.MP4);
-      setExportFormat(ExportFormat.MP4); // Default to MP4 if supported
-    }
-    setSupportedFormats(formats);
+    const checkSupport = async () => {
+      const formats = [ExportFormat.WebM];
+
+      // Check for MP4 support via WebCodecs (VideoEncoder)
+      // This is what Mp4ExportService uses
+      if ('VideoEncoder' in window) {
+        try {
+          const support = await VideoEncoder.isConfigSupported({
+            codec: 'avc1.4d002a', // H.264 High Profile
+            width: 1920,
+            height: 1080,
+            bitrate: 8_000_000,
+            framerate: 30,
+          });
+
+          if (support.supported) {
+            formats.push(ExportFormat.MP4);
+            setExportFormat(ExportFormat.MP4); // Default to MP4 if supported
+          }
+        } catch (e) {
+          console.error('Error checking VideoEncoder support:', e);
+        }
+      } else if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1.4d002a')) {
+        // Fallback to MediaRecorder check if VideoEncoder is not available
+        formats.push(ExportFormat.MP4);
+        setExportFormat(ExportFormat.MP4);
+      }
+
+      setSupportedFormats(formats);
+    };
+
+    checkSupport();
   }, []);
 
   // Calculate high definition dimensions based on selected aspect ratio
