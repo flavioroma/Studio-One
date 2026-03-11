@@ -59,7 +59,7 @@ export const translations = {
       },
       audiotrim: {
         description:
-          'Trim audio with millisecond precision. Export audio segments while maintaining original quality. Can extract audio from a video file.',
+          'Trim audio with precision. Export audio segments while maintaining original quality. Can extract audio from videos.',
       },
       slidesync: {
         description:
@@ -96,7 +96,6 @@ export const translations = {
         setEnd: 'Set End',
         selectionStart: 'Selection Start',
         selectionEnd: 'Selection End',
-        tip: 'Tip: Use Left/Right keys for 0.1s, Shift for 1s, Alt for 0.01s',
         fullTrack: 'Play Full Track',
         selection: 'Play Selection',
         playFull: 'Play Entire Track',
@@ -104,16 +103,20 @@ export const translations = {
         outputFormat: 'Output Format',
         desc: 'Description',
         smartSlice: 'Smart Bitstream Slice',
-        losslessMaster: 'Lossless PCM Master',
         exportAs: 'Export as',
         exportFailed: 'Failed to export audio. Try again.',
         wavDesc:
-          'Standard lossless PCM format.\nRecommended for absolute millisecond-perfect precision.',
+          'Standard lossless PCM format.\nHighly recommended to preserve audio quality. Use MP3 for exporting smaller files.',
         mp3Desc:
-          'Compressed audio format.\nNote: For variable bit rate files, selection points might differ slightly, use WAV for absolute accuracy.',
+          'Compressed lossy audio format.\nExporting to MP3 introduces quality loss. Use WAV for best quality.',
         removeTrackTitle: 'Remove Audio Track?',
         removeTrackMsg:
           'Are you sure you want to remove this audio track? This action cannot be undone.',
+        eraseProjectTitle: 'Erase Project?',
+        eraseProjectMsg:
+          'Are you sure you want to erase the entire project? All audio tracks will be removed. This action cannot be undone.',
+        dropZoneTitleMulti: 'Select or drop audio/video files',
+        noTracksHint: 'Awaiting Source',
       },
       slidesync: {
         title: 'SlideSync',
@@ -124,6 +127,7 @@ export const translations = {
         backgroundMusic: '1. Background music',
         backgroundMusicDesc: '(sets the duration of the video)',
         selectAudio: 'Select Audio',
+        selectFromAudioTrim: 'Select from AudioTrim',
         removeAudio: 'Remove Audio',
         videoFormat: '3. Choose video format',
         noSlideSelected: 'Select a slide from the timeline to edit its properties',
@@ -146,7 +150,7 @@ export const translations = {
         creating: 'Creating...',
         exportClip: 'Export Clip',
         recordingNote: 'Recording Render... Do not switch tabs.',
-        awaitingMedia: 'Awaiting audio and images',
+        awaitingMedia: 'Awaiting media',
         exportFailed: 'MP4 Export failed. Please check console for details.',
         aiCaptionTitle: 'Generate caption using AI',
         exportAsWebm: 'Export as WebM (VP9)',
@@ -322,7 +326,7 @@ export const translations = {
       },
       audiotrim: {
         description:
-          "Taglia audio con precisione al millisecondo. Esporta segmenti audio mantenendo la qualità originale. Può estrarre l'audio da un file video.",
+          "Taglia audio con precisione. Esporta segmenti audio mantenendo la qualità originale. Può estrarre l'audio da video.",
       },
       slidesync: {
         description:
@@ -359,7 +363,6 @@ export const translations = {
         setEnd: 'Imposta Fine',
         selectionStart: 'Inizio Selezione',
         selectionEnd: 'Fine Selezione',
-        tip: 'Suggerimento: Usa le frecce Destra/Sinistra per 0.1s, Shift per 1s, Alt per 0.01s',
         fullTrack: 'Riproduci Traccia Intera',
         selection: 'Riproduci Selezione',
         playFull: 'Riproduci Traccia Intera',
@@ -367,16 +370,20 @@ export const translations = {
         outputFormat: 'Formato di Output',
         desc: 'Descrizione',
         smartSlice: 'Taglio Intelligente Bitstream',
-        losslessMaster: 'Master PCM Lossless',
         exportAs: 'Esporta',
         exportFailed: 'Esportazione audio fallita. Riprova.',
         wavDesc:
-          "Formato PCM lossless standard.\nConsigliato per un'accuratezza millimetrica assoluta.",
+          "Formato PCM standard.\nAltamente consigliato per preservare la qualità audio. Usa MP3 per esportare file più piccoli.",
         mp3Desc:
-          'Formato audio compresso.\nNota: per i file con bitrate variabile, i punti di selezione potrebbero differire leggermente, usa WAV per la massima precisione.',
+          "Formato audio compresso.\nL'esportazione in MP3 introduce perdite di qualità. Usa WAV per la qualità massima.",
         removeTrackTitle: 'Rimuovere Traccia Audio?',
         removeTrackMsg:
           "Sei sicuro di voler rimuovere questa traccia audio? L'azione non può essere annullata.",
+        eraseProjectTitle: 'Buttare via il progetto?',
+        eraseProjectMsg:
+          "Sei sicuro di voler buttare via l'intero progetto? Tutte le tracce audio verranno rimosse. L'azione non può essere annullata.",
+        dropZoneTitleMulti: 'Seleziona o trascina file audio/video',
+        noTracksHint: 'In attesa del file',
       },
       slidesync: {
         title: 'SlideSync',
@@ -387,6 +394,7 @@ export const translations = {
         backgroundMusic: '1. Musica di sottofondo',
         backgroundMusicDesc: '(stabilisce la durata del video)',
         selectAudio: 'Seleziona Audio',
+        selectFromAudioTrim: 'Seleziona da AudioTrim',
         removeAudio: 'Rimuovi Audio',
         videoFormat: '3. Scegli il formato del video',
         noSlideSelected: 'Seleziona una immagine dalla timeline per modificarne le proprietà',
@@ -409,7 +417,7 @@ export const translations = {
         creating: 'Creazione in corso...',
         exportClip: 'Esporta Clip',
         recordingNote: 'Rendering in corso... Non cambiare scheda.',
-        awaitingMedia: 'In attesa di audio e immagini',
+        awaitingMedia: 'In attesa di media',
         exportFailed: 'Esportazione MP4 fallita. Controlla la console per i dettagli.',
         aiCaptionTitle: 'Genera didascalia con AI',
         exportAsWebm: 'Esporta come WebM (VP9)',
