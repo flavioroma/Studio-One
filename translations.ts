@@ -16,6 +16,7 @@ export const translations = {
       resolution: 'Resolution',
       mediaCreated: 'Creation Date',
       addMore: 'Add More',
+      loading: 'Loading...',
     },
     captions: {
       captionText: 'Caption Text',
@@ -242,6 +243,7 @@ export const translations = {
       resolution: 'Risoluzione',
       addMore: 'Aggiungi Altre',
       mediaCreated: 'Data di creazione',
+      loading: 'Caricamento...',
     },
     captions: {
       captionText: 'Testo Didascalia',

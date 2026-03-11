@@ -50,6 +50,7 @@ export const AudioTrimTool: React.FC = () => {
   const [endMins, setEndMins] = useState('0');
   const [endSecs, setEndSecs] = useState('0');
   const [endCents, setEndCents] = useState('0');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
@@ -161,24 +162,30 @@ export const AudioTrimTool: React.FC = () => {
   // Load State
   useEffect(() => {
     const load = async () => {
-      const state = await PersistenceService.loadAudioTrimState();
-      if (state && state.tracks.length > 0) {
-        setTracks(state.tracks);
-        const initialId = state.selectedId || state.tracks[0].id;
-        setSelectedId(initialId);
+      setIsProcessing(true);
+      try {
+        const state = await PersistenceService.loadAudioTrimState();
+        if (state && state.tracks.length > 0) {
+          setTracks(state.tracks);
+          const initialId = state.selectedId || state.tracks[0].id;
+          setSelectedId(initialId);
 
-        // Process the initially selected track
-        const initialTrack = state.tracks.find((t) => t.id === initialId) || state.tracks[0];
-        const buffer = await processAudio(initialTrack.file);
-        if (buffer) {
-          setStartTime(initialTrack.startTime);
-          setEndTime(initialTrack.endTime);
-          setExportFormat(initialTrack.exportFormat);
-          syncStartInputs(initialTrack.startTime);
-          syncEndInputs(initialTrack.endTime);
+          // Process the initially selected track
+          const initialTrack = state.tracks.find((t) => t.id === initialId) || state.tracks[0];
+          const buffer = await processAudio(initialTrack.file);
+          if (buffer) {
+            const effectiveEndTime = initialTrack.endTime || buffer.duration;
+            setStartTime(initialTrack.startTime);
+            setEndTime(effectiveEndTime);
+            setExportFormat(initialTrack.exportFormat);
+            syncStartInputs(initialTrack.startTime);
+            syncEndInputs(effectiveEndTime);
+          }
         }
+      } finally {
+        isLoadedRef.current = true;
+        setIsProcessing(false);
       }
-      isLoadedRef.current = true;
     };
     load();
   }, []);
@@ -222,7 +229,7 @@ export const AudioTrimTool: React.FC = () => {
   // Handle track selection
   const handleSelectTrack = useCallback(
     async (id: string) => {
-      if (id === selectedId) return;
+      if (id === selectedId || isProcessing) return;
 
       stopAudio();
 
@@ -230,24 +237,38 @@ export const AudioTrimTool: React.FC = () => {
       saveCurrentTrackState();
 
       isSwitchingRef.current = true;
+      setIsProcessing(true);
 
       const track = tracks.find((t) => t.id === id);
-      if (!track) return;
-
-      setSelectedId(id);
-      const buffer = await processAudio(track.file);
-      if (buffer) {
-        setStartTime(track.startTime);
-        setEndTime(track.endTime);
-        setExportFormat(track.exportFormat);
-        setCurrentTime(0);
-        syncStartInputs(track.startTime);
-        syncEndInputs(track.endTime);
+      if (!track) {
+        setIsProcessing(false);
+        isSwitchingRef.current = false;
+        return;
       }
 
-      isSwitchingRef.current = false;
+      setSelectedId(id);
+      try {
+        const buffer = await processAudio(track.file);
+        if (buffer) {
+          const effectiveEndTime = track.endTime || buffer.duration;
+          setStartTime(track.startTime);
+          setEndTime(effectiveEndTime);
+          setExportFormat(track.exportFormat);
+          setCurrentTime(0);
+          syncStartInputs(track.startTime);
+          syncEndInputs(effectiveEndTime);
+
+          // Update track metadata if it was 0
+          if (track.endTime === 0) {
+            setTracks(prev => prev.map(t => t.id === id ? { ...t, endTime: buffer.duration } : t));
+          }
+        }
+      } finally {
+        setIsProcessing(false);
+        isSwitchingRef.current = false;
+      }
     },
-    [selectedId, tracks, startTime, endTime, exportFormat]
+    [selectedId, tracks, startTime, endTime, exportFormat, isProcessing]
   );
 
   // Handle file drop (multi file)
@@ -274,21 +295,26 @@ export const AudioTrimTool: React.FC = () => {
     // Select and process the first new track
     const firstTrack = newTracks[0];
     setSelectedId(firstTrack.id);
-    const buffer = await processAudio(firstTrack.file);
-    if (buffer) {
-      const duration = buffer.duration;
-      setStartTime(0);
-      setEndTime(duration);
-      setCurrentTime(0);
-      syncStartInputs(0);
-      syncEndInputs(duration);
+    setIsProcessing(true);
+    try {
+      const buffer = await processAudio(firstTrack.file);
+      if (buffer) {
+        const duration = buffer.duration;
+        setStartTime(0);
+        setEndTime(duration);
+        setCurrentTime(0);
+        syncStartInputs(0);
+        syncEndInputs(duration);
 
-      // Update the track with the actual duration
-      setTracks((prev) =>
-        prev.map((track) =>
-          track.id === firstTrack.id ? { ...track, endTime: duration } : track
-        )
-      );
+        // Update the track with the actual duration
+        setTracks((prev) =>
+          prev.map((track) =>
+            track.id === firstTrack.id ? { ...track, endTime: duration } : track
+          )
+        );
+      }
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -540,14 +566,23 @@ export const AudioTrimTool: React.FC = () => {
       // Select the first remaining track
       const nextTrack = remaining[0];
       setSelectedId(nextTrack.id);
+      setIsProcessing(true);
       processAudio(nextTrack.file).then((buffer) => {
         if (buffer) {
+          const effectiveEndTime = nextTrack.endTime || buffer.duration;
           setStartTime(nextTrack.startTime);
-          setEndTime(nextTrack.endTime);
+          setEndTime(effectiveEndTime);
           setExportFormat(nextTrack.exportFormat);
           syncStartInputs(nextTrack.startTime);
-          syncEndInputs(nextTrack.endTime);
+          syncEndInputs(effectiveEndTime);
+
+          // Update track metadata if it was 0
+          if (nextTrack.endTime === 0) {
+            setTracks(prev => prev.map(t => t.id === nextTrack.id ? { ...t, endTime: buffer.duration } : t));
+          }
         }
+      }).finally(() => {
+        setIsProcessing(false);
       });
     } else {
       setSelectedId(null);
@@ -660,16 +695,39 @@ export const AudioTrimTool: React.FC = () => {
 
   return (
     <div className="h-full flex bg-slate-900 overflow-hidden">
-      <AudioTrimSidebar
-        tracks={tracks}
-        selectedId={selectedId}
-        onFilesSelected={handleDrop}
-        onSelectTrack={handleSelectTrack}
-        onDeleteAll={handleEraseProject}
-      />
+        <AudioTrimSidebar
+          tracks={tracks}
+          selectedId={selectedId}
+          onFilesSelected={handleDrop}
+          onSelectTrack={handleSelectTrack}
+          onDeleteAll={handleEraseProject}
+          isDisabled={isProcessing}
+        />
 
       {/* Main content area */}
-      <div className="flex-1 flex flex-col min-w-0 bg-slate-950">
+      <div className="flex-1 flex flex-col min-w-0 bg-slate-950 relative">
+        {/* Loading Overlay */}
+        {isProcessing && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/60 backdrop-blur-md transition-all duration-300 animate-fadeIn">
+            <div className="flex flex-col items-center gap-6">
+              <div className="relative">
+                <div className="w-16 h-16 border-4 border-tool-audiotrim/20 border-t-tool-audiotrim rounded-full animate-spin"></div>
+                <Music className="w-6 h-6 text-tool-audiotrim absolute inset-0 m-auto animate-pulse" />
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <span className="text-white font-bold tracking-[0.2em] uppercase text-sm">
+                  {t.common.loading}
+                </span>
+                <div className="flex gap-1">
+                  <div className="w-1.5 h-1.5 bg-tool-audiotrim rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                  <div className="w-1.5 h-1.5 bg-tool-audiotrim rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                  <div className="w-1.5 h-1.5 bg-tool-audiotrim rounded-full animate-bounce"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex-1 relative flex flex-col items-center justify-center p-8 overflow-y-auto">
           {!selectedTrack ? (
             <div className="flex flex-col items-center gap-4 text-slate-600 animate-pulse">
