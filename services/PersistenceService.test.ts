@@ -84,6 +84,71 @@ describe('PersistenceService', () => {
     });
   });
 
+  describe('AudioTrim', () => {
+    const mockAudioState = {
+      tracks: [
+        {
+          id: 'track1',
+          file: new File([], 'audio.mp3'),
+          startTime: 1,
+          endTime: 5,
+          exportFormat: 'wav' as const,
+        },
+      ],
+      selectedId: 'track1',
+    };
+
+    it('saves AudioTrim state', async () => {
+      await PersistenceService.saveAudioTrimState(mockAudioState);
+      expect(set).toHaveBeenCalledWith('audiotrim_state_v1', mockAudioState);
+    });
+
+    it('loads AudioTrim state', async () => {
+      vi.mocked(get).mockResolvedValue(mockAudioState);
+      const state = await PersistenceService.loadAudioTrimState();
+      expect(state).toEqual(mockAudioState);
+    });
+
+    it('returns null if no state exists', async () => {
+      vi.mocked(get).mockResolvedValue(null);
+      const state = await PersistenceService.loadAudioTrimState();
+      expect(state).toBeNull();
+    });
+
+    it('migrates legacy single-file state', async () => {
+      const legacyState = {
+        file: new File([], 'old-audio.mp3'),
+        startTime: 2,
+        endTime: 10,
+        exportFormat: 'mp3' as const,
+      };
+
+      vi.mocked(get).mockResolvedValue(legacyState);
+      const state = await PersistenceService.loadAudioTrimState();
+
+      expect(state).not.toBeNull();
+      expect(state?.tracks.length).toBe(1);
+      expect(state?.tracks[0].file).toBe(legacyState.file);
+      expect(state?.tracks[0].startTime).toBe(2);
+      expect(state?.tracks[0].endTime).toBe(10);
+      expect(state?.tracks[0].exportFormat).toBe('mp3');
+      expect(state?.selectedId).toBe(state?.tracks[0].id);
+    });
+
+    it('returns null for legacy state with null file', async () => {
+      const legacyState = {
+        file: null,
+        startTime: 0,
+        endTime: 0,
+        exportFormat: 'wav' as const,
+      };
+
+      vi.mocked(get).mockResolvedValue(legacyState);
+      const state = await PersistenceService.loadAudioTrimState();
+      expect(state).toBeNull();
+    });
+  });
+
   it('clears all state', async () => {
     await PersistenceService.clearState();
     expect(clear).toHaveBeenCalled();

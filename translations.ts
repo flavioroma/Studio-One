@@ -60,7 +60,7 @@ export const translations = {
       },
       audiotrim: {
         description:
-          'Trim audio with millisecond precision. Export audio segments while maintaining original quality. Can extract audio from a video file.',
+          'Trim audio with precision. Export audio segments while maintaining original quality. Can extract audio from videos.',
       },
       slidesync: {
         description:
@@ -104,6 +104,11 @@ export const translations = {
         removeTrackTitle: 'Remove Audio Track?',
         removeTrackMsg:
           'Are you sure you want to remove this audio track? This action cannot be undone.',
+        eraseProjectTitle: 'Erase Project?',
+        eraseProjectMsg:
+          'Are you sure you want to erase the entire project? All audio tracks will be removed. This action cannot be undone.',
+        dropZoneTitleMulti: 'Select or drop audio/video files',
+        noTracksHint: 'Awaiting Source',
       },
       slidesync: {
         title: 'SlideSync',
@@ -280,7 +285,7 @@ export const translations = {
       },
       audiotrim: {
         description:
-          "Taglia audio con precisione al millisecondo. Esporta segmenti audio mantenendo la qualità originale. Può estrarre l'audio da un file video.",
+          "Taglia audio con precisione. Esporta segmenti audio mantenendo la qualità originale. Può estrarre l'audio da video.",
       },
       slidesync: {
         description:
@@ -324,6 +329,11 @@ export const translations = {
         removeTrackTitle: 'Rimuovere Traccia Audio?',
         removeTrackMsg:
           "Sei sicuro di voler rimuovere questa traccia audio? L'azione non può essere annullata.",
+        eraseProjectTitle: 'Buttare via il progetto?',
+        eraseProjectMsg:
+          "Sei sicuro di voler buttare via l'intero progetto? Tutte le tracce audio verranno rimosse. L'azione non può essere annullata.",
+        dropZoneTitleMulti: 'Seleziona o trascina file audio/video',
+        noTracksHint: 'In attesa del file',
       },
       slidesync: {
         title: 'SlideSync',

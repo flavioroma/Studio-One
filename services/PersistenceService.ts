@@ -68,7 +68,21 @@ export interface LegacyPhotoverlayState {
   watermarkPosition?: TextPosition;
 }
 
+export interface AudioTrackItem {
+  id: string;
+  file: File;
+  startTime: number;
+  endTime: number;
+  exportFormat: 'wav' | 'mp3';
+}
+
 export interface AudioTrimState {
+  tracks: AudioTrackItem[];
+  selectedId: string | null;
+}
+
+// For backward compatibility
+export interface LegacyAudioTrimState {
   file: File | null;
   startTime: number;
   endTime: number;
@@ -169,7 +183,30 @@ export class PersistenceService {
 
   static async loadAudioTrimState(): Promise<AudioTrimState | null> {
     try {
-      return (await get<AudioTrimState>(AUDIOTRIM_KEY)) || null;
+      const state = await get<any>(AUDIOTRIM_KEY);
+      if (!state) return null;
+
+      // Migrate legacy single-file state
+      if ('file' in state) {
+        const legacy = state as LegacyAudioTrimState;
+        if (!legacy.file) return null;
+
+        const id = Math.random().toString(36).substr(2, 9);
+        return {
+          tracks: [
+            {
+              id,
+              file: legacy.file,
+              startTime: legacy.startTime,
+              endTime: legacy.endTime,
+              exportFormat: legacy.exportFormat,
+            },
+          ],
+          selectedId: id,
+        };
+      }
+
+      return state as AudioTrimState;
     } catch (error) {
       console.error('Failed to load AudioTrim state:', error);
       return null;
