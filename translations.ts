@@ -5,7 +5,6 @@ export const translations = {
     common: {
       backToHome: 'Back to Home',
       activeTool: 'Active Tool',
-      moreTools: 'More tools coming...',
       openTool: 'Open Tool',
       eraseProject: 'Erase the project',
       eraseConfirm: 'Are you sure you want to erase the project? This action cannot be undone.',
@@ -82,7 +81,7 @@ export const translations = {
       clientSideDesc:
         'No servers involved - All processing happens directly in your browser, keeping your data private',
       donation: {
-        title: 'More tools coming soon',
+        title: 'More tools coming',
         description: 'Please feel free to help this project with voluntary donations',
         link: 'Help the project',
       },
@@ -268,7 +267,6 @@ export const translations = {
     common: {
       backToHome: 'Torna alla Home',
       activeTool: 'Strumento Attivo',
-      moreTools: 'Altri strumenti in arrivo...',
       openTool: 'Apri Strumento',
       eraseProject: 'Butta via il progetto',
       eraseConfirm:
@@ -346,7 +344,7 @@ export const translations = {
       clientSideDesc:
         "Nessun server coinvolto - L'elaborazione avviene localmente nel browser, mantenendo i tuoi dati privati",
       donation: {
-        title: 'Altri strumenti in arrivo presto',
+        title: 'Altri strumenti in arrivo',
         description: 'Sentiti libero di aiutare questo progetto con donazioni volontarie',
         link: 'Aiuta il progetto',
       },
