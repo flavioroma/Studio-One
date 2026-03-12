@@ -260,7 +260,9 @@ export const AudioTrimTool: React.FC = () => {
 
           // Update track metadata if it was 0
           if (track.endTime === 0) {
-            setTracks(prev => prev.map(t => t.id === id ? { ...t, endTime: buffer.duration } : t));
+            setTracks((prev) =>
+              prev.map((t) => (t.id === id ? { ...t, endTime: buffer.duration } : t))
+            );
           }
         }
       } finally {
@@ -322,7 +324,7 @@ export const AudioTrimTool: React.FC = () => {
     if (sourceNodeRef.current) {
       try {
         sourceNodeRef.current.stop();
-      } catch (e) { }
+      } catch (e) {}
       sourceNodeRef.current.disconnect();
       sourceNodeRef.current = null;
     }
@@ -435,11 +437,6 @@ export const AudioTrimTool: React.FC = () => {
       window.removeEventListener('mouseup', handleMouseUp);
     };
   }, [isDragging, audioBuffer?.duration]);
-
-
-
-
-
 
   const handleExport = async () => {
     if (!file || !audioBuffer) return;
@@ -567,23 +564,27 @@ export const AudioTrimTool: React.FC = () => {
       const nextTrack = remaining[0];
       setSelectedId(nextTrack.id);
       setIsProcessing(true);
-      processAudio(nextTrack.file).then((buffer) => {
-        if (buffer) {
-          const effectiveEndTime = nextTrack.endTime || buffer.duration;
-          setStartTime(nextTrack.startTime);
-          setEndTime(effectiveEndTime);
-          setExportFormat(nextTrack.exportFormat);
-          syncStartInputs(nextTrack.startTime);
-          syncEndInputs(effectiveEndTime);
+      processAudio(nextTrack.file)
+        .then((buffer) => {
+          if (buffer) {
+            const effectiveEndTime = nextTrack.endTime || buffer.duration;
+            setStartTime(nextTrack.startTime);
+            setEndTime(effectiveEndTime);
+            setExportFormat(nextTrack.exportFormat);
+            syncStartInputs(nextTrack.startTime);
+            syncEndInputs(effectiveEndTime);
 
-          // Update track metadata if it was 0
-          if (nextTrack.endTime === 0) {
-            setTracks(prev => prev.map(t => t.id === nextTrack.id ? { ...t, endTime: buffer.duration } : t));
+            // Update track metadata if it was 0
+            if (nextTrack.endTime === 0) {
+              setTracks((prev) =>
+                prev.map((t) => (t.id === nextTrack.id ? { ...t, endTime: buffer.duration } : t))
+              );
+            }
           }
-        }
-      }).finally(() => {
-        setIsProcessing(false);
-      });
+        })
+        .finally(() => {
+          setIsProcessing(false);
+        });
     } else {
       setSelectedId(null);
       PersistenceService.saveAudioTrimState({ tracks: [], selectedId: null });
@@ -817,10 +818,11 @@ export const AudioTrimTool: React.FC = () => {
                     <div className="flex flex-col items-center gap-2 group/play">
                       <button
                         onClick={() => togglePlay('all')}
-                        className={`w-22 h-22 flex items-center justify-center border border-tool-audiotrim/50 rounded-4xl transition-all ${isPlaying && playMode === 'all'
-                          ? 'bg-tool-audiotrim/80 text-white shadow-lg'
-                          : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
-                          }`}
+                        className={`w-22 h-22 flex items-center justify-center border border-tool-audiotrim/50 rounded-4xl transition-all ${
+                          isPlaying && playMode === 'all'
+                            ? 'bg-tool-audiotrim/80 text-white shadow-lg'
+                            : 'bg-slate-700 hover:bg-slate-600 text-slate-300'
+                        }`}
                         title={t.tools.audiotrim.playFull}
                       >
                         {isPlaying && playMode === 'all' ? (
@@ -867,7 +869,6 @@ export const AudioTrimTool: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                       {/* Start Marker Column */}
                       <div className="space-y-6">
-
                         <div className="space-y-4">
                           <div className="flex justify-between items-center px-1">
                             <label className="text-[12px] font-black uppercase tracking-widest text-slate-500">
@@ -978,7 +979,6 @@ export const AudioTrimTool: React.FC = () => {
 
                       {/* End Marker Column */}
                       <div className="space-y-6">
-
                         <div className="space-y-4">
                           <div className="flex justify-between items-center px-1">
                             <div className="flex items-center gap-1.5 bg-slate-900/50 p-1.5 rounded-lg border border-slate-700/50">
@@ -1012,7 +1012,10 @@ export const AudioTrimTool: React.FC = () => {
                                     parseFloat(endSecs || '0') +
                                     parseFloat(endCents || '0') / 100;
                                   if (!isNaN(val)) {
-                                    const final = Math.min(audioBuffer?.duration || 100, Math.max(val, startTime + 0.01));
+                                    const final = Math.min(
+                                      audioBuffer?.duration || 100,
+                                      Math.max(val, startTime + 0.01)
+                                    );
                                     setEndTime(final);
                                     syncEndInputs(final);
                                   }
@@ -1092,10 +1095,11 @@ export const AudioTrimTool: React.FC = () => {
                       <div className="flex flex-col items-center gap-2 group/play">
                         <button
                           onClick={() => togglePlay('selection')}
-                          className={`w-22 h-22 flex items-center justify-center border border-tool-audiotrim/50 rounded-4xl transition-all ${isPlaying && playMode === 'selection'
-                            ? 'bg-tool-audiotrim text-white shadow-lg shadow-tool-audiotrim/20 ring-2 ring-white/20'
-                            : 'bg-slate-700 hover:bg-slate-600 text-slate-300 shadow-lg'
-                            }`}
+                          className={`w-22 h-22 flex items-center justify-center border border-tool-audiotrim/50 rounded-4xl transition-all ${
+                            isPlaying && playMode === 'selection'
+                              ? 'bg-tool-audiotrim text-white shadow-lg shadow-tool-audiotrim/20 ring-2 ring-white/20'
+                              : 'bg-slate-700 hover:bg-slate-600 text-slate-300 shadow-lg'
+                          }`}
                           title={t.tools.audiotrim.playSelection}
                         >
                           {isPlaying && playMode === 'selection' ? (

@@ -82,10 +82,11 @@ export const VideoverlaySidebar: React.FC<VideoverlaySidebarProps> = ({
                 <button
                   key={opt.id}
                   onClick={() => onRotationChange(opt.id as Rotation)}
-                  className={`flex items-center justify-center gap-2 p-2 rounded-xl border hover:text-tool-videoverlay transition-all ${rotation === opt.id
-                    ? 'bg-tool-videoverlay/20 border-tool-videoverlay text-tool-videoverlay shadow-[0_0_15px_rgba(168,85,247,0.2)]'
-                    : 'bg-slate-700/50 border-slate-600 hover:border-tool-videoverlay/40 hover:bg-slate-700/50'
-                    }`}
+                  className={`flex items-center justify-center gap-2 p-2 rounded-xl border hover:text-tool-videoverlay transition-all ${
+                    rotation === opt.id
+                      ? 'bg-tool-videoverlay/20 border-tool-videoverlay text-tool-videoverlay shadow-[0_0_15px_rgba(168,85,247,0.2)]'
+                      : 'bg-slate-700/50 border-slate-600 hover:border-tool-videoverlay/40 hover:bg-slate-700/50'
+                  }`}
                 >
                   <span className="text-[10px] font-bold uppercase">{opt.label}</span>
                 </button>
@@ -103,10 +104,11 @@ export const VideoverlaySidebar: React.FC<VideoverlaySidebarProps> = ({
                 <button
                   key={opt.id}
                   onClick={() => onAudioModeChange(opt.id as AudioMode)}
-                  className={`flex flex-col items-center justify-center p-2 rounded-xl border hover:text-tool-videoverlay transition-all ${audioMode === opt.id
-                    ? 'bg-tool-videoverlay/20 border-tool-videoverlay text-tool-videoverlay shadow-[0_0_15px_rgba(168,85,247,0.2)]'
-                    : 'bg-slate-700/50 border-slate-600 hover:border-tool-videoverlay/40 hover:bg-slate-700/50'
-                    }`}
+                  className={`flex flex-col items-center justify-center p-2 rounded-xl border hover:text-tool-videoverlay transition-all ${
+                    audioMode === opt.id
+                      ? 'bg-tool-videoverlay/20 border-tool-videoverlay text-tool-videoverlay shadow-[0_0_15px_rgba(168,85,247,0.2)]'
+                      : 'bg-slate-700/50 border-slate-600 hover:border-tool-videoverlay/40 hover:bg-slate-700/50'
+                  }`}
                 >
                   <opt.icon className="w-4 h-4 mb-1" />
                   <span className="text-[10px] font-bold uppercase">{opt.label}</span>

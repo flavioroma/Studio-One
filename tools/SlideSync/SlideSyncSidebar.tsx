@@ -243,10 +243,7 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
 
               {showAudioTrimMenu && audioTrimTracks.length > 1 && (
                 <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setShowAudioTrimMenu(false)}
-                  />
+                  <div className="fixed inset-0 z-40" onClick={() => setShowAudioTrimMenu(false)} />
                   <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden animate-fadeIn">
                     <div className="max-h-48 overflow-y-auto py-1">
                       {audioTrimTracks.map((track) => (
@@ -305,10 +302,11 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
               <button
                 key={opt.id}
                 onClick={() => onAspectRatioChange(opt.id)}
-                className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${aspectRatio === opt.id
-                  ? 'bg-tool-slidesync/20 border-tool-slidesync text-tool-slidesync shadow-[0_0_15px_rgba(59,130,246,0.2)]'
-                  : 'bg-slate-700/50 border-slate-600 hover:border-tool-slidesync/40 text-slate-300 hover:text-tool-slidesync'
-                  }`}
+                className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${
+                  aspectRatio === opt.id
+                    ? 'bg-tool-slidesync/20 border-tool-slidesync text-tool-slidesync shadow-[0_0_15px_rgba(59,130,246,0.2)]'
+                    : 'bg-slate-700/50 border-slate-600 hover:border-tool-slidesync/40 text-slate-300 hover:text-tool-slidesync'
+                }`}
               >
                 <opt.icon className="w-4 h-4 mb-1" />
                 <span className="text-[10px] font-bold uppercase">{opt.label}</span>

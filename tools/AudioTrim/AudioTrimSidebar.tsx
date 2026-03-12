@@ -24,7 +24,9 @@ export const AudioTrimSidebar: React.FC<AudioTrimSidebarProps> = ({
   const { t } = useLanguage();
 
   return (
-    <div className={`w-80 border-r border-slate-700 bg-slate-800 flex flex-col p-6 overflow-y-auto z-10 shadow-2xl space-y-6 ${isDisabled ? 'opacity-50 pointer-events-none' : ''}`}>
+    <div
+      className={`w-80 border-r border-slate-700 bg-slate-800 flex flex-col p-6 overflow-y-auto z-10 shadow-2xl space-y-6 ${isDisabled ? 'opacity-50 pointer-events-none' : ''}`}
+    >
       {tracks.length === 0 ? (
         <div className="space-y-6">
           <FileDropZone
@@ -43,13 +45,15 @@ export const AudioTrimSidebar: React.FC<AudioTrimSidebarProps> = ({
               <button
                 key={track.id}
                 onClick={() => onSelectTrack(track.id)}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${selectedId === track.id
-                  ? 'bg-tool-audiotrim/20 border-tool-audiotrim text-tool-audiotrim shadow-[0_0_15px_rgba(16,185,129,0.15)]'
-                  : 'bg-slate-700/50 border-slate-600 hover:border-tool-audiotrim/40 hover:bg-slate-700/50 text-slate-300'
-                  }`}
+                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
+                  selectedId === track.id
+                    ? 'bg-tool-audiotrim/20 border-tool-audiotrim text-tool-audiotrim shadow-[0_0_15px_rgba(16,185,129,0.15)]'
+                    : 'bg-slate-700/50 border-slate-600 hover:border-tool-audiotrim/40 hover:bg-slate-700/50 text-slate-300'
+                }`}
               >
-                <div className={`p-2 rounded-lg shrink-0 ${selectedId === track.id ? 'bg-tool-audiotrim/20' : 'bg-slate-600/50'
-                  }`}>
+                <div
+                  className={`p-2 rounded-lg shrink-0 ${selectedId === track.id ? 'bg-tool-audiotrim/20' : 'bg-slate-600/50'}`}
+                >
                   <Music className="w-4 h-4" />
                 </div>
                 <span className="text-sm font-bold truncate">{track.file.name}</span>

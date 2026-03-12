@@ -327,7 +327,7 @@ export const translations = {
         exportAs: 'Esporta',
         exportFailed: 'Esportazione audio fallita. Riprova.',
         wavDesc:
-          "Formato PCM standard.\nAltamente consigliato per preservare la qualità audio. Usa MP3 per esportare file più piccoli.",
+          'Formato PCM standard.\nAltamente consigliato per preservare la qualità audio. Usa MP3 per esportare file più piccoli.',
         mp3Desc:
           "Formato audio compresso.\nL'esportazione in MP3 introduce perdite di qualità. Usa WAV per la qualità massima.",
         removeTrackTitle: 'Rimuovere Traccia Audio?',
