@@ -45,19 +45,37 @@ export const PiCollageTool: React.FC = () => {
     return () => clearTimeout(timeout);
   }, [pictures, aspectRatio, exportFormat]);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
-      const newPics: PiCollagePicture[] = files.map((file, i) => {
-        const maxZ = pictures.length > 0 ? Math.max(...pictures.map((p) => p.zIndex)) : 0;
-        return {
+      const newPics: PiCollagePicture[] = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const previewUrl = URL.createObjectURL(file);
+
+        // Measure image
+        const img = new Image();
+        img.src = previewUrl;
+        await new Promise((resolve) => {
+          img.onload = resolve;
+        });
+
+        const ar = img.width / img.height;
+        const maxZ =
+          pictures.length > 0
+            ? Math.max(...pictures.map((p) => p.zIndex), ...newPics.map((p) => p.zIndex))
+            : 0;
+
+        newPics.push({
           id: Math.random().toString(36).substring(7),
           file,
-          previewUrl: URL.createObjectURL(file),
-          x: 20 + i * 5,
-          y: 20 + i * 5,
-          width: 30,
-          height: 40,
+          previewUrl,
+          aspectRatio: ar,
+          x: 20 + (pictures.length + i) * 5,
+          y: 20 + (pictures.length + i) * 5,
+          width: 30, // Base width percentage
+          height: 30 / ar, // Adjust height based on AR to start non-stretched
           rotation: 0,
           scaleX: 1,
           scaleY: 1,
@@ -67,12 +85,13 @@ export const PiCollageTool: React.FC = () => {
           borderSize: BorderSize.Small,
           borderColor: TextColor.White,
           filter: FilterMode.Normal,
-          zIndex: maxZ + 1 + i,
+          zIndex: maxZ + 1,
           isVisible: true,
-        };
-      });
+        });
+      }
+
       setPictures((prev) => [...prev, ...newPics]);
-      setActivePictureId(newPics[0].id);
+      if (newPics.length > 0) setActivePictureId(newPics[0].id);
     }
   };
 
@@ -93,15 +112,15 @@ export const PiCollageTool: React.FC = () => {
   const getCanvasDimensions = () => {
     switch (aspectRatio) {
       case AspectRatio.Landscape_16_9:
-        return { w: 1920, h: 1080 };
+        return { w: 3840, h: 2160 };
       case AspectRatio.Portrait_9_16:
-        return { w: 1080, h: 1920 };
-      case AspectRatio.Portrait_4_5:
-        return { w: 1080, h: 1350 };
+        return { w: 2160, h: 3840 };
+      case AspectRatio.Portrait_3_4:
+        return { w: 2160, h: 2880 };
       case AspectRatio.Square_1_1:
-        return { w: 1080, h: 1080 };
+        return { w: 2160, h: 2160 };
       default:
-        return { w: 1920, h: 1080 };
+        return { w: 3840, h: 2160 };
     }
   };
 
@@ -123,10 +142,11 @@ export const PiCollageTool: React.FC = () => {
 
       for (const pic of sorted) {
         // Compute pixel dimensions
+        // IMPORTANT: Width is the driver, height is calculated from AR to avoid stretching
+        const pxW = (pic.width / 100) * w;
+        const pxH = pxW / pic.aspectRatio;
         const pxX = (pic.x / 100) * w;
         const pxY = (pic.y / 100) * h;
-        const pxW = (pic.width / 100) * w;
-        const pxH = (pic.height / 100) * h;
 
         ctx.save();
 
@@ -147,7 +167,8 @@ export const PiCollageTool: React.FC = () => {
         }
 
         // Clip area for image contents inside border
-        const bSize = pic.borderSize;
+        // Scale border size for 4K (base resolution was 1080 vertical/square, now 2160)
+        const bSize = pic.borderSize * 2;
         ctx.beginPath();
         // The internal area
         ctx.rect(-pxW / 2 + bSize, -pxH / 2 + bSize, pxW - 2 * bSize, pxH - 2 * bSize);

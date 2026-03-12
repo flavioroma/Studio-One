@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trash2, Monitor, Smartphone, Smartphone as SmartphoneIcon, Square } from 'lucide-react';
+import { Trash2, Monitor, Smartphone, Square, Tablet } from 'lucide-react';
 import { AspectRatio, PiCollagePicture, BorderSize, FilterMode } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { FileDropZone } from '../../components/FileDropZone';
@@ -28,7 +28,7 @@ export const PiCollageSidebar: React.FC<PiCollageSidebarProps> = ({
   const formatOptions = [
     { id: AspectRatio.Landscape_16_9, label: '16:9', icon: Monitor },
     { id: AspectRatio.Portrait_9_16, label: '9:16', icon: Smartphone },
-    { id: AspectRatio.Portrait_4_5, label: '4:5', icon: SmartphoneIcon },
+    { id: AspectRatio.Portrait_3_4, label: '3:4', icon: Tablet },
     { id: AspectRatio.Square_1_1, label: '1:1', icon: Square },
   ];
 
@@ -69,7 +69,7 @@ export const PiCollageSidebar: React.FC<PiCollageSidebarProps> = ({
           {/* Output Resolution Settings */}
           <div className="space-y-4">
             <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
-              {t.tools.picollage.outputResolution}
+              {t.tools.picollage.aspectRatio}
             </h3>
             <div className="grid grid-cols-2 gap-2">
               {formatOptions.map((opt) => (

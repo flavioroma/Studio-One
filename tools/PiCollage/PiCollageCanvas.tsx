@@ -18,6 +18,64 @@ export const PiCollageCanvas: React.FC<PiCollageCanvasProps> = ({
   onUpdatePicture,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerSize({
+          width: entry.contentRect.width,
+          height: entry.contentRect.height,
+        });
+      }
+    });
+
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  const getCanvasStyle = () => {
+    // Calculate aspect ratio decimal
+    let ratio = 16 / 9;
+    switch (aspectRatio) {
+      case AspectRatio.Landscape_16_9:
+        ratio = 16 / 9;
+        break;
+      case AspectRatio.Portrait_9_16:
+        ratio = 9 / 16;
+        break;
+      case AspectRatio.Portrait_3_4:
+        ratio = 3 / 4;
+        break;
+      case AspectRatio.Square_1_1:
+        ratio = 1 / 1;
+        break;
+    }
+
+    const availableW = containerSize.width;
+    const availableH = containerSize.height;
+
+    if (availableW === 0 || availableH === 0) return { width: '100%', height: '100%' };
+
+    const containerRatio = availableW / availableH;
+
+    let finalW, finalH;
+    if (containerRatio > ratio) {
+      // Container is wider than canvas ratio -> fit to height
+      finalH = availableH;
+      finalW = finalH * ratio;
+    } else {
+      // Container is taller than canvas ratio -> fit to width
+      finalW = availableW;
+      finalH = finalW / ratio;
+    }
+
+    return {
+      width: `${finalW}px`,
+      height: `${finalH}px`,
+    };
+  };
 
   const [interaction, setInteraction] = useState<{
     id: string;
@@ -38,8 +96,8 @@ export const PiCollageCanvas: React.FC<PiCollageCanvasProps> = ({
         return '16 / 9';
       case AspectRatio.Portrait_9_16:
         return '9 / 16';
-      case AspectRatio.Portrait_4_5:
-        return '4 / 5';
+      case AspectRatio.Portrait_3_4:
+        return '3 / 4';
       case AspectRatio.Square_1_1:
         return '1 / 1';
       default:
@@ -88,6 +146,13 @@ export const PiCollageCanvas: React.FC<PiCollageCanvasProps> = ({
     // Use setPointerCapture to track movement outside element
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
 
+    // Get the element being clicked to get its current pixel height
+    // (since height is 'auto' in state)
+    const target = (e.currentTarget as HTMLElement).closest('.transform-gpu') as HTMLElement;
+    const currentHeight = target
+      ? (target.getBoundingClientRect().height / containerSize.height) * 100
+      : 30;
+
     setInteraction({
       id,
       type,
@@ -97,7 +162,7 @@ export const PiCollageCanvas: React.FC<PiCollageCanvasProps> = ({
       initialX: pic.x,
       initialY: pic.y,
       initialWidth: pic.width,
-      initialHeight: pic.height,
+      initialHeight: currentHeight,
       initialRotation: pic.rotation,
     });
   };
@@ -105,7 +170,11 @@ export const PiCollageCanvas: React.FC<PiCollageCanvasProps> = ({
   const handlePointerMove = (e: React.PointerEvent) => {
     if (!interaction || !containerRef.current) return;
 
-    const rect = containerRef.current.getBoundingClientRect();
+    // Use dimensions of the actual export area for coordinate calculations
+    const canvasArea = document.getElementById('picollage-export-area');
+    if (!canvasArea) return;
+    const rect = canvasArea.getBoundingClientRect();
+
     const dx = ((e.clientX - interaction.startX) / rect.width) * 100;
     const dy = ((e.clientY - interaction.startY) / rect.height) * 100;
 
@@ -117,46 +186,59 @@ export const PiCollageCanvas: React.FC<PiCollageCanvasProps> = ({
         y: interaction.initialY + dy,
       };
     } else if (interaction.type === 'resize' && interaction.handle) {
-      // Basic resize logic (doesn't fully account for rotation center offset perfectly without math overhead,
-      // but good enough for simple bounding box constraints without matrix math)
+      const pic = pictures.find((p) => p.id === interaction.id);
+      if (!pic) return;
+
       let newW = interaction.initialWidth;
-      let newH = interaction.initialHeight;
       let newX = interaction.initialX;
       let newY = interaction.initialY;
 
+      // Handle horizontal growth/shrinkage
       if (interaction.handle.includes('e')) newW += dx;
-      if (interaction.handle.includes('s')) newH += dy;
       if (interaction.handle.includes('w')) {
         newW -= dx;
         newX += dx;
       }
-      if (interaction.handle.includes('n')) {
-        newH -= dy;
+
+      // Handle vertical growth/shrinkage by also influencing width if strictly vertical handles
+      if (interaction.handle === 'n') {
+        const dy_w = dy * pic.aspectRatio; // proportional dx
+        newW -= dy_w;
         newY += dy;
+        newX += dy_w / 2; // Keep centered-ish if only top pulled
+      }
+      if (interaction.handle === 's') {
+        const dy_w = dy * pic.aspectRatio;
+        newW += dy_w;
       }
 
-      // Keep aspect ratio for corners
+      // Handle corners (diagonal) - prioritize DX for width calculation
       if (interaction.handle.length === 2) {
-        // simple proportional scale (can be improved)
-        const ratio = interaction.initialWidth / interaction.initialHeight;
-        if (Math.abs(dx) > Math.abs(dy)) {
-          if (interaction.handle.includes('n')) newH = newW / ratio;
-          else newH = newW / ratio;
-        } else {
-          if (interaction.handle.includes('w')) newW = newH * ratio;
-          else newW = newH * ratio;
+        // dx already influenced newW above for 'e'/'w' parts
+        // but we might want to pick the larger movement to feel more natural
+        if (Math.abs(dy) > Math.abs(dx)) {
+          // dy is primary
+          const sign = interaction.handle.includes('s') ? 1 : -1;
+          newW = (interaction.initialHeight + dy * sign) * pic.aspectRatio;
+          if (interaction.handle.includes('w')) {
+            newX = interaction.initialX + (interaction.initialWidth - newW);
+          }
+          if (interaction.handle.includes('n')) {
+            newY = interaction.initialY + dy;
+          }
         }
       }
 
       // Minimum size
       if (newW < 5) newW = 5;
-      if (newH < 5) newH = 5;
 
-      updates = { x: newX, y: newY, width: newW, height: newH };
+      // Height is always derived from width * AR in state or handled by CSS aspect-ratio
+      // Since we use CSS aspect-ratio on the div, we only need to update width and x/y
+      updates = { x: newX, y: newY, width: newW };
     } else if (interaction.type === 'rotate') {
       // Calculate angle from center of image
       const cx = interaction.initialX + interaction.initialWidth / 2;
-      const cy = interaction.initialY + interaction.initialHeight / 2;
+      const cy = interaction.initialY + (interaction.initialHeight || 0) / 2;
 
       const pxX = ((e.clientX - rect.left) / rect.width) * 100;
       const pxY = ((e.clientY - rect.top) / rect.height) * 100;
@@ -223,14 +305,16 @@ export const PiCollageCanvas: React.FC<PiCollageCanvasProps> = ({
 
   return (
     <div
-      className="relative w-full h-full flex items-center justify-center p-8"
+      ref={containerRef}
+      className="relative w-full h-full flex items-center justify-center p-4 md:p-8 overflow-hidden"
       onClick={() => onSelectPicture(null)}
     >
       <div
-        ref={containerRef}
         id="picollage-export-area"
-        className="relative bg-white shadow-2xl overflow-hidden max-h-full max-w-full"
-        style={{ aspectRatio: getAspectStyle(), width: '100%', maxHeight: '100%' }}
+        className="relative bg-white shadow-2xl overflow-hidden flex-shrink-0"
+        style={{
+          ...getCanvasStyle(),
+        }}
       >
         {/* Sort by zIndex */}
         {[...pictures]
@@ -246,7 +330,9 @@ export const PiCollageCanvas: React.FC<PiCollageCanvasProps> = ({
                   left: `${pic.x}%`,
                   top: `${pic.y}%`,
                   width: `${pic.width}%`,
-                  height: `${pic.height}%`,
+                  // Height is auto-calculated based on aspect ratio to prevent stretching
+                  aspectRatio: `${pic.aspectRatio}`,
+                  height: 'auto',
                   transform: `rotate(${pic.rotation}deg)`,
                   transformOrigin: '50% 50%',
                   zIndex: pic.zIndex,

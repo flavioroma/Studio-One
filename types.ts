@@ -127,6 +127,7 @@ export interface PiCollagePicture {
   id: string;
   file: File;
   previewUrl: string;
+  aspectRatio: number; // width / height
 
   // Transform and Framing
   x: number;
