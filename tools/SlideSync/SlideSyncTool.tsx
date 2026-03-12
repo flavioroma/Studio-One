@@ -276,6 +276,11 @@ export const SlideSyncTool: React.FC = () => {
             <div className="flex items-center gap-4">
               <span className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-500">
                 {slides.length} {t.tools.slidesync.slidesCount}
+                {audioDuration > 0 && slides.length > 0 && (
+                  <span className="ml-2 text-tool-slidesync lowercase tracking-normal font-bold">
+                    ({(audioDuration / slides.length).toFixed(2)}s / {t.tools.slidesync.slide})
+                  </span>
+                )}
               </span>
               <span className="text-[12px] text-slate-400 italic">
                 {t.tools.slidesync.timelineTip}

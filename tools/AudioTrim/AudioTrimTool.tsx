@@ -695,14 +695,14 @@ export const AudioTrimTool: React.FC = () => {
 
   return (
     <div className="h-full flex bg-slate-900 overflow-hidden">
-        <AudioTrimSidebar
-          tracks={tracks}
-          selectedId={selectedId}
-          onFilesSelected={handleDrop}
-          onSelectTrack={handleSelectTrack}
-          onDeleteAll={handleEraseProject}
-          isDisabled={isProcessing}
-        />
+      <AudioTrimSidebar
+        tracks={tracks}
+        selectedId={selectedId}
+        onFilesSelected={handleDrop}
+        onSelectTrack={handleSelectTrack}
+        onDeleteAll={handleEraseProject}
+        isDisabled={isProcessing}
+      />
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col min-w-0 bg-slate-950 relative">
@@ -814,7 +814,7 @@ export const AudioTrimTool: React.FC = () => {
 
                   {/* Header Area for Playback */}
                   <div className="mt-8 flex items-center justify-center gap-6 px-4">
-                    <div className="flex flex-col items-center gap-1 group/play">
+                    <div className="flex flex-col items-center gap-2 group/play">
                       <button
                         onClick={() => togglePlay('all')}
                         className={`w-22 h-22 flex items-center justify-center border border-tool-audiotrim/50 rounded-4xl transition-all ${isPlaying && playMode === 'all'
@@ -829,7 +829,7 @@ export const AudioTrimTool: React.FC = () => {
                           <Play className="w-11 h-11 ml-1 text-tool-audiotrim" />
                         )}
                       </button>
-                      <span className="text-[12px] font-black uppercase tracking-widest text-slate-500 group-hover/play:text-slate-400">
+                      <span className="text-[12px] font-black uppercase tracking-widest text-slate-500 group-hover/play:text-slate-400 mt-2">
                         {t.tools.audiotrim.fullTrack}
                       </span>
                       <span className="text-[12px] font-mono text-tool-audiotrim font-bold uppercase tracking-widest mt-1">
@@ -981,9 +981,6 @@ export const AudioTrimTool: React.FC = () => {
 
                         <div className="space-y-4">
                           <div className="flex justify-between items-center px-1">
-                            <label className="text-[12px] font-black uppercase tracking-widest text-slate-500">
-                              {t.tools.audiotrim.selectionEnd}
-                            </label>
                             <div className="flex items-center gap-1.5 bg-slate-900/50 p-1.5 rounded-lg border border-slate-700/50">
                               <input
                                 type="text"
@@ -1025,6 +1022,9 @@ export const AudioTrimTool: React.FC = () => {
                                 Set
                               </button>
                             </div>
+                            <label className="text-[12px] font-black uppercase tracking-widest text-slate-500">
+                              {t.tools.audiotrim.selectionEnd}
+                            </label>
                           </div>
 
                           <div className="relative flex items-center gap-2">
@@ -1088,8 +1088,8 @@ export const AudioTrimTool: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="flex flex-col items-center pt-6 mt-6">
-                      <div className="flex flex-col items-center gap-2 group/play mb-4">
+                    <div className="flex flex-col items-center pt-4 mt-4">
+                      <div className="flex flex-col items-center gap-2 group/play">
                         <button
                           onClick={() => togglePlay('selection')}
                           className={`w-22 h-22 flex items-center justify-center border border-tool-audiotrim/50 rounded-4xl transition-all ${isPlaying && playMode === 'selection'
@@ -1106,7 +1106,7 @@ export const AudioTrimTool: React.FC = () => {
                             <Play className="w-11 h-11 ml-1 text-tool-audiotrim" />
                           )}
                         </button>
-                        <span className="text-[12px] font-black uppercase tracking-widest text-slate-500 group-hover/play:text-slate-400">
+                        <span className="text-[12px] font-black uppercase tracking-widest text-slate-500 group-hover/play:text-slate-400 mt-2">
                           {t.tools.audiotrim.selection}
                         </span>
                         <span className="text-[12px] font-mono text-tool-audiotrim font-bold uppercase tracking-widest mt-1">
