@@ -1,10 +1,10 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Slide, AspectRatio, ExportFormat } from '../types';
-import { calculateCaptionMetrics, calculateCaptionPosition } from '../utils/captionUtils';
-import { Mp4ExportService } from '../services/Mp4ExportService';
+import { Slide, AspectRatio, ExportFormat } from '../../types';
+import { calculateCaptionMetrics, calculateCaptionPosition } from '../../utils/captionUtils';
+import { Mp4ExportService } from '../../services/Mp4ExportService';
 import { Download, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
-import { PlaybackControls } from './PlaybackControls';
-import { useLanguage } from '../contexts/LanguageContext';
+import { PlaybackControls } from '../../components/PlaybackControls';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface VideoPreviewProps {
   slides: Slide[];
@@ -77,8 +77,8 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
         return { w: 1920, h: 1080 };
       case AspectRatio.Portrait_9_16:
         return { w: 1080, h: 1920 };
-      case AspectRatio.Portrait_4_5:
-        return { w: 1080, h: 1350 };
+      case AspectRatio.Portrait_3_4:
+        return { w: 1080, h: 1440 };
       case AspectRatio.Square_1_1:
         return { w: 1080, h: 1080 };
       default:
@@ -335,8 +335,8 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
         return 'aspect-video w-full max-w-5xl';
       case AspectRatio.Portrait_9_16:
         return 'aspect-[9/16] h-full max-h-[80vh]';
-      case AspectRatio.Portrait_4_5:
-        return 'aspect-[4/5] h-full max-h-[80vh]';
+      case AspectRatio.Portrait_3_4:
+        return 'aspect-[3/4] h-full max-h-[80vh]';
       case AspectRatio.Square_1_1:
         return 'aspect-square h-full max-h-[80vh]';
       default:
