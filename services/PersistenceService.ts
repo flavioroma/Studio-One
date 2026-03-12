@@ -13,6 +13,7 @@ const SLIDESYNC_KEY = 'slidesync_state_v1';
 const VIDEOVERLAY_KEY = 'videoverlay_state_v1';
 const PHOTOVERLAY_KEY = 'photoverlay_state_v1';
 const AUDIOTRIM_KEY = 'audiotrim_state_v1';
+const PICOLLAGE_KEY = 'picollage_state_v1';
 
 export interface SlideSyncState {
   slides: Slide[];
@@ -87,6 +88,12 @@ export interface LegacyAudioTrimState {
   startTime: number;
   endTime: number;
   exportFormat: 'wav' | 'mp3';
+}
+
+export interface PiCollageState {
+  pictures: import('../types').PiCollagePicture[];
+  aspectRatio: AspectRatio;
+  exportFormat: 'png' | 'jpg';
 }
 
 export class PersistenceService {
@@ -209,6 +216,24 @@ export class PersistenceService {
       return state as AudioTrimState;
     } catch (error) {
       console.error('Failed to load AudioTrim state:', error);
+      return null;
+    }
+  }
+
+  // PiCollage
+  static async savePiCollageState(state: PiCollageState): Promise<void> {
+    try {
+      await set(PICOLLAGE_KEY, state);
+    } catch (error) {
+      console.error('Failed to save PiCollage state:', error);
+    }
+  }
+
+  static async loadPiCollageState(): Promise<PiCollageState | null> {
+    try {
+      return (await get<PiCollageState>(PICOLLAGE_KEY)) || null;
+    } catch (error) {
+      console.error('Failed to load PiCollage state:', error);
       return null;
     }
   }
