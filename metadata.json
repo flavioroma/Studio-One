@@ -1,5 +1,5 @@
 {
-  "name": "SlideSync Studio",
-  "description": "Create music videos from your photos with custom text overlays. Features Gemini-powered auto-captioning and browser-native video rendering.",
+  "name": "Studio One",
+  "description": "A collection of tools designed to enhance multimedia content",
   "requestFramePermissions": []
 }

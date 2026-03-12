@@ -1,7 +1,22 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Slide, AspectRatio } from '../../types';
+import { AudioTrackItem } from '../../services/PersistenceService';
 import { calculateCaptionMetrics, calculateCaptionPosition } from '../../utils/captionUtils';
-import { Maximize, Move, AlignHorizontalSpaceAround, AlignVerticalSpaceAround, Plus, Music, Trash2, Monitor, Smartphone, Smartphone as SmartphoneIcon, Square, Image as ImageIcon } from 'lucide-react';
+import {
+  Maximize,
+  Move,
+  AlignHorizontalSpaceAround,
+  AlignVerticalSpaceAround,
+  Plus,
+  Music,
+  Trash2,
+  Monitor,
+  Smartphone,
+  Smartphone as SmartphoneIcon,
+  Square,
+  Image as ImageIcon,
+  ChevronDown,
+} from 'lucide-react';
 import { CaptionSettingsPanel } from '../../components/CaptionSettingsPanel';
 import { useLanguage } from '../../contexts/LanguageContext';
 
@@ -15,7 +30,10 @@ interface SlideSyncSidebarProps {
   audioFile: File | null;
   onAudioUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onRemoveAudio: () => void;
+  audioTrimTracks: AudioTrackItem[];
+  onSelectAudioTrimTrack: (track: AudioTrackItem) => void;
   onAspectRatioChange: (ratio: AspectRatio) => void;
+  isAudioRendering?: boolean;
   hasContent: boolean;
   onDeleteAll: () => void;
 }
@@ -30,7 +48,10 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
   audioFile,
   onAudioUpload,
   onRemoveAudio,
+  audioTrimTracks,
+  onSelectAudioTrimTrack,
   onAspectRatioChange,
+  isAudioRendering = false,
   hasContent,
   onDeleteAll,
 }) => {
@@ -39,6 +60,7 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [lastPos, setLastPos] = useState({ x: 0, y: 0 });
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const [showAudioTrimMenu, setShowAudioTrimMenu] = useState(false);
 
   const formatOptions = [
     { id: AspectRatio.Landscape_16_9, label: '16:9', icon: Monitor },
@@ -55,7 +77,7 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
       for (const entry of entries) {
         setContainerSize({
           width: entry.contentRect.width,
-          height: entry.contentRect.height
+          height: entry.contentRect.height,
         });
       }
     });
@@ -66,11 +88,16 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
 
   const getAspectStyle = () => {
     switch (aspectRatio) {
-      case AspectRatio.Landscape_16_9: return '16 / 9';
-      case AspectRatio.Portrait_9_16: return '9 / 16';
-      case AspectRatio.Portrait_4_5: return '4 / 5';
-      case AspectRatio.Square_1_1: return '1 / 1';
-      default: return '16 / 9';
+      case AspectRatio.Landscape_16_9:
+        return '16 / 9';
+      case AspectRatio.Portrait_9_16:
+        return '9 / 16';
+      case AspectRatio.Portrait_4_5:
+        return '4 / 5';
+      case AspectRatio.Square_1_1:
+        return '1 / 1';
+      default:
+        return '16 / 9';
     }
   };
 
@@ -91,7 +118,7 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
 
     onUpdate({
       offsetX: Math.max(-400, Math.min(400, (slide.offsetX || 0) + moveX)),
-      offsetY: Math.max(-400, Math.min(400, (slide.offsetY || 0) + moveY))
+      offsetY: Math.max(-400, Math.min(400, (slide.offsetY || 0) + moveY)),
     });
 
     setLastPos({ x: e.clientX, y: e.clientY });
@@ -107,7 +134,12 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
     if (containerSize.width === 0 || !slide) return { display: 'none' };
 
     const metrics = calculateCaptionMetrics(containerSize.width, containerSize.height, slide);
-    const pos = calculateCaptionPosition(containerSize.width, containerSize.height, metrics, slide.position);
+    const pos = calculateCaptionPosition(
+      containerSize.width,
+      containerSize.height,
+      metrics,
+      slide.position
+    );
 
     const topY = pos.y - metrics.fontSize;
 
@@ -136,15 +168,32 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
     return style;
   };
 
+  const formatDuration = (seconds: number) => {
+    if (!seconds || seconds <= 0 || !isFinite(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
-    <div className="space-y-6 flex flex-col h-full" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
+    <div
+      className="space-y-6 flex flex-col h-full"
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
+    >
       <div className="flex items-center justify-center">
-        <h3 className="text-md font-bold text-slate-100 uppercase tracking-tight">{t.tools.slidesync.mediaSettings}</h3>
+        <h3 className="text-md font-bold text-slate-100 uppercase tracking-tight">
+          {t.tools.slidesync.mediaSettings}
+        </h3>
       </div>
 
       <div className="space-y-6">
-        <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-400">{t.tools.slidesync.backgroundMusic}<br />{t.tools.slidesync.backgroundMusicDesc}</label>
+        <div className="flex flex-col gap-4">
+          <label className="text-sm font-semibold text-slate-400">
+            {t.tools.slidesync.backgroundMusic}
+            <br />
+            {t.tools.slidesync.backgroundMusicDesc}
+          </label>
           <div className="flex items-center gap-2">
             <input
               type="file"
@@ -155,10 +204,12 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
             />
             <label
               htmlFor="audio-upload"
-              className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border border-slate-600 cursor-pointer hover:bg-slate-700/50 transition-all ${audioFile ? 'bg-tool-slidesync/10 border-tool-slidesync/40 text-tool-slidesync/80' : ''}`}
+              className={`flex items-center justify-center gap-2 w-full p-3 rounded-xl border border-slate-600 hover:border-tool-slidesync/40 bg-slate-700/50 cursor-pointer transition-all text-slate-300 hover:text-tool-slidesync ${audioFile ? 'bg-tool-slidesync/10 border-tool-slidesync/40 text-tool-slidesync/80' : ''}`}
             >
               <Music className="w-4 h-4" />
-              <span className="text-sm truncate max-w-[120px]">{audioFile ? audioFile.name : t.tools.slidesync.selectAudio}</span>
+              <span className="text-sm truncate max-w-[120px]">
+                {audioFile ? audioFile.name : t.tools.slidesync.selectAudio}
+              </span>
             </label>
             {audioFile && (
               <button
@@ -170,29 +221,59 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
               </button>
             )}
           </div>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-400">{t.tools.slidesync.videoFormat}</label>
-          <div className="grid grid-cols-2 gap-2">
-            {formatOptions.map((opt) => (
+          {audioTrimTracks.length > 0 && !audioFile && (
+            <div className="relative">
               <button
-                key={opt.id}
-                onClick={() => onAspectRatioChange(opt.id)}
-                className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${aspectRatio === opt.id
-                  ? 'bg-tool-slidesync/20 border-tool-slidesync text-tool-slidesync shadow-[0_0_15px_rgba(var(--tool-slidesync),0.2)]'
-                  : 'bg-slate-700/50 border-slate-600 hover:border-slate-500'
-                  }`}
+                onClick={() => {
+                  if (audioTrimTracks.length === 1) {
+                    onSelectAudioTrimTrack(audioTrimTracks[0]);
+                  } else {
+                    setShowAudioTrimMenu(!showAudioTrimMenu);
+                  }
+                }}
+                disabled={isAudioRendering}
+                className={`flex items-center justify-center gap-2 w-full p-3 rounded-xl border border-slate-600 hover:border-tool-slidesync/40 bg-slate-700/50 transition-all text-slate-300 hover:text-tool-slidesync ${isAudioRendering ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                <opt.icon className="w-4 h-4 mb-1" />
-                <span className="text-[10px] font-bold uppercase">{opt.label}</span>
+                <Music className="w-4 h-4" />
+                <span className="text-sm">
+                  {isAudioRendering ? t.captions.thinking : t.tools.slidesync.selectFromAudioTrim}
+                </span>
+                {audioTrimTracks.length > 1 && <ChevronDown className="w-3 h-3" />}
               </button>
-            ))}
-          </div>
+
+              {showAudioTrimMenu && audioTrimTracks.length > 1 && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowAudioTrimMenu(false)} />
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden animate-fadeIn">
+                    <div className="max-h-48 overflow-y-auto py-1">
+                      {audioTrimTracks.map((track) => (
+                        <button
+                          key={track.id}
+                          onClick={() => {
+                            onSelectAudioTrimTrack(track);
+                            setShowAudioTrimMenu(false);
+                          }}
+                          className="w-full flex items-center justify-between px-4 py-3 text-xs text-slate-300 hover:bg-tool-slidesync/10 hover:text-tool-slidesync border-b border-slate-700 last:border-0 transition-colors"
+                          title={track.file.name}
+                        >
+                          <span className="truncate mr-4">{track.file.name}</span>
+                          <span className="shrink-0 text-slate-500 font-mono">
+                            {formatDuration(track.endTime - track.startTime)}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-semibold text-slate-400">{t.tools.slidesync.uploadPhotos}</label>
+        <div className="flex flex-col gap-4">
+          <label className="text-sm font-semibold text-slate-400">
+            {t.tools.slidesync.uploadImages}
+          </label>
           <div className="relative group">
             <input
               type="file"
@@ -204,11 +285,33 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
             />
             <label
               htmlFor="img-upload"
-              className="flex items-center justify-center gap-2 w-full p-3 rounded-xl border-2 border-dashed border-slate-600 hover:border-tool-slidesync/40 hover:bg-slate-700/50 cursor-pointer transition-all"
+              className="flex items-center justify-center gap-2 w-full p-3 rounded-xl border border-slate-600 hover:border-tool-slidesync/40 bg-slate-700/50 cursor-pointer transition-all text-slate-300 hover:text-tool-slidesync"
             >
               <Plus className="w-5 h-5" />
-              <span className="text-sm font-medium">{t.tools.slidesync.addMedia}</span>
+              <span className="text-sm font-medium">{t.tools.slidesync.addImages}</span>
             </label>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <label className="text-sm font-semibold text-slate-400">
+            {t.tools.slidesync.videoFormat}
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {formatOptions.map((opt) => (
+              <button
+                key={opt.id}
+                onClick={() => onAspectRatioChange(opt.id)}
+                className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${
+                  aspectRatio === opt.id
+                    ? 'bg-tool-slidesync/20 border-tool-slidesync text-tool-slidesync shadow-[0_0_15px_rgba(59,130,246,0.2)]'
+                    : 'bg-slate-700/50 border-slate-600 hover:border-tool-slidesync/40 text-slate-300 hover:text-tool-slidesync'
+                }`}
+              >
+                <opt.icon className="w-4 h-4 mb-1" />
+                <span className="text-[10px] font-bold uppercase">{opt.label}</span>
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -218,12 +321,15 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
       {slide ? (
         <div className="space-y-6 animate-fadeIn pb-8">
           <div className="flex items-center justify-center">
-            <h3 className="text-md font-bold text-slate-100 uppercase tracking-tight">{t.tools.slidesync.slideProperties}</h3>
+            <h3 className="text-md font-bold text-slate-100 uppercase tracking-tight">
+              {t.tools.slidesync.slideProperties}
+            </h3>
           </div>
 
           <div className="space-y-3">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-              <Maximize className="w-3 h-3 text-tool-slidesync" /> {t.tools.slidesync.framingPreview}
+              <Maximize className="w-3 h-3 text-tool-slidesync" />{' '}
+              {t.tools.slidesync.framingPreview}
             </label>
 
             <div
@@ -237,7 +343,7 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
                 className="absolute inset-0 flex items-center justify-center pointer-events-none"
                 style={{
                   transform: `translate(${slide.offsetX || 0}%, ${slide.offsetY || 0}%) scale(${slide.zoom || 1})`,
-                  transition: isDragging ? 'none' : 'transform 0.2s ease-out'
+                  transition: isDragging ? 'none' : 'transform 0.2s ease-out',
                 }}
               >
                 <img
@@ -247,15 +353,13 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
                 />
               </div>
 
-              {slide.text && (
-                <div style={getCaptionStyle()}>
-                  {slide.text}
-                </div>
-              )}
+              {slide.text && <div style={getCaptionStyle()}>{slide.text}</div>}
 
               <div className="absolute inset-0 border border-tool-slidesync/20 pointer-events-none z-10">
                 <div className="w-full h-full grid grid-cols-3 grid-rows-3 opacity-10">
-                  {[...Array(9)].map((_, i) => <div key={i} className="border border-white/20"></div>)}
+                  {[...Array(9)].map((_, i) => (
+                    <div key={i} className="border border-white/20"></div>
+                  ))}
                 </div>
               </div>
 
@@ -264,7 +368,9 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
               </div>
 
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none group-hover:opacity-0 transition-opacity z-30">
-                <span className="text-[9px] font-bold text-white/30 uppercase tracking-tighter bg-black/40 px-3 py-1 rounded-full">{t.tools.slidesync.panImage}</span>
+                <span className="text-[9px] font-bold text-white/30 uppercase tracking-tighter bg-black/40 px-3 py-1 rounded-full">
+                  {t.tools.slidesync.panImage}
+                </span>
               </div>
             </div>
 
@@ -281,7 +387,7 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
                   step="0.01"
                   value={slide.zoom}
                   onChange={(e) => onUpdate({ zoom: parseFloat(e.target.value) })}
-                  className="w-full h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-tool-slidesync"
+                  className="w-full h-1 bg-slate-700 rounded-lg cursor-pointer range-sm text-tool-slidesync accent-tool-slidesync transition-all"
                 />
               </div>
 
@@ -332,7 +438,9 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
             className="w-full flex items-center justify-center gap-3 p-3.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/30 hover:border-red-500/50 rounded-2xl transition-all group"
           >
             <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
-            <span className="text-xs font-bold uppercase tracking-widest">{t.common.eraseProject}</span>
+            <span className="text-xs font-bold uppercase tracking-widest">
+              {t.common.eraseProject}
+            </span>
           </button>
         </div>
       )}

@@ -12,23 +12,30 @@ interface TimelineProps {
   onImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-export const Timeline: React.FC<TimelineProps> = ({ slides, activeSlideId, onSelectSlide, onReorder, onDelete, onImageUpload }) => {
+export const Timeline: React.FC<TimelineProps> = ({
+  slides,
+  activeSlideId,
+  onSelectSlide,
+  onReorder,
+  onDelete,
+  onImageUpload,
+}) => {
   const { t } = useLanguage();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
-    e.dataTransfer.setData("text/plain", index.toString());
-    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData('text/plain', index.toString());
+    e.dataTransfer.effectAllowed = 'move';
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
+    e.dataTransfer.dropEffect = 'move';
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>, dropIndex: number) => {
     e.preventDefault();
-    const dragIndexStr = e.dataTransfer.getData("text/plain");
+    const dragIndexStr = e.dataTransfer.getData('text/plain');
     if (!dragIndexStr) return;
 
     const dragIndex = parseInt(dragIndexStr, 10);
@@ -63,7 +70,7 @@ export const Timeline: React.FC<TimelineProps> = ({ slides, activeSlideId, onSel
       className="h-full flex gap-4 overflow-x-auto items-center pb-4 px-2 custom-scrollbar select-none"
       style={{
         scrollbarWidth: 'thin',
-        scrollbarColor: '#475569 #1e293b'
+        scrollbarColor: '#475569 #1e293b',
       }}
     >
       <style>{`
@@ -96,8 +103,11 @@ export const Timeline: React.FC<TimelineProps> = ({ slides, activeSlideId, onSel
           onDragOver={handleDragOver}
           onDrop={(e) => handleDrop(e, index)}
           onClick={() => onSelectSlide(slide.id)}
-          className={`relative group h-24 aspect-square flex-shrink-0 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${activeSlideId === slide.id ? 'border-tool-slidesync shadow-lg shadow-tool-slidesync/20 scale-105 z-10' : 'border-slate-600 hover:border-slate-400'
-            }`}
+          className={`relative group h-24 aspect-square flex-shrink-0 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
+            activeSlideId === slide.id
+              ? 'border-tool-slidesync shadow-lg shadow-tool-slidesync/20 scale-105 z-10'
+              : 'border-slate-600 hover:border-slate-400'
+          }`}
         >
           {/* Drag Handle Overlay */}
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-move z-20">
@@ -114,7 +124,10 @@ export const Timeline: React.FC<TimelineProps> = ({ slides, activeSlideId, onSel
           </div>
           {slide.text && (
             <div className="absolute top-2 right-2 z-10">
-              <div className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" title={t.tools.slidesync.hasText}></div>
+              <div
+                className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"
+                title={t.tools.slidesync.hasText}
+              ></div>
             </div>
           )}
 
@@ -131,12 +144,21 @@ export const Timeline: React.FC<TimelineProps> = ({ slides, activeSlideId, onSel
         </div>
       ))}
 
-      {/* Add More Photos slot at the end */}
-      <label className="flex-shrink-0 h-24 aspect-square rounded-lg border-2 border-dashed border-slate-700 hover:border-tool-slidesync/50 hover:bg-slate-800/50 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all">
-        <Plus className="w-5 h-5 text-slate-500" />
-        <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter">{t.common.addMore}</span>
-        <input type="file" accept="image/*" multiple onChange={onImageUpload} className="hidden" />
-      </label>
+      {slides.length > 0 && (
+        <label className="flex-shrink-0 h-24 aspect-square rounded-lg border-2 border-slate-700 hover:border-tool-slidesync/50 hover:bg-slate-800/50 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all">
+          <Plus className="w-5 h-5 text-slate-500" />
+          <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter">
+            {t.common.addMore}
+          </span>
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={onImageUpload}
+            className="hidden"
+          />
+        </label>
+      )}
     </div>
   );
 };

@@ -2,12 +2,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { PlayCircle, Trash2 } from 'lucide-react';
 import { Slide, TextPosition, TextColor, AspectRatio, TextSize } from '../../types';
 import { generateCaptionForImage } from '../../services/geminiService';
-import { PersistenceService } from '../../services/PersistenceService';
+import { PersistenceService, AudioTrackItem } from '../../services/PersistenceService';
 import { SlideSyncSidebar } from './SlideSyncSidebar';
 import { Timeline } from './Timeline';
 import { VideoPreview } from '../../components/VideoPreview';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { renderTrimmedAudioToFile } from '../../utils/audioUtils';
 
 export const SlideSyncTool: React.FC = () => {
   const { t } = useLanguage();
@@ -16,10 +17,12 @@ export const SlideSyncTool: React.FC = () => {
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [audioDuration, setAudioDuration] = useState<number>(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isAudioRendering, setIsAudioRendering] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>(AspectRatio.Landscape_16_9);
   const [showEraseConfirm, setShowEraseConfirm] = useState(false);
+  const [audioTrimTracks, setAudioTrimTracks] = useState<AudioTrackItem[]>([]);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -29,7 +32,7 @@ export const SlideSyncTool: React.FC = () => {
       if (slides.length === 0 || !activeSlideId) return;
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) return;
 
-      const currentIndex = slides.findIndex(s => s.id === activeSlideId);
+      const currentIndex = slides.findIndex((s) => s.id === activeSlideId);
 
       if (e.key === 'ArrowLeft') {
         const nextIndex = Math.max(0, currentIndex - 1);
@@ -55,7 +58,7 @@ export const SlideSyncTool: React.FC = () => {
             audio.ontimeupdate = null;
             audio.currentTime = 0;
             setAudioDuration(audio.duration);
-          }
+          };
         } else {
           setAudioDuration(audio.duration);
         }
@@ -71,7 +74,6 @@ export const SlideSyncTool: React.FC = () => {
     }
   }, [audioFile]);
 
-
   // Persistence Logic
   const isLoadedRef = useRef(false);
 
@@ -81,9 +83,9 @@ export const SlideSyncTool: React.FC = () => {
       const state = await PersistenceService.loadState();
       if (state) {
         // Restore slides with new Object URLs
-        const restoredSlides = state.slides.map(s => ({
+        const restoredSlides = state.slides.map((s) => ({
           ...s,
-          previewUrl: URL.createObjectURL(s.file)
+          previewUrl: URL.createObjectURL(s.file),
         }));
 
         setSlides(restoredSlides);
@@ -92,6 +94,12 @@ export const SlideSyncTool: React.FC = () => {
         setAspectRatio(state.aspectRatio);
         setAudioFile(state.audioFile);
       }
+
+      const trimState = await PersistenceService.loadAudioTrimState();
+      if (trimState) {
+        setAudioTrimTracks(trimState.tracks);
+      }
+
       isLoadedRef.current = true;
     };
     load();
@@ -105,7 +113,7 @@ export const SlideSyncTool: React.FC = () => {
       PersistenceService.saveState({
         slides,
         audioFile,
-        aspectRatio
+        aspectRatio,
       });
     }, 2000); // 2 seconds debounce
 
@@ -114,7 +122,7 @@ export const SlideSyncTool: React.FC = () => {
   useEffect(() => {
     if (!activeSlideId || slides.length === 0 || audioDuration === 0) return;
 
-    const index = slides.findIndex(s => s.id === activeSlideId);
+    const index = slides.findIndex((s) => s.id === activeSlideId);
     if (index !== -1) {
       const slideDuration = audioDuration / slides.length;
       const startTime = index * slideDuration;
@@ -186,7 +194,7 @@ export const SlideSyncTool: React.FC = () => {
       const caption = await generateCaptionForImage(slide.file);
       updateSlide(id, { text: caption });
     } catch (error) {
-      console.error("Failed to generate caption", error);
+      console.error('Failed to generate caption', error);
       alert(t.tools.slidesync.captionError);
     } finally {
       setIsProcessing(false);
@@ -196,7 +204,7 @@ export const SlideSyncTool: React.FC = () => {
   const activeSlide = slides.find((s) => s.id === activeSlideId);
 
   const handleEraseProject = () => {
-    slides.forEach(s => URL.revokeObjectURL(s.previewUrl));
+    slides.forEach((s) => URL.revokeObjectURL(s.previewUrl));
     setSlides([]);
     setActiveSlideId(null);
     setAudioFile(null);
@@ -206,7 +214,22 @@ export const SlideSyncTool: React.FC = () => {
     PersistenceService.saveState({ slides: [], audioFile: null, aspectRatio });
   };
 
-
+  const handleSelectAudioTrimTrack = async (track: AudioTrackItem) => {
+    setIsAudioRendering(true);
+    try {
+      const renderedFile = await renderTrimmedAudioToFile(
+        track.file,
+        track.startTime,
+        track.endTime
+      );
+      setAudioFile(renderedFile);
+    } catch (error) {
+      console.error('Failed to render trimmed audio', error);
+      alert(t.tools.audiotrim.exportFailed);
+    } finally {
+      setIsAudioRendering(false);
+    }
+  };
 
   return (
     <div className="flex h-full bg-slate-900 overflow-hidden">
@@ -222,7 +245,10 @@ export const SlideSyncTool: React.FC = () => {
           audioFile={audioFile}
           onAudioUpload={handleAudioUpload}
           onRemoveAudio={() => setAudioFile(null)}
+          audioTrimTracks={audioTrimTracks}
+          onSelectAudioTrimTrack={handleSelectAudioTrimTrack}
           onAspectRatioChange={setAspectRatio}
+          isAudioRendering={isAudioRendering}
           hasContent={slides.length > 0 || audioFile !== null}
           onDeleteAll={() => setShowEraseConfirm(true)}
         />
@@ -244,10 +270,21 @@ export const SlideSyncTool: React.FC = () => {
 
         <div className="h-48 bg-slate-800/80 backdrop-blur-sm border-t border-slate-700 p-6">
           <div className="flex justify-between items-center mb-4">
-            <span className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-500">{t.tools.slidesync.timelineSequence}</span>
+            <span className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-500">
+              {t.tools.slidesync.timelineSequence}
+            </span>
             <div className="flex items-center gap-4">
-              <span className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-500">{slides.length} {t.tools.slidesync.slidesCount}</span>
-              <span className="text-[12px] text-slate-400 italic">{t.tools.slidesync.timelineTip}</span>
+              <span className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-500">
+                {slides.length} {t.tools.slidesync.slidesCount}
+                {audioDuration > 0 && slides.length > 0 && (
+                  <span className="ml-2 text-tool-slidesync lowercase tracking-normal font-bold">
+                    ({(audioDuration / slides.length).toFixed(2)}s / {t.tools.slidesync.slide})
+                  </span>
+                )}
+              </span>
+              <span className="text-[12px] text-slate-400 italic">
+                {t.tools.slidesync.timelineTip}
+              </span>
             </div>
           </div>
           <Timeline

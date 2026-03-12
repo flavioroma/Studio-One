@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI } from '@google/genai';
 
 // Helper to convert file to Base64
 const fileToGenerativePart = async (file: File): Promise<string> => {
@@ -19,7 +19,7 @@ export const generateCaptionForImage = async (file: File): Promise<string> => {
   try {
     const apiKey = process.env.API_KEY;
     if (!apiKey) {
-      throw new Error("API_KEY not found in environment");
+      throw new Error('API_KEY not found in environment');
     }
 
     const ai = new GoogleGenAI({ apiKey });
@@ -36,15 +36,15 @@ export const generateCaptionForImage = async (file: File): Promise<string> => {
             },
           },
           {
-            text: "Write a short, witty, and engaging caption for this image. Maximum 10 words. Do not use hashtags or emojis.",
+            text: 'Write a short, witty, and engaging caption for this image. Maximum 10 words. Do not use hashtags or emojis.',
           },
         ],
       },
     });
 
-    return response.text?.trim() || "Cool photo!";
+    return response.text?.trim() || 'Cool photo!';
   } catch (error) {
-    console.error("Gemini API Error:", error);
+    console.error('Gemini API Error:', error);
     throw error;
   }
 };

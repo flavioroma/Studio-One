@@ -1,8 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Slide, TextPosition, AspectRatio, TextSize, ExportFormat } from '../types';
+import { Slide, AspectRatio, ExportFormat } from '../types';
 import { calculateCaptionMetrics, calculateCaptionPosition } from '../utils/captionUtils';
 import { Mp4ExportService } from '../services/Mp4ExportService';
-import { Download, Loader2, AlertCircle, RotateCcw, FileVideo } from 'lucide-react';
+import { Download, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
 import { PlaybackControls } from './PlaybackControls';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -25,7 +25,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
   setIsPlaying,
   currentTime,
   setCurrentTime,
-  aspectRatio
+  aspectRatio,
 }) => {
   const { t } = useLanguage();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -35,24 +35,54 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
   const [supportedFormats, setSupportedFormats] = useState<ExportFormat[]>([ExportFormat.WebM]);
 
   useEffect(() => {
-    const formats = [ExportFormat.WebM];
-    // Check for MP4 support
-    if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1.4d002a')) {
-      formats.push(ExportFormat.MP4);
-      setExportFormat(ExportFormat.MP4); // Default to MP4 if supported
-    }
-    setSupportedFormats(formats);
+    const checkSupport = async () => {
+      const formats = [ExportFormat.WebM];
+
+      // Check for MP4 support via WebCodecs (VideoEncoder)
+      // This is what Mp4ExportService uses
+      if ('VideoEncoder' in window) {
+        try {
+          const support = await VideoEncoder.isConfigSupported({
+            codec: 'avc1.4d002a', // H.264 High Profile
+            width: 1920,
+            height: 1080,
+            bitrate: 8_000_000,
+            framerate: 30,
+          });
+
+          if (support.supported) {
+            formats.push(ExportFormat.MP4);
+            setExportFormat(ExportFormat.MP4); // Default to MP4 if supported
+          }
+        } catch (e) {
+          console.error('Error checking VideoEncoder support:', e);
+        }
+      } else if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1.4d002a')) {
+        // Fallback to MediaRecorder check if VideoEncoder is not available
+        formats.push(ExportFormat.MP4);
+        setExportFormat(ExportFormat.MP4);
+      }
+
+      setSupportedFormats(formats);
+    };
+
+    checkSupport();
   }, []);
 
   // Calculate high definition dimensions based on selected aspect ratio
   // Base unit 1080p
   const getDimensions = () => {
     switch (aspectRatio) {
-      case AspectRatio.Landscape_16_9: return { w: 1920, h: 1080 };
-      case AspectRatio.Portrait_9_16: return { w: 1080, h: 1920 };
-      case AspectRatio.Portrait_4_5: return { w: 1080, h: 1350 };
-      case AspectRatio.Square_1_1: return { w: 1080, h: 1080 };
-      default: return { w: 1920, h: 1080 };
+      case AspectRatio.Landscape_16_9:
+        return { w: 1920, h: 1080 };
+      case AspectRatio.Portrait_9_16:
+        return { w: 1080, h: 1920 };
+      case AspectRatio.Portrait_4_5:
+        return { w: 1080, h: 1350 };
+      case AspectRatio.Square_1_1:
+        return { w: 1080, h: 1080 };
+      default:
+        return { w: 1920, h: 1080 };
     }
   };
 
@@ -69,7 +99,11 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
       ctx.font = 'bold 40px Inter, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(
-        slides.length === 0 ? t.tools.slidesync.addImagesToStart : t.tools.slidesync.addAudioToStart,
+        slides.length === 0
+          ? audioRef.current
+            ? t.tools.slidesync.addImagesToStart
+            : t.tools.slidesync.addMediaToStart
+          : t.tools.slidesync.addAudioToStart,
         CANVAS_WIDTH / 2,
         CANVAS_HEIGHT / 2
       );
@@ -105,13 +139,18 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
       const userY = (offsetY / 100) * CANVAS_HEIGHT;
 
       ctx.drawImage(img, baseX + userX, baseY + userY, w, h);
-    } catch (e) { }
+    } catch (e) {}
 
     if (currentSlide.text) {
       ctx.fillStyle = currentSlide.color;
 
       const metrics = calculateCaptionMetrics(CANVAS_WIDTH, CANVAS_HEIGHT, currentSlide);
-      const position = calculateCaptionPosition(CANVAS_WIDTH, CANVAS_HEIGHT, metrics, currentSlide.position);
+      const position = calculateCaptionPosition(
+        CANVAS_WIDTH,
+        CANVAS_HEIGHT,
+        metrics,
+        currentSlide.position
+      );
 
       ctx.font = `${currentSlide.isItalic ? 'italic ' : ''}bold ${metrics.fontSize}px Inter, sans-serif`;
       ctx.shadowColor = 'rgba(0,0,0,0.8)';
@@ -122,7 +161,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
       ctx.textAlign = position.textAlign as CanvasTextAlign;
 
       metrics.lines.forEach((line, i) => {
-        ctx.fillText(line, position.x, position.y + (i * metrics.lineHeight));
+        ctx.fillText(line, position.x, position.y + i * metrics.lineHeight);
       });
     }
   };
@@ -151,8 +190,10 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
       animationRef.current = requestAnimationFrame(loop);
     };
     loop();
-    return () => { if (animationRef.current) cancelAnimationFrame(animationRef.current); };
-  }, [isPlaying, slides, audioDuration, currentTime, aspectRatio]);
+    return () => {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    };
+  }, [isPlaying, slides, audioDuration, currentTime, aspectRatio, t]);
 
   const togglePlay = () => {
     if (!audioRef.current || slides.length === 0) return;
@@ -189,7 +230,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
         if (audioRef.current.src) {
           const response = await fetch(audioRef.current.src);
           const blob = await response.blob();
-          audioFile = new File([blob], "audio.mp3", { type: blob.type });
+          audioFile = new File([blob], 'audio.mp3', { type: blob.type });
         }
 
         const exporter = new Mp4ExportService();
@@ -199,7 +240,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
             width: getDimensions().w,
             height: getDimensions().h,
             fps: 30, // Consistently 30fps
-            audioFile
+            audioFile,
           },
           (progress) => {
             // Optional: could add progress state here
@@ -213,7 +254,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
         a.click();
         URL.revokeObjectURL(url);
       } catch (error) {
-        console.error("MP4 Export Failed:", error);
+        console.error('MP4 Export Failed:', error);
         alert(t.tools.slidesync.exportFailed);
       } finally {
         setIsRecording(false);
@@ -235,21 +276,24 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
 
     const combinedStream = new MediaStream([
       ...canvasStream.getVideoTracks(),
-      ...dest.stream.getAudioTracks()
+      ...dest.stream.getAudioTracks(),
     ]);
 
-    const mimeType = (exportFormat as string) === ExportFormat.MP4
-      ? 'video/mp4;codecs=avc1.4d002a'
-      : 'video/webm;codecs=vp9';
+    const mimeType =
+      (exportFormat as string) === ExportFormat.MP4
+        ? 'video/mp4;codecs=avc1.4d002a'
+        : 'video/webm;codecs=vp9';
 
     const recorder = new MediaRecorder(combinedStream, {
       mimeType,
       videoBitsPerSecond: 8000000, // 8 Mbps
-      audioBitsPerSecond: 128000   // 128 kbps
+      audioBitsPerSecond: 128000, // 128 kbps
     });
 
     const chunks: Blob[] = [];
-    recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunks.push(e.data);
+    };
 
     recorder.onstop = () => {
       const blob = new Blob(chunks, { type: mimeType.split(';')[0] });
@@ -272,36 +316,55 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
     const ctx = canvas.getContext('2d')!;
     const recordLoop = () => {
       const elapsed = (performance.now() - startTime) / 1000;
-      if (elapsed >= audioDuration) { recorder.stop(); return; }
+      if (elapsed >= audioDuration) {
+        recorder.stop();
+        return;
+      }
       renderFrame(ctx, elapsed);
       requestAnimationFrame(recordLoop);
     };
     recordLoop();
   };
 
-
   const isDisabled = slides.length === 0 || !audioRef.current;
 
   // CSS for dynamic aspect ratio display
   const getContainerAspect = () => {
     switch (aspectRatio) {
-      case AspectRatio.Landscape_16_9: return 'aspect-video w-full max-w-5xl';
-      case AspectRatio.Portrait_9_16: return 'aspect-[9/16] h-full max-h-[80vh]';
-      case AspectRatio.Portrait_4_5: return 'aspect-[4/5] h-full max-h-[80vh]';
-      case AspectRatio.Square_1_1: return 'aspect-square h-full max-h-[80vh]';
-      default: return 'aspect-video w-full max-w-5xl';
+      case AspectRatio.Landscape_16_9:
+        return 'aspect-video w-full max-w-5xl';
+      case AspectRatio.Portrait_9_16:
+        return 'aspect-[9/16] h-full max-h-[80vh]';
+      case AspectRatio.Portrait_4_5:
+        return 'aspect-[4/5] h-full max-h-[80vh]';
+      case AspectRatio.Square_1_1:
+        return 'aspect-square h-full max-h-[80vh]';
+      default:
+        return 'aspect-video w-full max-w-5xl';
     }
   };
 
   return (
     <div className="w-full h-full flex flex-col items-center justify-center relative">
-      <div className={`relative shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden border-4 border-slate-800 bg-black transition-all duration-500 ${getContainerAspect()}`}>
-        <canvas ref={canvasRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="w-full h-full object-contain" />
+      <div
+        className={`relative shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden border-4 border-slate-800 bg-black transition-all duration-500 ${getContainerAspect()}`}
+      >
+        <canvas
+          ref={canvasRef}
+          width={CANVAS_WIDTH}
+          height={CANVAS_HEIGHT}
+          className="w-full h-full object-contain"
+        />
         {!isPlaying && !isRecording && !isDisabled && (
-          <div className="absolute inset-0 flex items-center justify-center cursor-pointer transition-all duration-300" onClick={handleRestart}>
+          <div
+            className="absolute inset-0 flex items-center justify-center cursor-pointer transition-all duration-300"
+            onClick={handleRestart}
+          >
             <div className="bg-white/10 backdrop-blur-md p-4 rounded-full border border-white/20 hover:scale-110 hover:bg-white/20 transition-all flex flex-col items-center gap-2 group">
               <RotateCcw className="w-8 h-8 text-white group-hover:rotate-[-45deg] transition-transform" />
-              <span className="text-white text-[10px] font-black uppercase tracking-[0.2em]">{t.common.restartPreview}</span>
+              <span className="text-white text-[10px] font-black uppercase tracking-[0.2em]">
+                {t.common.restartPreview}
+              </span>
             </div>
           </div>
         )}
@@ -315,18 +378,39 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
         isDisabled={isDisabled || isRecording}
         themeColor="tool-slidesync"
       >
-        <button onClick={handleExport} disabled={isDisabled || isRecording} className={`flex items-center gap-3 px-8 py-3 rounded-full font-black text-xs uppercase tracking-widest transition-all ${isRecording ? 'bg-slate-700 text-slate-400' : 'bg-tool-slidesync hover:opacity-90 text-white shadow-xl shadow-tool-slidesync/10 active:scale-95'}`}>
-          {isRecording ? <><Loader2 className="w-4 h-4 animate-spin" /><span>{t.tools.slidesync.creating}</span></> : <><Download className="w-4 h-4" /><span>{t.tools.slidesync.exportClip}</span></>}
+        <button
+          onClick={handleExport}
+          disabled={isDisabled || isRecording}
+          className={`flex items-center gap-3 px-8 py-3 rounded-full font-black text-xs uppercase tracking-widest transition-all ${isRecording ? 'bg-slate-700 text-slate-400' : 'bg-tool-slidesync hover:opacity-90 text-white shadow-xl shadow-tool-slidesync/10 active:scale-95'}`}
+        >
+          {isRecording ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>{t.tools.slidesync.creating}</span>
+            </>
+          ) : (
+            <>
+              <Download className="w-4 h-4" />
+              <span>{t.tools.slidesync.exportClip}</span>
+            </>
+          )}
         </button>
 
         <div className="flex bg-slate-700/50 rounded-lg p-1 border border-slate-600">
-          {supportedFormats.map(fmt => (
+          {supportedFormats.map((fmt) => (
             <button
               key={fmt}
               onClick={() => setExportFormat(fmt)}
-              className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-all ${exportFormat === fmt ? 'bg-tool-slidesync text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
-                }`}
-              title={fmt === ExportFormat.MP4 ? t.tools.slidesync.exportAsMp4 : t.tools.slidesync.exportAsWebm}
+              className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-all ${
+                exportFormat === fmt
+                  ? 'bg-tool-slidesync text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title={
+                fmt === ExportFormat.MP4
+                  ? t.tools.slidesync.exportAsMp4
+                  : t.tools.slidesync.exportAsWebm
+              }
             >
               {fmt === ExportFormat.MP4 ? 'MP4' : 'WEBM'}
             </button>
@@ -336,7 +420,9 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
       {isRecording && (
         <div className="absolute top-12 bg-red-600/90 backdrop-blur-md text-white px-6 py-3 rounded-full flex items-center gap-3 animate-pulse z-50 shadow-2xl border border-white/20">
           <div className="w-3 h-3 bg-white rounded-full"></div>
-          <span className="font-bold uppercase tracking-wider text-xs">{t.tools.slidesync.recordingNote}</span>
+          <span className="font-bold uppercase tracking-wider text-xs">
+            {t.tools.slidesync.recordingNote}
+          </span>
         </div>
       )}
       {isDisabled && (

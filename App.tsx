@@ -32,26 +32,25 @@ const AppContent: React.FC = () => {
 
   const getToolName = () => {
     switch (activeTool) {
-      case 'slidesync': return t.tools.slidesync.title;
-      case 'audiotrim': return t.tools.audiotrim.title;
-      case 'videoverlay': return t.tools.videoverlay.title;
-      case 'photoverlay': return t.tools.photoverlay.title;
-      default: return '';
+      case 'slidesync':
+        return t.tools.slidesync.title;
+      case 'audiotrim':
+        return t.tools.audiotrim.title;
+      case 'videoverlay':
+        return t.tools.videoverlay.title;
+      case 'photoverlay':
+        return t.tools.photoverlay.title;
+      default:
+        return '';
     }
   };
 
   return (
     <div className="flex flex-col h-screen bg-slate-900 text-slate-100 overflow-hidden">
       {activeTool !== 'home' && (
-        <Navbar
-          toolName={getToolName()}
-          onBack={() => setActiveTool('home')}
-          toolId={activeTool}
-        />
+        <Navbar toolName={getToolName()} onBack={() => setActiveTool('home')} toolId={activeTool} />
       )}
-      <main className="flex-1 overflow-hidden">
-        {renderTool()}
-      </main>
+      <main className="flex-1 overflow-hidden">{renderTool()}</main>
     </div>
   );
 };
