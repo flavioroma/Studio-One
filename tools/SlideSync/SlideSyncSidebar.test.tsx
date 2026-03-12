@@ -47,7 +47,7 @@ describe('SlideSyncSidebar', () => {
     renderWithContext();
     expect(screen.getByText(/1\. Background music/i)).toBeInTheDocument();
     expect(screen.getByText(/2\. Images/i)).toBeInTheDocument();
-    expect(screen.getByText(/3\. Choose video format/i)).toBeInTheDocument();
+    expect(screen.getByText(/3\. Choose the aspect ratio/i)).toBeInTheDocument();
   });
 
   it('shows empty state when no slide is selected', () => {
