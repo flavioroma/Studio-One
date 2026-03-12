@@ -38,6 +38,26 @@ You will need [Node.js](https://nodejs.org/) (LTS version recommended).
    npm run dev
    ```
 
+### Update from an older version
+
+1. **Pull the latest changes:**
+
+   ```bash
+   git checkout main
+   git pull
+   ```
+
+2. **Install dependencies:**
+
+   ```bash
+   npm install
+   ```
+
+3. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
+
 > [!TIP]
 > Use Chrome-based browsers for the best performance and compatibility.
 
