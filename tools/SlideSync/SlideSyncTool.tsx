@@ -5,7 +5,7 @@ import { generateCaptionForImage } from '../../services/geminiService';
 import { PersistenceService, AudioTrackItem } from '../../services/PersistenceService';
 import { SlideSyncSidebar } from './SlideSyncSidebar';
 import { Timeline } from './Timeline';
-import { VideoPreview } from '../../components/VideoPreview';
+import { VideoPreview } from './VideoPreview';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { renderTrimmedAudioToFile } from '../../utils/audioUtils';

@@ -41,9 +41,8 @@ export enum TextColor {
 
 export enum AspectRatio {
   Landscape_16_9 = '16:9',
-  Landscape_5_4 = '5:4',
   Portrait_9_16 = '9:16',
-  Portrait_4_5 = '4:5',
+  Portrait_3_4 = '3:4',
   Square_1_1 = '1:1',
   Original = 'original',
 }

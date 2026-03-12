@@ -12,10 +12,10 @@ import {
   Trash2,
   Monitor,
   Smartphone,
-  Smartphone as SmartphoneIcon,
   Square,
   Image as ImageIcon,
   ChevronDown,
+  Tablet,
 } from 'lucide-react';
 import { CaptionSettingsPanel } from '../../components/CaptionSettingsPanel';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -65,7 +65,7 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
   const formatOptions = [
     { id: AspectRatio.Landscape_16_9, label: '16:9', icon: Monitor },
     { id: AspectRatio.Portrait_9_16, label: '9:16', icon: Smartphone },
-    { id: AspectRatio.Portrait_4_5, label: '4:5', icon: SmartphoneIcon },
+    { id: AspectRatio.Portrait_3_4, label: '3:4', icon: Tablet },
     { id: AspectRatio.Square_1_1, label: '1:1', icon: Square },
   ];
 
@@ -92,8 +92,8 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
         return '16 / 9';
       case AspectRatio.Portrait_9_16:
         return '9 / 16';
-      case AspectRatio.Portrait_4_5:
-        return '4 / 5';
+      case AspectRatio.Portrait_3_4:
+        return '3 / 4';
       case AspectRatio.Square_1_1:
         return '1 / 1';
       default:
