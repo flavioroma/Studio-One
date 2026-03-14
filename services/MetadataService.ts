@@ -297,30 +297,50 @@ export class MetadataService {
 
   // --- Photo Metadata Transfer (Writing) ---
   static async transferPhotoMetadata(sourceFile: File, destBlob: Blob): Promise<Blob> {
-    // 1. Read EXIF from Source as Binary String
-    const sourceDataUrl = await MetadataService.fileToDataURL(sourceFile);
-    const sourceExifObj = piexif.load(sourceDataUrl);
+    try {
+      // 1. Read EXIF from Source as Binary String
+      // Only attempt if it's a JPEG
+      if (
+        !sourceFile.type.includes('jpeg') &&
+        !sourceFile.name.toLowerCase().endsWith('.jpg') &&
+        !sourceFile.name.toLowerCase().endsWith('.jpeg')
+      ) {
+        return destBlob;
+      }
 
-    // 2. Read Dest Blob as DataURL
-    const destDataUrl = await MetadataService.blobToDataURL(destBlob);
+      const sourceDataUrl = await MetadataService.fileToDataURL(sourceFile);
+      let sourceExifObj;
+      try {
+        sourceExifObj = piexif.load(sourceDataUrl);
+      } catch (e) {
+        // Source might not have EXIF or isn't a valid JPEG for piexif
+        return destBlob;
+      }
 
-    // 3. Insert EXIF
-    // Note: We might want to remove "Thumbnail" data to save space/avoid conflicts
-    if (sourceExifObj['thumbnail']) {
-      delete sourceExifObj['thumbnail'];
+      // 2. Read Dest Blob as DataURL
+      const destDataUrl = await MetadataService.blobToDataURL(destBlob);
+
+      // 3. Insert EXIF
+      // Note: We might want to remove "Thumbnail" data to save space/avoid conflicts
+      if (sourceExifObj['thumbnail']) {
+        delete sourceExifObj['thumbnail'];
+      }
+
+      // Fix Orientation: Canvas export produces upright pixels.
+      // We must reset Orientation to 1 (Normal) so viewers don't rotate it again.
+      if (sourceExifObj['0th']) {
+        sourceExifObj['0th'][piexif.ImageIFD.Orientation] = 1;
+      }
+
+      const exifStr = piexif.dump(sourceExifObj);
+      const newJpeg = piexif.insert(exifStr, destDataUrl);
+
+      // 4. Convert back to Blob
+      return MetadataService.dataURLToBlob(newJpeg);
+    } catch (error) {
+      console.warn('[MetadataService] Failed to transfer metadata:', error);
+      return destBlob;
     }
-
-    // Fix Orientation: Canvas export produces upright pixels.
-    // We must reset Orientation to 1 (Normal) so viewers don't rotate it again.
-    if (sourceExifObj['0th']) {
-      sourceExifObj['0th'][piexif.ImageIFD.Orientation] = 1;
-    }
-
-    const exifStr = piexif.dump(sourceExifObj);
-    const newJpeg = piexif.insert(exifStr, destDataUrl);
-
-    // 4. Convert back to Blob
-    return MetadataService.dataURLToBlob(newJpeg);
   }
 
   // --- Helpers ---

@@ -17,6 +17,7 @@ import {
   PhotoItem,
   CaptionSettings,
   WatermarkSettings,
+  NamingSettings,
 } from '../../types';
 import { PersistenceService } from '../../services/PersistenceService';
 import {
@@ -39,7 +40,13 @@ export const PhotoverlayTool: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showApplyAllConfirm, setShowApplyAllConfirm] = useState(false);
-  const [exportAsArchive, setExportAsArchive] = useState(false);
+  const [itemToDeleteId, setItemToDeleteId] = useState<string | null>(null);
+  const [namingSettings, setNamingSettings] = useState<NamingSettings>({
+    keepOriginal: true,
+    type: 'prefix',
+    value: '',
+  });
+  const [preserveMetadata, setPreserveMetadata] = useState(true);
 
   // Preview Sizing
   const [containerSize, setContainerSize] = useState<{ width: number; height: number }>({
@@ -233,7 +240,12 @@ export const PhotoverlayTool: React.FC = () => {
         setItems(finalItems);
         setSelectedId(state.selectedId || finalItems[0].id);
         setApplyToAll(state.applyToAll || false);
-        setExportAsArchive(state.exportAsArchive || false);
+        if (state.namingSettings) {
+          setNamingSettings(state.namingSettings);
+        }
+        if (state.preserveMetadata !== undefined) {
+          setPreserveMetadata(state.preserveMetadata);
+        }
       }
       isLoadedRef.current = true;
     };
@@ -257,11 +269,12 @@ export const PhotoverlayTool: React.FC = () => {
         })),
         selectedId,
         applyToAll,
-        exportAsArchive,
+        namingSettings,
+        preserveMetadata,
       });
     }, 2000);
     return () => clearTimeout(timeoutId);
-  }, [items, selectedId, applyToAll]);
+  }, [items, selectedId, applyToAll, namingSettings, preserveMetadata]);
 
   const handleCaptionUpdate = (updates: Partial<CaptionSettings>) => {
     setItems((prev) =>
@@ -405,24 +418,29 @@ export const PhotoverlayTool: React.FC = () => {
         );
         if (blob) {
           let finalBlob = blob;
-          try {
-            finalBlob = await MetadataService.transferPhotoMetadata(item.file, blob);
-          } catch (e) {
-            console.warn('Failed to transfer metadata', e);
+          if (preserveMetadata) {
+            try {
+              finalBlob = await MetadataService.transferPhotoMetadata(item.file, blob);
+            } catch (e) {
+              console.warn('Failed to transfer metadata', e);
+            }
           }
 
-          if (exportAsArchive && items.length > 1) {
-            const originalName =
-              item.file.name.substring(0, item.file.name.lastIndexOf('.')) || item.file.name;
-            zip.file(`photoverlay-${originalName}.jpg`, finalBlob);
+          const originalName =
+            item.file.name.substring(0, item.file.name.lastIndexOf('.')) || item.file.name;
+          const finalName = namingSettings.keepOriginal
+            ? `${originalName}.jpg`
+            : namingSettings.type === 'prefix'
+              ? `${namingSettings.value}${originalName}.jpg`
+              : `${originalName}${namingSettings.value}.jpg`;
+
+          if (items.length > 1) {
+            zip.file(finalName, finalBlob);
           } else {
             const url = URL.createObjectURL(finalBlob);
             const a = document.createElement('a');
             a.href = url;
-            const originalName =
-              item.file.name.substring(0, item.file.name.lastIndexOf('.')) || item.file.name;
-            const ext = 'jpg'; // Force jpeg for metadata support
-            a.download = `photoverlay-${originalName}.${ext}`;
+            a.download = finalName;
             a.click();
             URL.revokeObjectURL(url);
             // Add small delay between downloads to ensure browser triggers all
@@ -431,7 +449,7 @@ export const PhotoverlayTool: React.FC = () => {
         }
       }
 
-      if (exportAsArchive && items.length > 1) {
+      if (items.length > 1) {
         const content = await zip.generateAsync({ type: 'blob' });
         const url = URL.createObjectURL(content);
         const a = document.createElement('a');
@@ -459,6 +477,18 @@ export const PhotoverlayTool: React.FC = () => {
     // Clear object URL
     const itemToRemove = items.find((item) => item.id === id);
     if (itemToRemove) URL.revokeObjectURL(itemToRemove.imageUrl);
+  };
+
+  const handleDeleteItemRequest = (id: string) => {
+    const item = items.find((i) => i.id === id);
+    if (!item) return;
+
+    const isCustomized = !!item.captionSettings.text || !!item.watermarkSettings.file;
+    if (isCustomized) {
+      setItemToDeleteId(id);
+    } else {
+      handleDeleteItem(id);
+    }
   };
 
   const confirmDeleteAll = () => {
@@ -576,6 +606,10 @@ export const PhotoverlayTool: React.FC = () => {
         onFileChange={handleFileChange}
         onCaptionUpdate={handleCaptionUpdate}
         onWatermarkUpdate={handleWatermarkUpdate}
+        namingSettings={namingSettings}
+        onNamingUpdate={(updates) => setNamingSettings((prev) => ({ ...prev, ...updates }))}
+        preserveMetadata={preserveMetadata}
+        onPreserveMetadataChange={setPreserveMetadata}
         onDeleteAll={() => setShowDeleteConfirm(true)}
       />
 
@@ -671,7 +705,7 @@ export const PhotoverlayTool: React.FC = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDeleteItem(item.id);
+                          handleDeleteItemRequest(item.id);
                         }}
                         className="absolute bottom-1 right-1 p-1.5 bg-red-500/90 text-white rounded-md hover:bg-red-600 transition-all opacity-0 group-hover:opacity-100 z-30 shadow-sm hover:scale-110"
                         title={t.common.removeFile}
@@ -742,22 +776,6 @@ export const PhotoverlayTool: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-4">
-              {items.length > 1 && (
-                <div className="flex bg-slate-900/50 p-1 rounded-xl border border-slate-700/50 mr-2">
-                  <button
-                    onClick={() => setExportAsArchive(false)}
-                    className={`px-4 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${!exportAsArchive ? 'bg-tool-photoverlay text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
-                  >
-                    {t.tools.photoverlay.individualFiles}
-                  </button>
-                  <button
-                    onClick={() => setExportAsArchive(true)}
-                    className={`px-4 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${exportAsArchive ? 'bg-tool-photoverlay text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}
-                  >
-                    {t.tools.photoverlay.singleArchive}
-                  </button>
-                </div>
-              )}
               <button
                 onClick={handleExport}
                 disabled={isExporting}
@@ -805,6 +823,22 @@ export const PhotoverlayTool: React.FC = () => {
         confirmLabel={t.tools.photoverlay.yesApply}
         cancelLabel={t.common.cancel}
         Icon={Check}
+      />
+
+      <ConfirmationModal
+        isOpen={!!itemToDeleteId}
+        onClose={() => setItemToDeleteId(null)}
+        onConfirm={() => {
+          if (itemToDeleteId) {
+            handleDeleteItem(itemToDeleteId);
+            setItemToDeleteId(null);
+          }
+        }}
+        title={t.tools.photoverlay.removePhotoTitle}
+        message={t.tools.photoverlay.removePhotoMsg}
+        confirmLabel={t.common.yesRemove}
+        cancelLabel={t.common.cancel}
+        Icon={Trash2}
       />
     </div>
   );

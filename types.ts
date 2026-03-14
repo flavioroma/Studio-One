@@ -100,6 +100,12 @@ export interface WatermarkSettings {
   scale: number;
 }
 
+export interface NamingSettings {
+  keepOriginal: boolean;
+  type: 'prefix' | 'suffix';
+  value: string;
+}
+
 export interface PhotoItem {
   id: string;
   file: File;

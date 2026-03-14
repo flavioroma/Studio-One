@@ -22,6 +22,7 @@ export const SlideSyncTool: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(0);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>(AspectRatio.Landscape_16_9);
   const [showEraseConfirm, setShowEraseConfirm] = useState(false);
+  const [slideToDeleteId, setSlideToDeleteId] = useState<string | null>(null);
   const [audioTrimTracks, setAudioTrimTracks] = useState<AudioTrackItem[]>([]);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -176,6 +177,17 @@ export const SlideSyncTool: React.FC = () => {
     });
   };
 
+  const handleDeleteSlideRequest = (id: string) => {
+    const slide = slides.find((s) => s.id === id);
+    if (!slide) return;
+
+    if (slide.text) {
+      setSlideToDeleteId(id);
+    } else {
+      deleteSlide(id);
+    }
+  };
+
   const reorderSlides = (fromIndex: number, toIndex: number) => {
     setSlides((prev) => {
       const result = [...prev];
@@ -292,7 +304,7 @@ export const SlideSyncTool: React.FC = () => {
             activeSlideId={activeSlideId}
             onSelectSlide={setActiveSlideId}
             onReorder={reorderSlides}
-            onDelete={deleteSlide}
+            onDelete={handleDeleteSlideRequest}
             onImageUpload={handleImageUpload}
           />
         </div>
@@ -305,6 +317,22 @@ export const SlideSyncTool: React.FC = () => {
         title={t.tools.slidesync.removeAllDataTitle}
         message={t.tools.slidesync.removeAllDataMsg}
         confirmLabel={t.tools.slidesync.yesRemoveAll}
+        cancelLabel={t.common.cancel}
+        Icon={Trash2}
+      />
+
+      <ConfirmationModal
+        isOpen={!!slideToDeleteId}
+        onClose={() => setSlideToDeleteId(null)}
+        onConfirm={() => {
+          if (slideToDeleteId) {
+            deleteSlide(slideToDeleteId);
+            setSlideToDeleteId(null);
+          }
+        }}
+        title={t.tools.slidesync.removeSlideTitle}
+        message={t.tools.slidesync.removeSlideMsg}
+        confirmLabel={t.common.yesRemove}
         cancelLabel={t.common.cancel}
         Icon={Trash2}
       />

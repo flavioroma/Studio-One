@@ -17,6 +17,11 @@ export const translations = {
       mediaCreated: 'Creation Date',
       addMore: 'Add More',
       loading: 'Loading...',
+      generalSettings: 'General Settings',
+      prefix: 'Prefix',
+      suffix: 'Suffix',
+      typeSomething: 'Type something...',
+      add: 'Add:',
     },
     captions: {
       captionText: 'Caption Text',
@@ -69,7 +74,7 @@ export const translations = {
       },
       videoverlay: {
         description:
-          'Rotate, replace audio, add overlay text captions and watermarks onto a video.',
+          'Cut, rotate, replace audio, add overlay text captions and watermarks onto a video.',
       },
       photoverlay: {
         description: 'Overlay text captions and watermarks onto multiple photos.',
@@ -152,6 +157,8 @@ export const translations = {
         removeAllDataTitle: 'Remove All Data?',
         removeAllDataMsg: 'Are you sure you want to remove all data? This action cannot be undone.',
         yesRemoveAll: 'Yes, Remove All',
+        removeSlideTitle: 'Remove Slide?',
+        removeSlideMsg: 'Are you sure you want to remove this slide? This action cannot be undone.',
       },
       videoverlay: {
         title: 'VideOverlay',
@@ -213,6 +220,7 @@ export const translations = {
         panImage: 'Pan Image',
         applyToAll: 'Apply this overlay to all photos',
         exportAllPhotos: 'EXPORT ALL PHOTOS',
+        keepOriginalNames: 'Keep the original names of files',
         applyToAllTitle: 'Apply to All Photos?',
         applyToAllMsg:
           'This will overwrite the custom overlay settings of your other photos. Are you sure?',
@@ -221,9 +229,7 @@ export const translations = {
         removeAllPhotosMsg:
           'Are you sure you want to remove all photos? This action cannot be undone.',
         yesRemoveAll: 'Yes, Remove All',
-        exportMode: 'Export Mode',
-        individualFiles: 'Individual Files',
-        singleArchive: 'Single Archive (ZIP)',
+        preserveMetadata: 'Preserve image metadata',
       },
     },
   },
@@ -241,9 +247,14 @@ export const translations = {
       restartPreview: 'Riavvia Anteprima',
       yesRemove: 'Sì, Rimuovi',
       resolution: 'Risoluzione',
-      addMore: 'Aggiungi Altre',
+      addMore: 'Aggiungi altre',
       mediaCreated: 'Data di creazione',
       loading: 'Caricamento...',
+      generalSettings: 'Impostazioni Generali',
+      prefix: 'Prefisso',
+      suffix: 'Suffisso',
+      typeSomething: 'Scrivi qualcosa...',
+      add: 'Aggiungi:',
     },
     captions: {
       captionText: 'Testo Didascalia',
@@ -296,7 +307,7 @@ export const translations = {
       },
       videoverlay: {
         description:
-          'Ruota, sostituisci audio, aggiungi didascalie di testo e filigrane su un video.',
+          'Taglia, ruota, sostituisci audio, aggiungi didascalie di testo e filigrane su un video.',
       },
       photoverlay: {
         description: 'Sovrapponi didascalie di testo e filigrane su molteplici foto.',
@@ -379,6 +390,9 @@ export const translations = {
         removeAllDataTitle: 'Rimuovi tutto?',
         removeAllDataMsg: "Sei sicuro di voler rimuovere tutto? L'azione non può essere annullata.",
         yesRemoveAll: 'Sì, Rimuovi Tutto',
+        removeSlideTitle: 'Rimuovere Immagine?',
+        removeSlideMsg:
+          "Sei sicuro di voler rimuovere questa immagine? L'azione non può essere annullata.",
       },
       videoverlay: {
         title: 'VideOverlay',
@@ -442,6 +456,7 @@ export const translations = {
         panImage: 'Sposta Immagine',
         applyToAll: 'Applica questa sovraimpressione a tutte le foto',
         exportAllPhotos: 'ESPORTA TUTTE LE FOTO',
+        keepOriginalNames: 'Mantieni i nomi originali dei file',
         applyToAllTitle: 'Applicare a Tutte le Foto?',
         applyToAllMsg:
           'Questo sovrascriverà le impostazioni personalizzate delle altre foto. Sei sicuro?',
@@ -450,9 +465,7 @@ export const translations = {
         removeAllPhotosMsg:
           "Sei sicuro di voler rimuovere tutte le foto? L'azione non può essere annullata.",
         yesRemoveAll: 'Sì, Rimuovi Tutte',
-        exportMode: 'Modalità Esportazione',
-        individualFiles: 'File Singoli',
-        singleArchive: 'Archivio Singolo (ZIP)',
+        preserveMetadata: 'Preserve i metadati delle immagini',
       },
     },
   },

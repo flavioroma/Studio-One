@@ -7,6 +7,7 @@ import {
   TextColor,
   TextPosition,
   TextSize,
+  NamingSettings,
 } from '../../types';
 import { CaptionSettingsPanel } from '../../components/CaptionSettingsPanel';
 import { WatermarkSettingsPanel } from '../../components/WatermarkSettingsPanel';
@@ -21,6 +22,10 @@ interface PhotoverlaySidebarProps {
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onCaptionUpdate: (updates: Partial<CaptionSettings>) => void;
   onWatermarkUpdate: (updates: Partial<WatermarkSettings>) => void;
+  namingSettings: NamingSettings;
+  onNamingUpdate: (updates: Partial<NamingSettings>) => void;
+  preserveMetadata: boolean;
+  onPreserveMetadataChange: (value: boolean) => void;
   onDeleteAll: () => void;
 }
 
@@ -32,6 +37,10 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
   onFileChange,
   onCaptionUpdate,
   onWatermarkUpdate,
+  namingSettings,
+  onNamingUpdate,
+  preserveMetadata,
+  onPreserveMetadataChange,
   onDeleteAll,
 }) => {
   const { t } = useLanguage();
@@ -39,7 +48,126 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
   return (
     <div className="w-80 border-r border-slate-700 bg-slate-800 flex flex-col p-6 overflow-y-auto z-10 shadow-2xl space-y-6">
       {itemsCount > 0 && (
-        <h2 className="text-lg font-bold text-slate-100 uppercase tracking-widest text-center">
+        <h2 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
+          {t.common.generalSettings}
+        </h2>
+      )}
+      {itemsCount > 0 && (
+        <div className="space-y-4 animate-fadeIn">
+          <div className="flex flex-col gap-4">
+            <div className="p-4 bg-slate-700/50 rounded-2xl border border-slate-600 space-y-4 hover:border-tool-photoverlay/40 shadow-inner">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div
+                  className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
+                    namingSettings.keepOriginal
+                      ? 'bg-tool-photoverlay border-tool-photoverlay'
+                      : 'border-slate-500 group-hover:border-slate-400'
+                  }`}
+                >
+                  {namingSettings.keepOriginal && <Check className="w-3.5 h-3.5 text-white" />}
+                </div>
+                <span className="text-xs font-bold text-slate-300 group-hover:text-slate-100 transition-colors">
+                  {t.tools.photoverlay.keepOriginalNames}
+                </span>
+                <input
+                  type="checkbox"
+                  checked={namingSettings.keepOriginal}
+                  onChange={(e) => onNamingUpdate({ keepOriginal: e.target.checked })}
+                  className="hidden"
+                />
+              </label>
+
+              {!namingSettings.keepOriginal && (
+                <div className="space-y-4 animate-fadeIn pt-2 border-t border-slate-600/50">
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">
+                      {t.common.add}
+                    </span>
+                    <div className="flex bg-slate-800/80 p-1 rounded-xl border border-slate-600">
+                      <button
+                        onClick={() => onNamingUpdate({ type: 'prefix' })}
+                        className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${
+                          namingSettings.type === 'prefix'
+                            ? 'bg-tool-photoverlay text-white shadow-lg'
+                            : 'text-slate-500 hover:text-slate-300'
+                        }`}
+                      >
+                        {t.common.prefix}
+                      </button>
+                      <button
+                        onClick={() => onNamingUpdate({ type: 'suffix' })}
+                        className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${
+                          namingSettings.type === 'suffix'
+                            ? 'bg-tool-photoverlay text-white shadow-lg'
+                            : 'text-slate-500 hover:text-slate-300'
+                        }`}
+                      >
+                        {t.common.suffix}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={namingSettings.value}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        // Windows/Linux/iOS invalid chars: < > : " / \ | ? *
+                        const filtered = val.replace(/[<>:"/\\|?*]/g, '');
+                        onNamingUpdate({ value: filtered });
+                      }}
+                      placeholder={t.common.typeSomething}
+                      className="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-tool-photoverlay transition-all"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 bg-slate-700/50 rounded-2xl border border-slate-600 hover:border-tool-photoverlay/40 shadow-inner transition-all">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div
+                  className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
+                    preserveMetadata
+                      ? 'bg-tool-photoverlay border-tool-photoverlay'
+                      : 'border-slate-500 group-hover:border-slate-400'
+                  }`}
+                >
+                  {preserveMetadata && <Check className="w-3.5 h-3.5 text-white" />}
+                </div>
+                <span className="text-xs font-bold text-slate-300 group-hover:text-slate-100 transition-colors">
+                  {t.tools.photoverlay.preserveMetadata}
+                </span>
+                <input
+                  type="checkbox"
+                  checked={preserveMetadata}
+                  onChange={(e) => onPreserveMetadataChange(e.target.checked)}
+                  className="hidden"
+                />
+              </label>
+
+              {selectedItem && (
+                <div className="flex gap-2 ml-1">
+                  {selectedItem.exifData?.creationTime && (
+                    <span className="px-2 py-0.5 bg-green-500/10 text-green-400 border border-green-500/20 rounded text-[9px] font-bold uppercase tracking-tighter">
+                      {t.common.mediaCreated}
+                    </span>
+                  )}
+                  {selectedItem.exifData?.latitude !== undefined && (
+                    <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded text-[9px] font-bold uppercase tracking-tighter">
+                      GPS
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {itemsCount > 0 && (
+        <h2 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
           {t.tools.photoverlay.overlaySettings}
         </h2>
       )}

@@ -7,6 +7,7 @@ import {
   TextSize,
   Rotation,
   AudioMode,
+  NamingSettings,
 } from '../types';
 
 const SLIDESYNC_KEY = 'slidesync_state_v1';
@@ -54,6 +55,8 @@ export interface PhotoverlayState {
   selectedId: string | null;
   applyToAll: boolean;
   exportAsArchive?: boolean;
+  namingSettings?: NamingSettings;
+  preserveMetadata?: boolean;
 }
 
 // For backward compatibility
@@ -165,7 +168,14 @@ export class PersistenceService {
         };
       }
 
-      return state as PhotoverlayState;
+      return {
+        ...state,
+        namingSettings: state.namingSettings || {
+          keepOriginal: true,
+          type: 'prefix',
+          value: '',
+        },
+      } as PhotoverlayState;
     } catch (error) {
       console.error('Failed to load Photoverlay state:', error);
       return null;

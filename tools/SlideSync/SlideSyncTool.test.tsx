@@ -44,4 +44,73 @@ describe('SlideSyncTool', () => {
     // Timeline should show the slide
     expect(await screen.findByAltText('Slide 1')).toBeInTheDocument();
   });
+
+  it('deletes non-customized slide immediately', async () => {
+    renderWithContext();
+    const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
+    const input = screen.getByLabelText(/Add Images/i) as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [file] } });
+
+    const deleteBtn = await screen.findByTitle(/Remove file/i);
+    fireEvent.click(deleteBtn);
+
+    expect(screen.queryByAltText('Slide 1')).not.toBeInTheDocument();
+  });
+
+  it('shows confirmation modal when deleting customized slide', async () => {
+    renderWithContext();
+    const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
+    const input = screen.getByLabelText(/Add Images/i) as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await screen.findByAltText('Slide 1');
+
+    // Add text
+    const textarea = screen.getByPlaceholderText(/Enter overlay text/i);
+    fireEvent.change(textarea, { target: { value: 'Test Slide Text' } });
+
+    const deleteBtn = screen.getByTitle(/Remove file/i);
+    fireEvent.click(deleteBtn);
+
+    // Modal should appear
+    expect(screen.getByText(/Remove Slide\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/Are you sure you want to remove this slide\?/i)).toBeInTheDocument();
+  });
+
+  it('removes customized slide after confirmation', async () => {
+    renderWithContext();
+    const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
+    const input = screen.getByLabelText(/Add Images/i) as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await screen.findByAltText('Slide 1');
+    fireEvent.change(screen.getByPlaceholderText(/Enter overlay text/i), {
+      target: { value: 'Test' },
+    });
+    fireEvent.click(screen.getByTitle(/Remove file/i));
+
+    const confirmBtn = screen.getByText(/Yes, Remove/i);
+    fireEvent.click(confirmBtn);
+
+    expect(screen.queryByAltText('Slide 1')).not.toBeInTheDocument();
+  });
+
+  it('keeps customized slide after cancellation', async () => {
+    renderWithContext();
+    const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
+    const input = screen.getByLabelText(/Add Images/i) as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await screen.findByAltText('Slide 1');
+    fireEvent.change(screen.getByPlaceholderText(/Enter overlay text/i), {
+      target: { value: 'Test' },
+    });
+    fireEvent.click(screen.getByTitle(/Remove file/i));
+
+    const cancelBtn = screen.getAllByText(/Cancel/i)[0];
+    fireEvent.click(cancelBtn);
+
+    expect(screen.getByAltText('Slide 1')).toBeInTheDocument();
+    expect(screen.queryByText(/Remove Slide\?/i)).not.toBeInTheDocument();
+  });
 });
