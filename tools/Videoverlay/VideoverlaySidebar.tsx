@@ -6,8 +6,11 @@ import { WatermarkSettingsPanel } from '../../components/WatermarkSettingsPanel'
 import { useLanguage } from '../../contexts/LanguageContext';
 import { FileDropZone } from '../../components/FileDropZone';
 
+import { MetadataService, VideoMetadata } from '../../services/MetadataService';
+
 interface VideoverlaySidebarProps {
   file: File | null;
+  metadata: VideoMetadata | null;
   rotation: Rotation;
   audioMode: AudioMode;
   audioFile: File | null;
@@ -25,6 +28,7 @@ interface VideoverlaySidebarProps {
 
 export const VideoverlaySidebar: React.FC<VideoverlaySidebarProps> = ({
   file,
+  metadata,
   rotation,
   audioMode,
   audioFile,

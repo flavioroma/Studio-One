@@ -264,29 +264,47 @@ export const PhotoverlayTool: React.FC = () => {
     load();
   }, []);
 
+  // Save State with Debounce
+  const saveState = () => {
+    PersistenceService.savePhotoverlayState({
+      items: items.map((item) => ({
+        id: item.id,
+        file: item.file,
+        caption: item.captionSettings.text,
+        color: item.captionSettings.color,
+        position: item.captionSettings.position,
+        textSize: item.captionSettings.textSize,
+        isItalic: item.captionSettings.isItalic,
+        watermarkFile: item.watermarkSettings.file,
+        watermarkPosition: item.watermarkSettings.position,
+        framingSettings: item.framingSettings,
+      })),
+      selectedId,
+      applyToAll,
+      namingSettings,
+      preserveMetadata,
+    });
+  };
+
   useEffect(() => {
     if (!isLoadedRef.current) return;
-    const timeoutId = setTimeout(() => {
-      PersistenceService.savePhotoverlayState({
-        items: items.map((item) => ({
-          id: item.id,
-          file: item.file,
-          caption: item.captionSettings.text,
-          color: item.captionSettings.color,
-          position: item.captionSettings.position,
-          textSize: item.captionSettings.textSize,
-          isItalic: item.captionSettings.isItalic,
-          watermarkFile: item.watermarkSettings.file,
-          watermarkPosition: item.watermarkSettings.position,
-          framingSettings: item.framingSettings,
-        })),
-        selectedId,
-        applyToAll,
-        namingSettings,
-        preserveMetadata,
-      });
-    }, 2000);
-    return () => clearTimeout(timeoutId);
+    const timeoutId = setTimeout(saveState, 1000);
+    return () => {
+      clearTimeout(timeoutId);
+      saveState();
+    };
+  }, [items, selectedId, applyToAll, namingSettings, preserveMetadata]);
+
+  // Handle browser refresh/close
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (isLoadedRef.current) {
+        saveState();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [items, selectedId, applyToAll, namingSettings, preserveMetadata]);
 
   const handleCaptionUpdate = (updates: Partial<CaptionSettings>) => {
@@ -313,7 +331,7 @@ export const PhotoverlayTool: React.FC = () => {
   const handleFramingUpdate = (updates: Partial<FramingSettings>) => {
     setItems((prev) =>
       prev.map((item) => {
-        if (applyToAll || item.id === selectedId) {
+        if (item.id === selectedId) {
           return { ...item, framingSettings: { ...item.framingSettings, ...updates } };
         }
         return item;
@@ -325,17 +343,15 @@ export const PhotoverlayTool: React.FC = () => {
     const newValue = e.target.checked;
     if (newValue) {
       // Check if there are other photos with different settings
-      const hasOtherCustomSettings = items.some(
+      const hasCaptionOrWatermark = items.some(
         (item) =>
           item.id !== selectedId &&
-          (item.captionSettings.text !== selectedItem?.captionSettings.text ||
-            item.watermarkSettings.file !== selectedItem?.watermarkSettings.file ||
-            item.framingSettings.zoom !== selectedItem?.framingSettings.zoom ||
-            item.framingSettings.offsetX !== selectedItem?.framingSettings.offsetX ||
-            item.framingSettings.offsetY !== selectedItem?.framingSettings.offsetY)
+          ((item.captionSettings.text &&
+            item.captionSettings.text !== selectedItem?.captionSettings.text) ||
+            (item.watermarkSettings.file &&
+              item.watermarkSettings.file !== selectedItem?.watermarkSettings.file))
       );
-
-      if (hasOtherCustomSettings && items.length > 1) {
+      if (hasCaptionOrWatermark && items.length > 1) {
         setShowApplyAllConfirm(true);
       } else {
         confirmApplyToAll(true);
@@ -352,7 +368,6 @@ export const PhotoverlayTool: React.FC = () => {
           ...item,
           captionSettings: { ...selectedItem.captionSettings },
           watermarkSettings: { ...selectedItem.watermarkSettings },
-          framingSettings: { ...selectedItem.framingSettings },
         }))
       );
       setApplyToAll(true);
@@ -518,7 +533,13 @@ export const PhotoverlayTool: React.FC = () => {
     const item = items.find((i) => i.id === id);
     if (!item) return;
 
-    const isCustomized = !!item.captionSettings.text || !!item.watermarkSettings.file;
+    const isCustomized =
+      !!item.captionSettings.text ||
+      !!item.watermarkSettings.file ||
+      item.framingSettings.zoom !== 1 ||
+      item.framingSettings.offsetX !== 0 ||
+      item.framingSettings.offsetY !== 0;
+
     if (isCustomized) {
       setItemToDeleteId(id);
     } else {
@@ -733,11 +754,15 @@ export const PhotoverlayTool: React.FC = () => {
                         alt="Thumb"
                       />
 
-                      {(item.captionSettings.text || item.watermarkSettings.file) && (
+                      {(item.captionSettings.text ||
+                        item.watermarkSettings.file ||
+                        item.framingSettings.zoom !== 1 ||
+                        item.framingSettings.offsetX !== 0 ||
+                        item.framingSettings.offsetY !== 0) && (
                         <div className="absolute top-2 right-2 z-10">
                           <div
                             className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"
-                            title={t.tools.slidesync.hasText}
+                            title={t.common.isCustomized}
                           ></div>
                         </div>
                       )}

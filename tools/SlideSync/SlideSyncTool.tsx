@@ -81,7 +81,7 @@ export const SlideSyncTool: React.FC = () => {
   // Load State on Mount
   useEffect(() => {
     const load = async () => {
-      const state = await PersistenceService.loadState();
+      const state = await PersistenceService.loadSlideSyncState();
       if (state) {
         // Restore slides with new Object URLs
         const restoredSlides = state.slides.map((s) => ({
@@ -92,7 +92,9 @@ export const SlideSyncTool: React.FC = () => {
         setSlides(restoredSlides);
         if (restoredSlides.length > 0) setActiveSlideId(restoredSlides[0].id);
 
-        setAspectRatio(state.aspectRatio);
+        if (state.aspectRatio) {
+          setAspectRatio(state.aspectRatio);
+        }
         setAudioFile(state.audioFile);
       }
 
@@ -107,18 +109,36 @@ export const SlideSyncTool: React.FC = () => {
   }, []);
 
   // Save State with Debounce
+  const saveState = () => {
+    PersistenceService.saveSlideSyncState({
+      slides,
+      audioFile,
+      aspectRatio,
+    });
+  };
+
   useEffect(() => {
     if (!isLoadedRef.current) return;
 
-    const timeoutId = setTimeout(() => {
-      PersistenceService.saveState({
-        slides,
-        audioFile,
-        aspectRatio,
-      });
-    }, 2000); // 2 seconds debounce
+    const timeoutId = setTimeout(saveState, 1000); // 1 second debounce
 
-    return () => clearTimeout(timeoutId);
+    return () => {
+      clearTimeout(timeoutId);
+      // If unmounting, attempt one final save
+      saveState();
+    };
+  }, [slides, audioFile, aspectRatio]);
+
+  // Handle browser refresh/close
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (isLoadedRef.current) {
+        saveState();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [slides, audioFile, aspectRatio]);
   useEffect(() => {
     if (!activeSlideId || slides.length === 0 || audioDuration === 0) return;
@@ -181,7 +201,10 @@ export const SlideSyncTool: React.FC = () => {
     const slide = slides.find((s) => s.id === id);
     if (!slide) return;
 
-    if (slide.text) {
+    const isCustomized =
+      !!slide.text || slide.zoom !== 1 || slide.offsetX !== 0 || slide.offsetY !== 0;
+
+    if (isCustomized) {
       setSlideToDeleteId(id);
     } else {
       deleteSlide(id);
@@ -223,7 +246,7 @@ export const SlideSyncTool: React.FC = () => {
     setIsPlaying(false);
     setCurrentTime(0);
     setShowEraseConfirm(false);
-    PersistenceService.saveState({ slides: [], audioFile: null, aspectRatio });
+    PersistenceService.saveSlideSyncState({ slides: [], audioFile: null, aspectRatio });
   };
 
   const handleSelectAudioTrimTrack = async (track: AudioTrackItem) => {

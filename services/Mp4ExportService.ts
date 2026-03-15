@@ -134,14 +134,24 @@ export class Mp4ExportService {
     // Load all images and watermarks first
     const images = await Promise.all(slides.map((s) => this.loadImage(s.previewUrl)));
     const watermarks = await Promise.all(
-      slides.map((s) => (s.watermarkSettings?.file ? this.loadImage(URL.createObjectURL(s.watermarkSettings.file)) : null))
+      slides.map((s) =>
+        s.watermarkSettings?.file
+          ? this.loadImage(URL.createObjectURL(s.watermarkSettings.file))
+          : null
+      )
     );
 
     for (let i = 0; i < totalFrames; i++) {
       const time = i / fps;
       const slideIndex = Math.min(Math.floor(time / slideDuration), slides.length - 1);
 
-      this.renderFrame(images[slideIndex], slides[slideIndex], width, height, watermarks[slideIndex]);
+      this.renderFrame(
+        images[slideIndex],
+        slides[slideIndex],
+        width,
+        height,
+        watermarks[slideIndex]
+      );
 
       // Create VideoFrame from canvas
       const frame = new VideoFrame(this.canvas, { timestamp: i * (1_000_000 / fps) }); // microseconds

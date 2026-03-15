@@ -23,13 +23,13 @@ describe('PersistenceService', () => {
     };
 
     it('saves SlideSync state', async () => {
-      await PersistenceService.saveState(mockState);
+      await PersistenceService.saveSlideSyncState(mockState);
       expect(set).toHaveBeenCalledWith('slidesync_state_v1', mockState);
     });
 
     it('loads SlideSync state', async () => {
       vi.mocked(get).mockResolvedValue(mockState);
-      const state = await PersistenceService.loadState();
+      const state = await PersistenceService.loadSlideSyncState();
       expect(state).toEqual(mockState);
       expect(get).toHaveBeenCalledWith('slidesync_state_v1');
     });

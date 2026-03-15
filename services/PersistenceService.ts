@@ -97,7 +97,7 @@ export interface LegacyAudioTrimState {
 
 export class PersistenceService {
   // SlideSync
-  static async saveState(state: SlideSyncState): Promise<void> {
+  static async saveSlideSyncState(state: SlideSyncState): Promise<void> {
     try {
       await set(SLIDESYNC_KEY, state);
     } catch (error) {
@@ -105,7 +105,7 @@ export class PersistenceService {
     }
   }
 
-  static async loadState(): Promise<SlideSyncState | null> {
+  static async loadSlideSyncState(): Promise<SlideSyncState | null> {
     try {
       return (await get<SlideSyncState>(SLIDESYNC_KEY)) || null;
     } catch (error) {

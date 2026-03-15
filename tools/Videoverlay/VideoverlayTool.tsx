@@ -29,6 +29,7 @@ import { calculateCaptionMetrics } from '../../utils/captionUtils';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { VideoverlaySidebar } from './VideoverlaySidebar';
+import { TimeRangeSelector } from '../../components/TimeRangeSelector';
 
 export const VideoverlayTool: React.FC = () => {
   const { t } = useLanguage();
@@ -265,29 +266,55 @@ export const VideoverlayTool: React.FC = () => {
     load();
   }, []);
 
-  // Save State
+  // Save State with Debounce
+  const saveState = () => {
+    PersistenceService.saveVideoverlayState({
+      file,
+      caption: captionSettings.text,
+      color: captionSettings.color,
+      position: captionSettings.position,
+      textSize: captionSettings.textSize,
+      isItalic: captionSettings.isItalic,
+      watermarkFile: watermarkSettings.file,
+      watermarkPosition: watermarkSettings.position,
+      rotation,
+      audioMode,
+      audioFile,
+      startTime,
+      endTime,
+    });
+  };
+
   useEffect(() => {
     if (!isLoadedRef.current) return;
 
-    const timeoutId = setTimeout(() => {
-      PersistenceService.saveVideoverlayState({
-        file,
-        caption: captionSettings.text,
-        color: captionSettings.color,
-        position: captionSettings.position,
-        textSize: captionSettings.textSize,
-        isItalic: captionSettings.isItalic,
-        watermarkFile: watermarkSettings.file,
-        watermarkPosition: watermarkSettings.position,
-        rotation,
-        audioMode,
-        audioFile,
-        startTime,
-        endTime,
-      });
-    }, 2000);
+    const timeoutId = setTimeout(saveState, 1000); // 1 second debounce
 
-    return () => clearTimeout(timeoutId);
+    return () => {
+      clearTimeout(timeoutId);
+      saveState();
+    };
+  }, [
+    file,
+    captionSettings,
+    watermarkSettings,
+    rotation,
+    audioMode,
+    audioFile,
+    startTime,
+    endTime,
+  ]);
+
+  // Handle browser refresh/close
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (isLoadedRef.current) {
+        saveState();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [
     file,
     captionSettings,
@@ -755,137 +782,29 @@ export const VideoverlayTool: React.FC = () => {
 
               {/* Trimming Controls */}
               {!isExporting && metadata && (
-                <div className="w-full max-w-2xl bg-slate-800/80 backdrop-blur-sm p-6 rounded-3xl border border-slate-700 space-y-6 mt-4 z-20 shadow-xl">
-                  <div className="flex items-center justify-between gap-4">
-                    <button
-                      onClick={() => {
-                        if (videoRef.current)
-                          setStartTime(Math.min(videoRef.current.currentTime, endTime - 0.01));
-                      }}
-                      className="flex-1 group/btn flex items-center justify-center gap-2 px-5 py-3 bg-slate-700 hover:bg-tool-videoverlay/20 hover:text-tool-videoverlay border border-slate-600 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95"
-                    >
-                      <Flag className="w-3.5 h-3.5 group-hover/btn:scale-110 transition-transform" />{' '}
-                      {t.tools.audiotrim.setStart}
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (videoRef.current)
-                          setEndTime(Math.max(videoRef.current.currentTime, startTime + 0.01));
-                      }}
-                      className="flex-1 group/btn flex items-center justify-center gap-2 px-5 py-3 bg-slate-700 hover:bg-tool-videoverlay/20 hover:text-tool-videoverlay border border-slate-600 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95"
-                    >
-                      <Flag className="w-3.5 h-3.5 fill-current group-hover/btn:scale-110 transition-transform" />{' '}
-                      {t.tools.audiotrim.setEnd}
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center px-1">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">
-                          {t.tools.audiotrim.selectionStart}
-                        </label>
-                        <span className="text-xs font-mono text-tool-videoverlay">
-                          {Math.floor(startTime / 60)}:
-                          {Math.floor(startTime % 60)
-                            .toString()
-                            .padStart(2, '0')}
-                          .
-                          {Math.floor((startTime % 1) * 100)
-                            .toString()
-                            .padStart(2, '0')}
-                        </span>
-                      </div>
-                      <div className="relative flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            const newTime = Math.max(0, startTime - 0.1);
-                            setStartTime(newTime);
-                            if (videoRef.current) videoRef.current.currentTime = newTime;
-                          }}
-                          className="p-1 hover:text-white text-slate-500 transition-colors"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </button>
-                        <input
-                          type="range"
-                          min="0"
-                          max={metadata.duration || 100}
-                          step="0.033"
-                          value={startTime}
-                          onChange={(e) => {
-                            const val = parseFloat(e.target.value);
-                            setStartTime(Math.min(val, endTime - 0.01));
-                            if (videoRef.current) videoRef.current.currentTime = val;
-                          }}
-                          className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-tool-videoverlay"
-                        />
-                        <button
-                          onClick={() => {
-                            const newTime = Math.min(endTime - 0.01, startTime + 0.1);
-                            setStartTime(newTime);
-                            if (videoRef.current) videoRef.current.currentTime = newTime;
-                          }}
-                          className="p-1 hover:text-white text-slate-500 transition-colors"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center px-1">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">
-                          {t.tools.audiotrim.selectionEnd}
-                        </label>
-                        <span className="text-xs font-mono text-tool-videoverlay">
-                          {Math.floor(endTime / 60)}:
-                          {Math.floor(endTime % 60)
-                            .toString()
-                            .padStart(2, '0')}
-                          .
-                          {Math.floor((endTime % 1) * 100)
-                            .toString()
-                            .padStart(2, '0')}
-                        </span>
-                      </div>
-                      <div className="relative flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            const newTime = Math.max(startTime + 0.01, endTime - 0.1);
-                            setEndTime(newTime);
-                            if (videoRef.current) videoRef.current.currentTime = newTime;
-                          }}
-                          className="p-1 hover:text-white text-slate-500 transition-colors"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </button>
-                        <input
-                          type="range"
-                          min="0"
-                          max={metadata.duration || 100}
-                          step="0.033"
-                          value={endTime}
-                          onChange={(e) => {
-                            const val = parseFloat(e.target.value);
-                            setEndTime(Math.max(val, startTime + 0.01));
-                            if (videoRef.current) videoRef.current.currentTime = val;
-                          }}
-                          className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-tool-videoverlay"
-                        />
-                        <button
-                          onClick={() => {
-                            const newTime = Math.min(metadata.duration || 0, endTime + 0.1);
-                            setEndTime(newTime);
-                            if (videoRef.current) videoRef.current.currentTime = newTime;
-                          }}
-                          className="p-1 hover:text-white text-slate-500 transition-colors"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                <div className="w-full max-w-5xl mt-4 z-20 shadow-xl">
+                  <TimeRangeSelector
+                    theme="videoverlay"
+                    currentTime={currentTime}
+                    startTime={startTime}
+                    endTime={endTime}
+                    maxDuration={metadata.duration || 100}
+                    onStartTimeChange={(val) => {
+                      setStartTime(val);
+                      if (videoRef.current) videoRef.current.currentTime = val;
+                    }}
+                    onEndTimeChange={(val) => {
+                      setEndTime(val);
+                      if (videoRef.current) videoRef.current.currentTime = val;
+                    }}
+                    formatTime={formatTime}
+                    labels={{
+                      setStart: t.tools.audiotrim.setStart,
+                      setEnd: t.tools.audiotrim.setEnd,
+                      selectionStart: t.tools.audiotrim.selectionStart,
+                      selectionEnd: t.tools.audiotrim.selectionEnd,
+                    }}
+                  />
                 </div>
               )}
             </>

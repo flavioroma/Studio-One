@@ -8,6 +8,7 @@ interface MagnificationSettingsPanelProps {
   settings: FramingSettings;
   onUpdate: (updates: Partial<FramingSettings>) => void;
   aspectRatio: AspectRatio;
+  sourceDimensions?: { width: number; height: number } | null;
   themeColor?: string;
   captionText?: string;
   getCaptionStyle?: () => React.CSSProperties;
@@ -18,6 +19,7 @@ export const MagnificationSettingsPanel: React.FC<MagnificationSettingsPanelProp
   settings,
   onUpdate,
   aspectRatio,
+  sourceDimensions,
   themeColor = 'tool-slidesync',
   captionText,
   getCaptionStyle,
@@ -55,6 +57,9 @@ export const MagnificationSettingsPanel: React.FC<MagnificationSettingsPanelProp
   };
 
   const getAspectStyle = () => {
+    if (aspectRatio === AspectRatio.Original && sourceDimensions) {
+      return `${sourceDimensions.width} / ${sourceDimensions.height}`;
+    }
     switch (aspectRatio) {
       case AspectRatio.Landscape_16_9:
         return '16 / 9';
@@ -102,7 +107,7 @@ export const MagnificationSettingsPanel: React.FC<MagnificationSettingsPanelProp
         ref={containerRef}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
-        className={`relative bg-black rounded-xl overflow-hidden border border-slate-700 shadow-2xl cursor-grab active:cursor-grabbing group transition-all duration-300`}
+        className={`relative bg-black rounded-xs overflow-hidden border border-slate-700 shadow-2xl cursor-grab active:cursor-grabbing group transition-all duration-300`}
         style={{ aspectRatio: getAspectStyle() }}
       >
         <div
@@ -129,9 +134,13 @@ export const MagnificationSettingsPanel: React.FC<MagnificationSettingsPanelProp
           </div>
         </div>
 
-        <div className={`absolute top-2 left-2 ${themeClasses.bg} border border-white/20 backdrop-blur-md px-2 py-0.5 rounded text-[8px] font-black text-white uppercase tracking-tighter z-30`}>
-          {t.tools.slidesync.output} {aspectRatio}
-        </div>
+        {themeColor === 'tool-slidesync' && (
+          <div
+            className={`absolute top-2 left-2 ${themeClasses.bg} border border-white/20 backdrop-blur-md px-2 py-0.5 rounded text-[8px] font-black text-white uppercase tracking-tighter z-30`}
+          >
+            {t.common.output} {aspectRatio}
+          </div>
+        )}
 
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none group-hover:opacity-0 transition-opacity z-30">
           <span className="text-[9px] font-bold text-white/30 uppercase tracking-tighter bg-black/40 px-3 py-1 rounded-full">
@@ -154,6 +163,7 @@ export const MagnificationSettingsPanel: React.FC<MagnificationSettingsPanelProp
             value={settings.zoom}
             onChange={(e) => onUpdate({ zoom: parseFloat(e.target.value) })}
             className={`w-full h-1 bg-slate-700 rounded-lg cursor-pointer range-sm ${themeClasses.accent} transition-all`}
+            aria-label={t.tools.slidesync.magnification}
           />
         </div>
 

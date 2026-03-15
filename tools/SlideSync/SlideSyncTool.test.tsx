@@ -6,9 +6,9 @@ import { LanguageProvider } from '../../contexts/LanguageContext';
 // Mock services
 vi.mock('../../services/PersistenceService', () => ({
   PersistenceService: {
-    loadState: vi.fn().mockResolvedValue(null),
+    loadSlideSyncState: vi.fn().mockResolvedValue(null),
     loadAudioTrimState: vi.fn().mockResolvedValue({ tracks: [], selectedId: null }),
-    saveState: vi.fn(),
+    saveSlideSyncState: vi.fn(),
   },
 }));
 
@@ -112,5 +112,22 @@ describe('SlideSyncTool', () => {
 
     expect(screen.getByAltText('Slide 1')).toBeInTheDocument();
     expect(screen.queryByText(/Remove Slide\?/i)).not.toBeInTheDocument();
+  });
+
+  it('shows confirmation modal when slide has magnification applied', async () => {
+    renderWithContext();
+    const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
+    const input = screen.getByLabelText(/Add Images/i) as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await screen.findByAltText('Slide 1');
+
+    // Change zoom
+    const zoomSlider = await screen.findByRole('slider', { name: /magnification/i });
+    fireEvent.change(zoomSlider, { target: { value: '1.2' } });
+
+    fireEvent.click(screen.getByTitle(/Remove file/i));
+
+    expect(screen.getByText(/Remove Slide\?/i)).toBeInTheDocument();
   });
 });
