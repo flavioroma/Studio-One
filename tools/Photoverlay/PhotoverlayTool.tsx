@@ -18,6 +18,7 @@ import {
   CaptionSettings,
   WatermarkSettings,
   NamingSettings,
+  FramingSettings,
 } from '../../types';
 import { PersistenceService } from '../../services/PersistenceService';
 import {
@@ -161,6 +162,11 @@ export const PhotoverlayTool: React.FC = () => {
                 opacity: 0.2,
                 scale: 0.2,
               },
+        framingSettings: {
+          zoom: 1.0,
+          offsetX: 0,
+          offsetY: 0,
+        },
         metadata: dimensions,
         exifData: exif,
       });
@@ -204,6 +210,11 @@ export const PhotoverlayTool: React.FC = () => {
             opacity: 0.2,
             scale: 0.2,
           },
+          framingSettings: (item as any).framingSettings || {
+            zoom: 1.0,
+            offsetX: 0,
+            offsetY: 0,
+          },
           metadata: null,
           exifData: null,
         }));
@@ -231,6 +242,7 @@ export const PhotoverlayTool: React.FC = () => {
               imageUrl: item.imageUrl,
               captionSettings: item.captionSettings,
               watermarkSettings: item.watermarkSettings,
+              framingSettings: item.framingSettings,
               metadata: dimensions,
               exifData: exif,
             };
@@ -266,6 +278,7 @@ export const PhotoverlayTool: React.FC = () => {
           isItalic: item.captionSettings.isItalic,
           watermarkFile: item.watermarkSettings.file,
           watermarkPosition: item.watermarkSettings.position,
+          framingSettings: item.framingSettings,
         })),
         selectedId,
         applyToAll,
@@ -297,6 +310,16 @@ export const PhotoverlayTool: React.FC = () => {
       })
     );
   };
+  const handleFramingUpdate = (updates: Partial<FramingSettings>) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (applyToAll || item.id === selectedId) {
+          return { ...item, framingSettings: { ...item.framingSettings, ...updates } };
+        }
+        return item;
+      })
+    );
+  };
 
   const handleApplyToAllChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.checked;
@@ -306,7 +329,10 @@ export const PhotoverlayTool: React.FC = () => {
         (item) =>
           item.id !== selectedId &&
           (item.captionSettings.text !== selectedItem?.captionSettings.text ||
-            item.watermarkSettings.file !== selectedItem?.watermarkSettings.file)
+            item.watermarkSettings.file !== selectedItem?.watermarkSettings.file ||
+            item.framingSettings.zoom !== selectedItem?.framingSettings.zoom ||
+            item.framingSettings.offsetX !== selectedItem?.framingSettings.offsetX ||
+            item.framingSettings.offsetY !== selectedItem?.framingSettings.offsetY)
       );
 
       if (hasOtherCustomSettings && items.length > 1) {
@@ -326,6 +352,7 @@ export const PhotoverlayTool: React.FC = () => {
           ...item,
           captionSettings: { ...selectedItem.captionSettings },
           watermarkSettings: { ...selectedItem.watermarkSettings },
+          framingSettings: { ...selectedItem.framingSettings },
         }))
       );
       setApplyToAll(true);
@@ -358,7 +385,17 @@ export const PhotoverlayTool: React.FC = () => {
           img.src = item.imageUrl;
         });
 
-        ctx.drawImage(imgElement, 0, 0, item.metadata.width, item.metadata.height);
+        // Apply framing (zoom and offsets)
+        const zoom = item.framingSettings?.zoom || 1.0;
+        const offsetX = (item.framingSettings?.offsetX || 0) * (canvas.width / 100);
+        const offsetY = (item.framingSettings?.offsetY || 0) * (canvas.height / 100);
+
+        const drawWidth = canvas.width * zoom;
+        const drawHeight = canvas.height * zoom;
+        const drawX = (canvas.width - drawWidth) / 2 + offsetX;
+        const drawY = (canvas.height - drawHeight) / 2 + offsetY;
+
+        ctx.drawImage(imgElement, drawX, drawY, drawWidth, drawHeight);
 
         // Watermark
         if (item.watermarkSettings.file) {
@@ -443,8 +480,6 @@ export const PhotoverlayTool: React.FC = () => {
             a.download = finalName;
             a.click();
             URL.revokeObjectURL(url);
-            // Add small delay between downloads to ensure browser triggers all
-            await new Promise((r) => setTimeout(r, 400));
           }
         }
       }
@@ -606,6 +641,7 @@ export const PhotoverlayTool: React.FC = () => {
         onFileChange={handleFileChange}
         onCaptionUpdate={handleCaptionUpdate}
         onWatermarkUpdate={handleWatermarkUpdate}
+        onFramingUpdate={handleFramingUpdate}
         namingSettings={namingSettings}
         onNamingUpdate={(updates) => setNamingSettings((prev) => ({ ...prev, ...updates }))}
         preserveMetadata={preserveMetadata}
@@ -640,6 +676,10 @@ export const PhotoverlayTool: React.FC = () => {
                   src={selectedItem?.imageUrl}
                   className="max-h-[60vh] w-auto pointer-events-none object-contain"
                   alt="Preview"
+                  style={{
+                    transform: `translate(${selectedItem?.framingSettings?.offsetX || 0}%, ${selectedItem?.framingSettings?.offsetY || 0}%) scale(${selectedItem?.framingSettings?.zoom || 1})`,
+                    transition: 'transform 0.2s ease-out',
+                  }}
                 />
 
                 {selectedItem?.watermarkSettings.file && (

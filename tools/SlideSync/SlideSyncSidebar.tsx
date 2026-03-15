@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Slide, AspectRatio } from '../../types';
+import { Slide, AspectRatio, TextPosition } from '../../types';
 import { AudioTrackItem } from '../../services/PersistenceService';
 import { calculateCaptionMetrics, calculateCaptionPosition } from '../../utils/captionUtils';
 import {
@@ -18,6 +18,8 @@ import {
   Tablet,
 } from 'lucide-react';
 import { CaptionSettingsPanel } from '../../components/CaptionSettingsPanel';
+import { WatermarkSettingsPanel } from '../../components/WatermarkSettingsPanel';
+import { MagnificationSettingsPanel } from '../../components/MagnificationSettingsPanel';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface SlideSyncSidebarProps {
@@ -326,102 +328,46 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
             </h3>
           </div>
 
-          <div className="space-y-3">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-              <Maximize className="w-3 h-3 text-tool-slidesync" />{' '}
-              {t.tools.slidesync.framingPreview}
-            </label>
-
-            <div
-              ref={containerRef}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              className="relative bg-black rounded-xl overflow-hidden border border-slate-700 shadow-2xl cursor-grab active:cursor-grabbing group transition-all duration-300"
-              style={{ aspectRatio: getAspectStyle() }}
-            >
-              <div
-                className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                style={{
-                  transform: `translate(${slide.offsetX || 0}%, ${slide.offsetY || 0}%) scale(${slide.zoom || 1})`,
-                  transition: isDragging ? 'none' : 'transform 0.2s ease-out',
-                }}
-              >
-                <img
-                  src={slide.previewUrl}
-                  alt="Source"
-                  className="max-w-full max-h-full w-auto h-auto object-contain border border-white/20 shadow-2xl"
-                />
-              </div>
-
-              {slide.text && <div style={getCaptionStyle()}>{slide.text}</div>}
-
-              <div className="absolute inset-0 border border-tool-slidesync/20 pointer-events-none z-10">
-                <div className="w-full h-full grid grid-cols-3 grid-rows-3 opacity-10">
-                  {[...Array(9)].map((_, i) => (
-                    <div key={i} className="border border-white/20"></div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="absolute top-2 left-2 bg-tool-slidesync border border-white/20 backdrop-blur-md px-2 py-0.5 rounded text-[8px] font-black text-white uppercase tracking-tighter z-30">
-                {t.tools.slidesync.output} {aspectRatio}
-              </div>
-
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none group-hover:opacity-0 transition-opacity z-30">
-                <span className="text-[9px] font-bold text-white/30 uppercase tracking-tighter bg-black/40 px-3 py-1 rounded-full">
-                  {t.tools.slidesync.panImage}
-                </span>
-              </div>
-            </div>
-
-            <div className="bg-slate-700/30 p-4 rounded-xl space-y-4 border border-slate-600/50">
-              <div className="space-y-1">
-                <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase">
-                  <span>{t.tools.slidesync.magnification}</span>
-                  <span className="text-tool-slidesync">{slide.zoom.toFixed(2)}x</span>
-                </div>
-                <input
-                  type="range"
-                  min="0.1"
-                  max="3"
-                  step="0.01"
-                  value={slide.zoom}
-                  onChange={(e) => onUpdate({ zoom: parseFloat(e.target.value) })}
-                  className="w-full h-1 bg-slate-700 rounded-lg cursor-pointer range-sm text-tool-slidesync accent-tool-slidesync transition-all"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => onUpdate({ offsetX: 0 })}
-                  className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-[9px] font-black uppercase flex items-center justify-center gap-1.5 transition-colors"
-                  title={t.tools.slidesync.centerX}
-                >
-                  <AlignHorizontalSpaceAround className="w-3 h-3" /> {t.tools.slidesync.centerX}
-                </button>
-                <button
-                  onClick={() => onUpdate({ offsetY: 0 })}
-                  className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-[9px] font-black uppercase flex items-center justify-center gap-1.5 transition-colors"
-                  title={t.tools.slidesync.centerY}
-                >
-                  <AlignVerticalSpaceAround className="w-3 h-3" /> {t.tools.slidesync.centerY}
-                </button>
-              </div>
-
-              <button
-                onClick={() => onUpdate({ offsetX: 0, offsetY: 0, zoom: 1.0 })}
-                className="w-full px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-[9px] font-black uppercase flex items-center justify-center gap-1.5 transition-colors"
-              >
-                <Move className="w-3 h-3" /> {t.tools.slidesync.resetFraming}
-              </button>
-            </div>
-          </div>
+          <MagnificationSettingsPanel
+            imageUrl={slide.previewUrl}
+            settings={slide}
+            onUpdate={onUpdate}
+            aspectRatio={aspectRatio}
+            themeColor="tool-slidesync"
+            captionText={slide.text}
+            getCaptionStyle={getCaptionStyle}
+          />
 
           <CaptionSettingsPanel
             settings={slide}
             onUpdate={onUpdate}
             onAutoCaption={onAutoCaption}
             isProcessing={isProcessing}
+            themeColor="tool-slidesync"
+          />
+
+          <WatermarkSettingsPanel
+            settings={
+              slide.watermarkSettings || {
+                file: null,
+                position: TextPosition.TopRight,
+                opacity: 0.2,
+                scale: 0.2,
+              }
+            }
+            onUpdate={(updates) =>
+              onUpdate({
+                watermarkSettings: {
+                  ...(slide.watermarkSettings || {
+                    file: null,
+                    position: TextPosition.TopRight,
+                    opacity: 0.2,
+                    scale: 0.2,
+                  }),
+                  ...updates,
+                },
+              })
+            }
             themeColor="tool-slidesync"
           />
         </div>

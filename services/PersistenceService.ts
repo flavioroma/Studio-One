@@ -8,6 +8,8 @@ import {
   Rotation,
   AudioMode,
   NamingSettings,
+  FramingSettings,
+  WatermarkSettings,
 } from '../types';
 
 const SLIDESYNC_KEY = 'slidesync_state_v1';
@@ -48,6 +50,7 @@ export interface PhotoItemState {
   isItalic?: boolean;
   watermarkFile?: File | null;
   watermarkPosition?: TextPosition;
+  framingSettings?: FramingSettings;
 }
 
 export interface PhotoverlayState {

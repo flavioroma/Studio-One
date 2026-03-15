@@ -13,6 +13,7 @@ describe('PhotoverlaySidebar', () => {
     onFileChange: vi.fn(),
     onCaptionUpdate: vi.fn(),
     onWatermarkUpdate: vi.fn(),
+    onFramingUpdate: vi.fn(),
     namingSettings: {
       keepOriginal: true,
       type: 'prefix' as const,
@@ -82,6 +83,7 @@ describe('PhotoverlaySidebar', () => {
         isItalic: false,
       },
       watermarkSettings: { file: null, position: TextPosition.TopRight, opacity: 0.2, scale: 0.2 },
+      framingSettings: { zoom: 1, offsetX: 0, offsetY: 0 },
       metadata: null,
       exifData: null,
     };

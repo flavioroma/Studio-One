@@ -8,9 +8,12 @@ import {
   TextPosition,
   TextSize,
   NamingSettings,
+  FramingSettings,
+  AspectRatio,
 } from '../../types';
 import { CaptionSettingsPanel } from '../../components/CaptionSettingsPanel';
 import { WatermarkSettingsPanel } from '../../components/WatermarkSettingsPanel';
+import { MagnificationSettingsPanel } from '../../components/MagnificationSettingsPanel';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { FileDropZone } from '../../components/FileDropZone';
 
@@ -22,6 +25,7 @@ interface PhotoverlaySidebarProps {
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onCaptionUpdate: (updates: Partial<CaptionSettings>) => void;
   onWatermarkUpdate: (updates: Partial<WatermarkSettings>) => void;
+  onFramingUpdate: (updates: Partial<FramingSettings>) => void;
   namingSettings: NamingSettings;
   onNamingUpdate: (updates: Partial<NamingSettings>) => void;
   preserveMetadata: boolean;
@@ -37,6 +41,7 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
   onFileChange,
   onCaptionUpdate,
   onWatermarkUpdate,
+  onFramingUpdate,
   namingSettings,
   onNamingUpdate,
   preserveMetadata,
@@ -168,29 +173,49 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
 
       {itemsCount > 0 && (
         <h2 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
-          {t.tools.photoverlay.overlaySettings}
+          {t.tools.photoverlay.framing}
         </h2>
       )}
 
       {itemsCount > 0 && (
-        <div className="p-4 bg-slate-700/50 rounded-2xl border border-slate-600 hover:border-tool-photoverlay/40 hover:bg-slate-700/50 transition-all">
-          <label className="flex items-center gap-3 cursor-pointer group">
-            <div
-              className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${applyToAll ? 'bg-tool-photoverlay border-tool-photoverlay' : 'border-slate-500 group-hover:border-tool-photoverlay/80'}`}
-            >
-              {applyToAll && <Check className="w-3.5 h-3.5 text-white stroke-[3px]" />}
+        <>
+          <div className="p-4 bg-slate-700/50 rounded-2xl border border-slate-600 hover:border-tool-photoverlay/40 hover:bg-slate-700/50 transition-all">
+            <label className="flex items-center gap-3 cursor-pointer group">
+              <div
+                className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${applyToAll ? 'bg-tool-photoverlay border-tool-photoverlay' : 'border-slate-500 group-hover:border-tool-photoverlay/80'}`}
+              >
+                {applyToAll && <Check className="w-3.5 h-3.5 text-white stroke-[3px]" />}
+              </div>
+              <span className="text-xs font-bold text-slate-300 group-hover:text-slate-100 transition-colors">
+                {t.tools.photoverlay.applyToAll}
+              </span>
+              <input
+                type="checkbox"
+                checked={applyToAll}
+                onChange={onApplyToAllChange}
+                className="hidden"
+              />
+            </label>
+          </div>
+
+          {selectedItem && (
+            <div className="px-1">
+              <MagnificationSettingsPanel
+                imageUrl={selectedItem.imageUrl}
+                settings={selectedItem.framingSettings}
+                onUpdate={onFramingUpdate}
+                aspectRatio={AspectRatio.Original}
+                themeColor="tool-photoverlay"
+              />
             </div>
-            <span className="text-xs font-bold text-slate-300 group-hover:text-slate-100 transition-colors">
-              {t.tools.photoverlay.applyToAll}
-            </span>
-            <input
-              type="checkbox"
-              checked={applyToAll}
-              onChange={onApplyToAllChange}
-              className="hidden"
-            />
-          </label>
-        </div>
+          )}
+        </>
+      )}
+
+      {itemsCount > 0 && (
+        <h2 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
+          {t.tools.photoverlay.overlaySettings}
+        </h2>
       )}
 
       {itemsCount === 0 ? (

@@ -1,6 +1,10 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Slide, AspectRatio, ExportFormat } from '../../types';
-import { calculateCaptionMetrics, calculateCaptionPosition } from '../../utils/captionUtils';
+import {
+  calculateCaptionMetrics,
+  calculateCaptionPosition,
+  calculateWatermarkPosition,
+} from '../../utils/captionUtils';
 import { Mp4ExportService } from '../../services/Mp4ExportService';
 import { Download, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
 import { PlaybackControls } from '../../components/PlaybackControls';
@@ -33,6 +37,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
   const [isRecording, setIsRecording] = useState(false);
   const [exportFormat, setExportFormat] = useState<ExportFormat>(ExportFormat.WebM);
   const [supportedFormats, setSupportedFormats] = useState<ExportFormat[]>([ExportFormat.WebM]);
+  const [watermarkImgs, setWatermarkImgs] = useState<Record<string, HTMLImageElement>>({});
 
   useEffect(() => {
     const checkSupport = async () => {
@@ -68,6 +73,29 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
 
     checkSupport();
   }, []);
+
+  // Preload watermarks when slides change
+  useEffect(() => {
+    const loadWatermarks = async () => {
+      const newImgs: Record<string, HTMLImageElement> = {};
+      for (const slide of slides) {
+        if (slide.watermarkSettings?.file && !watermarkImgs[slide.id]) {
+          const img = new Image();
+          img.src = URL.createObjectURL(slide.watermarkSettings.file);
+          await new Promise((resolve) => {
+            img.onload = resolve;
+            img.onerror = resolve;
+          });
+          newImgs[slide.id] = img;
+        } else if (watermarkImgs[slide.id]) {
+          newImgs[slide.id] = watermarkImgs[slide.id];
+        }
+      }
+      setWatermarkImgs(newImgs);
+    };
+
+    loadWatermarks();
+  }, [slides]);
 
   // Calculate high definition dimensions based on selected aspect ratio
   // Base unit 1080p
@@ -163,6 +191,26 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
       metrics.lines.forEach((line, i) => {
         ctx.fillText(line, position.x, position.y + i * metrics.lineHeight);
       });
+    }
+
+    // Render Watermark
+    const watermarkImg = watermarkImgs[currentSlide.id];
+    if (watermarkImg && currentSlide.watermarkSettings) {
+      const wWidth = CANVAS_WIDTH * currentSlide.watermarkSettings.scale;
+      const wAspectRatio = watermarkImg.width / watermarkImg.height || 1;
+      const wHeight = wWidth / wAspectRatio;
+
+      const wPos = calculateWatermarkPosition(
+        CANVAS_WIDTH,
+        CANVAS_HEIGHT,
+        wWidth,
+        wHeight,
+        currentSlide.watermarkSettings.position
+      );
+
+      ctx.globalAlpha = currentSlide.watermarkSettings.opacity;
+      ctx.drawImage(watermarkImg, wPos.x, wPos.y, wWidth, wHeight);
+      ctx.globalAlpha = 1.0;
     }
   };
 

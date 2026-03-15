@@ -65,7 +65,13 @@ export enum AudioMode {
   Replace = 'replace',
 }
 
-export interface Slide {
+export interface FramingSettings {
+  zoom: number; // 0.1 to 3.0. 1.0 is standard "fit" fit.
+  offsetX: number; // -400 to 400 (percentage of offset from center)
+  offsetY: number; // -400 to 400 (percentage of offset from center)
+}
+
+export interface Slide extends FramingSettings {
   id: string;
   file: File;
   previewUrl: string;
@@ -74,9 +80,7 @@ export interface Slide {
   position: TextPosition;
   textSize: TextSize;
   isItalic?: boolean;
-  zoom: number; // 0.1 to 3.0. 1.0 is standard "fit" fit.
-  offsetX: number; // -100 to 100 (percentage of offset from center)
-  offsetY: number; // -100 to 100 (percentage of offset from center)
+  watermarkSettings?: WatermarkSettings;
 }
 
 export interface VideoConfig {
@@ -112,6 +116,7 @@ export interface PhotoItem {
   imageUrl: string;
   captionSettings: CaptionSettings;
   watermarkSettings: WatermarkSettings;
+  framingSettings: FramingSettings;
   metadata: { width: number; height: number } | null;
   exifData: any | null;
 }

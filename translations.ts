@@ -207,6 +207,7 @@ export const translations = {
       photoverlay: {
         title: 'PhotOverlay',
         overlaySettings: 'Overlay',
+        framing: 'Framing',
         selectPhoto: 'Select a photo to add overlays',
         uploadPhotos: 'Select or drop Photos',
         awaitingSource: 'Awaiting Source',
@@ -442,6 +443,7 @@ export const translations = {
       photoverlay: {
         title: 'PhotOverlay',
         overlaySettings: 'Sovraimpressione',
+        framing: 'Inquadratura',
         selectPhoto: 'Seleziona una foto per aggiungere overlay',
         uploadPhotos: 'Seleziona o trascina foto',
         awaitingSource: 'In attesa delle foto',
