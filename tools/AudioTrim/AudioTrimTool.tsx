@@ -17,6 +17,7 @@ import { PersistenceService, AudioTrackItem } from '../../services/PersistenceSe
 import { useLanguage } from '../../contexts/LanguageContext';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { AudioTrimSidebar } from './AudioTrimSidebar';
+import { TimeRangeSelector } from '../../components/TimeRangeSelector';
 import * as lamejs from '@breezystack/lamejs';
 import { bufferToWav } from '../../utils/audioUtils';
 
@@ -36,7 +37,7 @@ export const AudioTrimTool: React.FC = () => {
   const [endTime, setEndTime] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [playMode, setPlayMode] = useState<'selection' | 'all'>('selection');
+  const [playMode, setPlayMode] = useState<'selection' | 'all' | 'endSelection'>('selection');
   const [isExporting, setIsExporting] = useState(false);
   const [peaks, setPeaks] = useState<number[]>([]);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('wav');
@@ -44,13 +45,8 @@ export const AudioTrimTool: React.FC = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEraseProjectConfirm, setShowEraseProjectConfirm] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [startMins, setStartMins] = useState('0');
-  const [startSecs, setStartSecs] = useState('0');
-  const [startCents, setStartCents] = useState('0');
-  const [endMins, setEndMins] = useState('0');
-  const [endSecs, setEndSecs] = useState('0');
-  const [endCents, setEndCents] = useState('0');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [playEndSeconds, setPlayEndSeconds] = useState(5);
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
@@ -77,11 +73,6 @@ export const AudioTrimTool: React.FC = () => {
     return `${mins}m${secs.toString().padStart(2, '0')}s${ms.toString().padStart(2, '0')}`;
   };
 
-  const syncStartInputs = (time: number) => {
-    setStartMins(Math.floor(time / 60).toString());
-    setStartSecs(Math.floor(time % 60).toString());
-    setStartCents(Math.floor((time % 1) * 100).toString());
-  };
 
   const syncEndInputs = (time: number) => {
     setEndMins(Math.floor(time / 60).toString());
@@ -178,8 +169,6 @@ export const AudioTrimTool: React.FC = () => {
             setStartTime(initialTrack.startTime);
             setEndTime(effectiveEndTime);
             setExportFormat(initialTrack.exportFormat);
-            syncStartInputs(initialTrack.startTime);
-            syncEndInputs(effectiveEndTime);
           }
         }
       } finally {
@@ -255,8 +244,6 @@ export const AudioTrimTool: React.FC = () => {
           setEndTime(effectiveEndTime);
           setExportFormat(track.exportFormat);
           setCurrentTime(0);
-          syncStartInputs(track.startTime);
-          syncEndInputs(effectiveEndTime);
 
           // Update track metadata if it was 0
           if (track.endTime === 0) {
@@ -305,8 +292,6 @@ export const AudioTrimTool: React.FC = () => {
         setStartTime(0);
         setEndTime(duration);
         setCurrentTime(0);
-        syncStartInputs(0);
-        syncEndInputs(duration);
 
         // Update the track with the actual duration
         setTracks((prev) =>
@@ -331,7 +316,7 @@ export const AudioTrimTool: React.FC = () => {
     setIsPlaying(false);
   };
 
-  const startPlayback = (time: number, mode: 'selection' | 'all') => {
+  const startPlayback = (time: number, mode: 'selection' | 'all' | 'endSelection') => {
     stopAudio();
     if (!audioCtxRef.current || !audioBuffer) return;
 
@@ -350,13 +335,16 @@ export const AudioTrimTool: React.FC = () => {
     setPlayMode(mode);
   };
 
-  const togglePlay = (mode: 'selection' | 'all') => {
+  const togglePlay = (mode: 'selection' | 'all' | 'endSelection') => {
     if (isPlaying && mode === playMode) {
       stopAudio();
     } else {
       let startPosition = mode === 'selection' ? Math.max(startTime, currentTime) : currentTime;
-      if (mode === 'selection' && startPosition >= endTime) {
+      if (mode === 'selection') {
         startPosition = startTime;
+      }
+      if (mode === 'endSelection') {
+        startPosition = Math.max(startTime, endTime - playEndSeconds);
       }
       if (mode === 'all' && startPosition >= (audioBuffer?.duration || 0)) {
         startPosition = 0;
@@ -371,7 +359,7 @@ export const AudioTrimTool: React.FC = () => {
         const elapsed = audioCtxRef.current.currentTime - startTimeRef.current;
         setCurrentTime(elapsed);
 
-        if (playMode === 'selection' && elapsed >= endTime) {
+        if ((playMode === 'selection' || playMode === 'endSelection') && elapsed >= endTime) {
           stopAudio();
           setCurrentTime(startTime);
         } else if (playMode === 'all' && elapsed >= (audioBuffer?.duration || 0)) {
@@ -393,17 +381,6 @@ export const AudioTrimTool: React.FC = () => {
     };
   }, [isPlaying, startTime, endTime, playMode, audioBuffer]);
 
-  const handleSetStart = () => {
-    const newStart = Math.min(currentTime, endTime - 0.01);
-    setStartTime(newStart);
-    syncStartInputs(newStart);
-  };
-
-  const handleSetEnd = () => {
-    const newEnd = Math.max(currentTime, startTime + 0.01);
-    setEndTime(newEnd);
-    syncEndInputs(newEnd);
-  };
 
   const handleMouseMove = (e: MouseEvent) => {
     if (!isDragging || !waveformContainerRef.current) return;
@@ -571,8 +548,6 @@ export const AudioTrimTool: React.FC = () => {
             setStartTime(nextTrack.startTime);
             setEndTime(effectiveEndTime);
             setExportFormat(nextTrack.exportFormat);
-            syncStartInputs(nextTrack.startTime);
-            syncEndInputs(effectiveEndTime);
 
             // Update track metadata if it was 0
             if (nextTrack.endTime === 0) {
@@ -729,23 +704,23 @@ export const AudioTrimTool: React.FC = () => {
           </div>
         )}
 
-        <div className="flex-1 relative flex flex-col items-center justify-center p-8 overflow-y-auto">
+        <div className="flex-1 relative flex flex-col items-center p-8 overflow-y-auto">
           {!selectedTrack ? (
-            <div className="flex flex-col items-center gap-4 text-slate-600 animate-pulse">
+            <div className="flex flex-col items-center gap-4 text-slate-600 animate-pulse my-auto">
               <Music className="w-24 h-24 stroke-[1px]" />
               <p className="font-bold uppercase tracking-[0.3em] text-xs">
                 {t.tools.audiotrim.noTracksHint}
               </p>
             </div>
           ) : !file ? (
-            <div className="flex flex-col items-center gap-4 text-slate-600 animate-pulse">
+            <div className="flex flex-col items-center gap-4 text-slate-600 animate-pulse my-auto">
               <Music className="w-24 h-24 stroke-[1px]" />
               <p className="font-bold uppercase tracking-[0.3em] text-xs">
                 {t.tools.audiotrim.noTracksHint}
               </p>
             </div>
           ) : (
-            <div className="max-w-5xl w-full mx-auto space-y-8">
+            <div className="max-w-5xl w-full mx-auto space-y-8 my-auto">
               <div className="space-y-6 animate-fadeIn">
                 <div className="flex items-center justify-between bg-slate-800/40 p-4 rounded-2xl border border-slate-700/50 gap-4">
                   <div className="flex items-center gap-4 min-w-0">
@@ -843,282 +818,93 @@ export const AudioTrimTool: React.FC = () => {
 
                 {/* Main Controls Panel */}
                 <div className="flex flex-col gap-6">
-                  <div className="bg-slate-800/80 backdrop-blur-sm p-8 rounded-3xl border border-slate-700">
-                    {/* Marker and Current Time Row */}
-                    <div className="flex items-center justify-between mb-10 gap-6">
-                      <button
-                        onClick={handleSetStart}
-                        className="flex-1 group/btn flex items-center justify-center gap-2 px-4 py-3 bg-slate-700 text-tool-audiotrim hover:bg-tool-audiotrim/20 border border-tool-audiotrim/50 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95"
-                      >
-                        <Flag className="w-3.5 h-3.5 group-hover/btn:scale-110 transition-transform text-tool-audiotrim" />{' '}
-                        {t.tools.audiotrim.setStart}
-                      </button>
-
-                      <div className="font-mono text-md text-tool-audiotrim bg-black/40 px-8 py-2 rounded-2xl border border-black/40 tabular-nums shadow-inner ring-1 ring-white/5 shrink-0">
-                        {formatTime(currentTime)}
+                  
+                  <TimeRangeSelector
+                    theme="audiotrim"
+                    currentTime={currentTime}
+                    startTime={startTime}
+                    endTime={endTime}
+                    maxDuration={audioBuffer?.duration || 100}
+                    onStartTimeChange={setStartTime}
+                    onEndTimeChange={setEndTime}
+                    formatTime={formatTime}
+                    labels={{
+                      setStart: t.tools.audiotrim.setStart,
+                      setEnd: t.tools.audiotrim.setEnd,
+                      selectionStart: t.tools.audiotrim.selectionStart,
+                      selectionEnd: t.tools.audiotrim.selectionEnd,
+                    }}
+                    startAddon={
+                      <div className="flex flex-col items-center pt-8">
+                        <div className="flex flex-col items-center gap-2 group/play">
+                          <button
+                            onClick={() => togglePlay('selection')}
+                            className={`w-22 h-22 flex items-center justify-center border border-tool-audiotrim/50 rounded-4xl transition-all ${
+                              isPlaying && playMode === 'selection'
+                                ? 'bg-tool-audiotrim text-white shadow-lg shadow-tool-audiotrim/20 ring-2 ring-white/20'
+                                : 'bg-slate-700 hover:bg-slate-600 text-slate-300 shadow-lg'
+                            }`}
+                            title={t.tools.audiotrim.playSelection}
+                          >
+                            {isPlaying && playMode === 'selection' ? (
+                              <Pause className="w-11 h-11" />
+                            ) : (
+                              <RotateCcw className="w-11 h-11 text-tool-audiotrim" />
+                            )}
+                          </button>
+                          <span className="text-[12px] font-black uppercase tracking-widest text-slate-500 group-hover/play:text-slate-400 mt-2 text-center">
+                            {t.tools.audiotrim.selection}
+                          </span>
+                          <span className="text-[12px] font-mono text-tool-audiotrim font-bold uppercase tracking-widest mt-1">
+                            {formatTime(Math.max(0, endTime - startTime))}
+                          </span>
+                        </div>
                       </div>
-
-                      <button
-                        onClick={handleSetEnd}
-                        className="flex-1 group/btn flex items-center justify-center gap-2 px-4 py-3 bg-slate-700 text-tool-audiotrim hover:bg-tool-audiotrim/20 border border-tool-audiotrim/50 rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95"
-                      >
-                        <Flag className="w-3.5 h-3.5 fill-current group-hover/btn:scale-110 transition-transform text-tool-audiotrim" />{' '}
-                        {t.tools.audiotrim.setEnd}
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                      {/* Start Marker Column */}
-                      <div className="space-y-6">
-                        <div className="space-y-4">
-                          <div className="flex justify-between items-center px-1">
-                            <label className="text-[12px] font-black uppercase tracking-widest text-slate-500">
-                              {t.tools.audiotrim.selectionStart}
-                            </label>
-                            <div className="flex items-center gap-1.5 bg-slate-900/50 p-1.5 rounded-lg border border-slate-700/50">
-                              <input
-                                type="text"
-                                className="w-8 bg-transparent text-center text-xs font-mono text-tool-audiotrim focus:outline-none"
-                                value={startMins}
-                                onChange={(e) => setStartMins(e.target.value)}
-                                placeholder="00"
-                              />
-                              <span className="text-slate-600 font-mono">:</span>
-                              <input
-                                type="text"
-                                className="w-8 bg-transparent text-center text-xs font-mono text-tool-audiotrim focus:outline-none"
-                                value={startSecs}
-                                onChange={(e) => setStartSecs(e.target.value)}
-                                placeholder="00"
-                              />
-                              <span className="text-slate-600 font-mono">.</span>
-                              <input
-                                type="text"
-                                className="w-8 bg-transparent text-center text-xs font-mono text-tool-audiotrim focus:outline-none"
-                                value={startCents}
-                                onChange={(e) => setStartCents(e.target.value)}
-                                placeholder="00"
-                              />
-                              <button
-                                onClick={() => {
-                                  const val =
-                                    parseFloat(startMins || '0') * 60 +
-                                    parseFloat(startSecs || '0') +
-                                    parseFloat(startCents || '0') / 100;
-                                  if (!isNaN(val)) {
-                                    const final = Math.max(0, Math.min(val, endTime - 0.01));
-                                    setStartTime(final);
-                                    syncStartInputs(final);
-                                  }
-                                }}
-                                className="ml-2 px-2 py-1 bg-tool-audiotrim text-[10px] text-white font-black uppercase rounded transition-opacity hover:opacity-90"
-                              >
-                                Set
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="relative flex items-center gap-2">
-                            <button
-                              onClick={() => {
-                                const next = Math.max(0, startTime - 0.1);
-                                setStartTime(next);
-                                syncStartInputs(next);
-                              }}
-                              className="p-1 hover:text-white text-slate-500 transition-colors"
+                    }
+                    endAddon={
+                      <div className="flex flex-col items-center pt-8">
+                        <div className="flex flex-col items-center gap-2 group/play">
+                          <button
+                            onClick={() => togglePlay('endSelection')}
+                            className={`w-22 h-22 flex items-center justify-center border border-tool-audiotrim/50 rounded-4xl transition-all ${
+                              isPlaying && playMode === 'endSelection'
+                                ? 'bg-tool-audiotrim text-white shadow-lg shadow-tool-audiotrim/20 ring-2 ring-white/20'
+                                : 'bg-slate-700 hover:bg-slate-600 text-slate-300 shadow-lg'
+                            }`}
+                            title={t.tools.audiotrim.playEndSelection}
+                          >
+                            {isPlaying && playMode === 'endSelection' ? (
+                              <Pause className="w-11 h-11" />
+                            ) : (
+                              <Play className="w-11 h-11 ml-1 text-tool-audiotrim" />
+                            )}
+                          </button>
+                          <span className="text-[12px] font-black uppercase tracking-widest text-slate-500 group-hover/play:text-slate-400 mt-2 text-center">
+                            {t.tools.audiotrim.playEndSelection}
+                          </span>
+                          <div className="text-[12px] font-bold tracking-widest flex items-center gap-1.5 mt-1 text-slate-500">
+                            <span>{t.tools.audiotrim.playLast}</span>
+                            <select
+                              className="bg-slate-900 border border-slate-700 text-tool-audiotrim font-mono text-[11px] rounded px-1.5 py-0.5 outline-none cursor-pointer hover:border-tool-audiotrim/50 transition-colors"
+                              value={playEndSeconds}
+                              onChange={(e) => setPlayEndSeconds(Number(e.target.value))}
                             >
-                              <ChevronsLeft className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                const next = Math.max(0, startTime - 0.01);
-                                setStartTime(next);
-                                syncStartInputs(next);
-                              }}
-                              className="p-1 hover:text-white text-slate-500 transition-colors"
-                            >
-                              <ChevronLeft className="w-4 h-4" />
-                            </button>
-                            <input
-                              ref={startInputRef}
-                              type="range"
-                              min="0"
-                              max={audioBuffer?.duration || 100}
-                              step="0.001"
-                              value={startTime}
-                              onChange={(e) => {
-                                const val = parseFloat(e.target.value);
-                                const final = Math.min(val, endTime - 0.01);
-                                setStartTime(final);
-                                syncStartInputs(final);
-                              }}
-                              className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-tool-audiotrim [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-tool-audiotrim [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-tool-audiotrim [&::-moz-range-thumb]:border-none"
-                            />
-                            <button
-                              onClick={() => {
-                                const next = Math.min(endTime - 0.01, startTime + 0.01);
-                                setStartTime(next);
-                                syncStartInputs(next);
-                              }}
-                              className="p-1 hover:text-white text-slate-500 transition-colors"
-                            >
-                              <ChevronRight className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                const next = Math.min(endTime - 0.01, startTime + 0.1);
-                                setStartTime(next);
-                                syncStartInputs(next);
-                              }}
-                              className="p-1 hover:text-white text-slate-500 transition-colors"
-                            >
-                              <ChevronsRight className="w-4 h-4" />
-                            </button>
+                              {[1, 2, 3, 5, 9].map((sec) => (
+                                <option 
+                                  key={sec} 
+                                  value={sec} 
+                                  disabled={(endTime - startTime) < sec}
+                                >
+                                  {sec}
+                                </option>
+                              ))}
+                            </select>
+                            <span>{t.tools.audiotrim.seconds}</span>
                           </div>
                         </div>
                       </div>
-
-                      {/* End Marker Column */}
-                      <div className="space-y-6">
-                        <div className="space-y-4">
-                          <div className="flex justify-between items-center px-1">
-                            <div className="flex items-center gap-1.5 bg-slate-900/50 p-1.5 rounded-lg border border-slate-700/50">
-                              <input
-                                type="text"
-                                className="w-8 bg-transparent text-center text-xs font-mono text-tool-audiotrim focus:outline-none"
-                                value={endMins}
-                                onChange={(e) => setEndMins(e.target.value)}
-                                placeholder="00"
-                              />
-                              <span className="text-slate-600 font-mono">:</span>
-                              <input
-                                type="text"
-                                className="w-8 bg-transparent text-center text-xs font-mono text-tool-audiotrim focus:outline-none"
-                                value={endSecs}
-                                onChange={(e) => setEndSecs(e.target.value)}
-                                placeholder="00"
-                              />
-                              <span className="text-slate-600 font-mono">.</span>
-                              <input
-                                type="text"
-                                className="w-8 bg-transparent text-center text-xs font-mono text-tool-audiotrim focus:outline-none"
-                                value={endCents}
-                                onChange={(e) => setEndCents(e.target.value)}
-                                placeholder="00"
-                              />
-                              <button
-                                onClick={() => {
-                                  const val =
-                                    parseFloat(endMins || '0') * 60 +
-                                    parseFloat(endSecs || '0') +
-                                    parseFloat(endCents || '0') / 100;
-                                  if (!isNaN(val)) {
-                                    const final = Math.min(
-                                      audioBuffer?.duration || 100,
-                                      Math.max(val, startTime + 0.01)
-                                    );
-                                    setEndTime(final);
-                                    syncEndInputs(final);
-                                  }
-                                }}
-                                className="ml-2 px-2 py-1 bg-tool-audiotrim text-[10px] text-white font-black uppercase rounded transition-opacity hover:opacity-90"
-                              >
-                                Set
-                              </button>
-                            </div>
-                            <label className="text-[12px] font-black uppercase tracking-widest text-slate-500">
-                              {t.tools.audiotrim.selectionEnd}
-                            </label>
-                          </div>
-
-                          <div className="relative flex items-center gap-2">
-                            <button
-                              onClick={() => {
-                                const next = Math.max(startTime + 0.01, endTime - 0.1);
-                                setEndTime(next);
-                                syncEndInputs(next);
-                              }}
-                              className="p-1 hover:text-white text-slate-500 transition-colors"
-                            >
-                              <ChevronsLeft className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                const next = Math.max(startTime + 0.01, endTime - 0.01);
-                                setEndTime(next);
-                                syncEndInputs(next);
-                              }}
-                              className="p-1 hover:text-white text-slate-500 transition-colors"
-                            >
-                              <ChevronLeft className="w-4 h-4" />
-                            </button>
-                            <input
-                              ref={endInputRef}
-                              type="range"
-                              min="0"
-                              max={audioBuffer?.duration || 100}
-                              step="0.001"
-                              value={endTime}
-                              onChange={(e) => {
-                                const val = parseFloat(e.target.value);
-                                const final = Math.max(val, startTime + 0.01);
-                                setEndTime(final);
-                                syncEndInputs(final);
-                              }}
-                              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-tool-audiotrim [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-tool-audiotrim [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-tool-audiotrim [&::-moz-range-thumb]:border-none"
-                            />
-                            <button
-                              onClick={() => {
-                                const next = Math.min(audioBuffer?.duration || 0, endTime + 0.01);
-                                setEndTime(next);
-                                syncEndInputs(next);
-                              }}
-                              className="p-1 hover:text-white text-slate-500 transition-colors"
-                            >
-                              <ChevronRight className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                const next = Math.min(audioBuffer?.duration || 0, endTime + 0.1);
-                                setEndTime(next);
-                                syncEndInputs(next);
-                              }}
-                              className="p-1 hover:text-white text-slate-500 transition-colors"
-                            >
-                              <ChevronsRight className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col items-center pt-4 mt-4">
-                      <div className="flex flex-col items-center gap-2 group/play">
-                        <button
-                          onClick={() => togglePlay('selection')}
-                          className={`w-22 h-22 flex items-center justify-center border border-tool-audiotrim/50 rounded-4xl transition-all ${
-                            isPlaying && playMode === 'selection'
-                              ? 'bg-tool-audiotrim text-white shadow-lg shadow-tool-audiotrim/20 ring-2 ring-white/20'
-                              : 'bg-slate-700 hover:bg-slate-600 text-slate-300 shadow-lg'
-                          }`}
-                          title={t.tools.audiotrim.playSelection}
-                        >
-                          {isPlaying && playMode === 'selection' ? (
-                            <Pause className="w-11 h-11" />
-                          ) : !isPlaying && (currentTime < startTime || currentTime > endTime) ? (
-                            <RotateCcw className="w-11 h-11 text-tool-audiotrim" />
-                          ) : (
-                            <Play className="w-11 h-11 ml-1 text-tool-audiotrim" />
-                          )}
-                        </button>
-                        <span className="text-[12px] font-black uppercase tracking-widest text-slate-500 group-hover/play:text-slate-400 mt-2">
-                          {t.tools.audiotrim.selection}
-                        </span>
-                        <span className="text-[12px] font-mono text-tool-audiotrim font-bold uppercase tracking-widest mt-1">
-                          {formatTime(endTime - startTime)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+                    }
+                  />
 
                   {/* Export Panel */}
                   <div className="bg-slate-800/80 backdrop-blur-sm p-6 rounded-3xl border border-slate-700 flex flex-col justify-center">

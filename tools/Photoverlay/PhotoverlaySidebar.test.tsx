@@ -13,6 +13,15 @@ describe('PhotoverlaySidebar', () => {
     onFileChange: vi.fn(),
     onCaptionUpdate: vi.fn(),
     onWatermarkUpdate: vi.fn(),
+    onFramingUpdate: vi.fn(),
+    namingSettings: {
+      keepOriginal: true,
+      type: 'prefix' as const,
+      value: '',
+    },
+    onNamingUpdate: vi.fn(),
+    preserveMetadata: true,
+    onPreserveMetadataChange: vi.fn(),
     onDeleteAll: vi.fn(),
   };
 
@@ -29,16 +38,36 @@ describe('PhotoverlaySidebar', () => {
     expect(screen.getByText(/Select or drop photos/i)).toBeInTheDocument();
   });
 
-  it('renders "apply to all" toggle when items exist', () => {
+  it('renders general settings section when items exist', () => {
     renderWithContext({ ...defaultProps, itemsCount: 1 });
-    expect(screen.getByText(/Apply/i)).toBeInTheDocument();
+    expect(screen.getByText(/General Settings/i)).toBeInTheDocument();
   });
 
-  it('calls onApplyToAllChange when checkbox is clicked', () => {
-    renderWithContext({ ...defaultProps, itemsCount: 1 });
-    const checkbox = screen.getByLabelText(/Apply this overlay to all photos/i);
-    fireEvent.click(checkbox);
-    expect(defaultProps.onApplyToAllChange).toHaveBeenCalled();
+  it('does not render general settings section when no items exist', () => {
+    renderWithContext({ ...defaultProps, itemsCount: 0 });
+    expect(screen.queryByText(/General Settings/i)).not.toBeInTheDocument();
+  });
+
+  it('shows naming input when keepOriginal is false', () => {
+    renderWithContext({
+      ...defaultProps,
+      itemsCount: 1,
+      namingSettings: { keepOriginal: false, type: 'prefix', value: '' },
+    });
+    expect(screen.getByText(/Prefix/i)).toBeInTheDocument();
+    expect(screen.getByText(/Suffix/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Type something/i)).toBeInTheDocument();
+  });
+
+  it('does not show naming input when keepOriginal is true', () => {
+    renderWithContext({
+      ...defaultProps,
+      itemsCount: 1,
+      namingSettings: { keepOriginal: true, type: 'prefix', value: '' },
+    });
+    expect(screen.queryByText(/Prefix/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Suffix/i)).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/Type something/i)).not.toBeInTheDocument();
   });
 
   it('renders settings panels when items exist', () => {
@@ -54,6 +83,7 @@ describe('PhotoverlaySidebar', () => {
         isItalic: false,
       },
       watermarkSettings: { file: null, position: TextPosition.TopRight, opacity: 0.2, scale: 0.2 },
+      framingSettings: { zoom: 1, offsetX: 0, offsetY: 0 },
       metadata: null,
       exifData: null,
     };

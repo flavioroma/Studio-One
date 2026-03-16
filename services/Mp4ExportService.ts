@@ -131,14 +131,27 @@ export class Mp4ExportService {
     const totalFrames = Math.ceil(audioDuration * fps);
     const slideDuration = audioDuration / slides.length;
 
-    // Load all images first
+    // Load all images and watermarks first
     const images = await Promise.all(slides.map((s) => this.loadImage(s.previewUrl)));
+    const watermarks = await Promise.all(
+      slides.map((s) =>
+        s.watermarkSettings?.file
+          ? this.loadImage(URL.createObjectURL(s.watermarkSettings.file))
+          : null
+      )
+    );
 
     for (let i = 0; i < totalFrames; i++) {
       const time = i / fps;
       const slideIndex = Math.min(Math.floor(time / slideDuration), slides.length - 1);
 
-      this.renderFrame(images[slideIndex], slides[slideIndex], width, height);
+      this.renderFrame(
+        images[slideIndex],
+        slides[slideIndex],
+        width,
+        height,
+        watermarks[slideIndex]
+      );
 
       // Create VideoFrame from canvas
       const frame = new VideoFrame(this.canvas, { timestamp: i * (1_000_000 / fps) }); // microseconds
@@ -220,7 +233,13 @@ export class Mp4ExportService {
     return new Blob([buffer], { type: 'video/mp4' });
   }
 
-  private renderFrame(img: HTMLImageElement, slide: Slide, width: number, height: number) {
+  private renderFrame(
+    img: HTMLImageElement,
+    slide: Slide,
+    width: number,
+    height: number,
+    watermarkImg?: HTMLImageElement | null
+  ) {
     const ctx = this.ctx;
     ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, width, height);
@@ -243,17 +262,41 @@ export class Mp4ExportService {
 
     ctx.drawImage(img, baseX + userX, baseY + userY, w, h);
 
+    // Draw Watermark
+    if (watermarkImg && slide.watermarkSettings) {
+      this.drawWatermark(ctx, width, height, watermarkImg, {
+        position: slide.watermarkSettings.position,
+        scale: slide.watermarkSettings.scale,
+        opacity: slide.watermarkSettings.opacity,
+      });
+    }
+
     // Draw Text using shared logic
-    // Note: Slide interface doesn't strictly match OverlayConfig but similar enough for renderOverlay?
-    // Actually Slide is slightly different. Let's make a shim.
     this.renderOverlay(ctx, width, height, {
       text: slide.text,
       color: slide.color,
       position: slide.position,
       textSize: slide.textSize,
       isItalic: slide.isItalic,
-      // Slides don't have watermark yet?
     });
+  }
+
+  private drawWatermark(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    height: number,
+    img: HTMLImageElement,
+    settings: { position: TextPosition; scale: number; opacity: number }
+  ) {
+    const w = width * settings.scale;
+    const aspectRatio = img.width / img.height;
+    const h = w / aspectRatio;
+
+    const pos = calculateWatermarkPosition(width, height, w, h, settings.position);
+
+    ctx.globalAlpha = settings.opacity;
+    ctx.drawImage(img, pos.x, pos.y, w, h);
+    ctx.globalAlpha = 1.0;
   }
 
   private loadImage(url: string): Promise<HTMLImageElement> {
@@ -424,17 +467,11 @@ export class Mp4ExportService {
 
         // Draw Watermark
         if (watermarkImg && overlay.watermark) {
-          // Calculate size based on scale prop (percentage of container width)
-          const w = width * overlay.watermark.scale;
-          const aspectRatio = watermarkImg.width / watermarkImg.height;
-          const h = w / aspectRatio;
-
-          const pos = calculateWatermarkPosition(width, height, w, h, overlay.watermark.position);
-
-          // Apply opacity
-          ctx.globalAlpha = overlay.watermark.opacity;
-          ctx.drawImage(watermarkImg, pos.x, pos.y, w, h);
-          ctx.globalAlpha = 1.0; // Reset
+          this.drawWatermark(ctx, width, height, watermarkImg, {
+            position: overlay.watermark.position,
+            scale: overlay.watermark.scale,
+            opacity: overlay.watermark.opacity,
+          });
         }
 
         // Draw Overlay

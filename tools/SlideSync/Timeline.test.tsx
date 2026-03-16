@@ -87,13 +87,13 @@ describe('Timeline', () => {
 
   it('shows indicator for slides with text', () => {
     renderWithContext();
-    // Slide 1 has text, Slide 2 doesn't
-    // The indicator has a title "Has text" from translations
-    const indicator = screen.getByTitle(/Has text/i);
+    // Slide 1 is customized, Slide 2 doesn't
+    // The indicator has a title "Is customized" from translations
+    const indicator = screen.getByTitle(/Is customized/i);
     expect(indicator).toBeInTheDocument();
 
-    // Check if there's only one such indicator (since only slide 1 has text)
-    expect(screen.getAllByTitle(/Has text/i).length).toBe(1);
+    // Check if there's only one such indicator (since only slide 1 is customized)
+    expect(screen.getAllByTitle(/Is customized/i).length).toBe(1);
   });
 
   it('renders the "Add More" button only when slides are present', () => {

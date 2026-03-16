@@ -175,7 +175,7 @@ export const WatermarkSettingsPanel: React.FC<WatermarkSettingsPanelProps> = ({
           <input
             type="range"
             min="10"
-            max="90"
+            max="100"
             step="1"
             value={settings.opacity * 100}
             onChange={(e) => onUpdate({ opacity: parseInt(e.target.value) / 100 })}

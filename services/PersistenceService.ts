@@ -7,6 +7,9 @@ import {
   TextSize,
   Rotation,
   AudioMode,
+  NamingSettings,
+  FramingSettings,
+  WatermarkSettings,
 } from '../types';
 
 const SLIDESYNC_KEY = 'slidesync_state_v1';
@@ -48,6 +51,7 @@ export interface PhotoItemState {
   isItalic?: boolean;
   watermarkFile?: File | null;
   watermarkPosition?: TextPosition;
+  framingSettings?: FramingSettings;
 }
 
 export interface PhotoverlayState {
@@ -55,6 +59,8 @@ export interface PhotoverlayState {
   selectedId: string | null;
   applyToAll: boolean;
   exportAsArchive?: boolean;
+  namingSettings?: NamingSettings;
+  preserveMetadata?: boolean;
 }
 
 // For backward compatibility
@@ -98,7 +104,7 @@ export interface PiCollageState {
 
 export class PersistenceService {
   // SlideSync
-  static async saveState(state: SlideSyncState): Promise<void> {
+  static async saveSlideSyncState(state: SlideSyncState): Promise<void> {
     try {
       await set(SLIDESYNC_KEY, state);
     } catch (error) {
@@ -106,7 +112,7 @@ export class PersistenceService {
     }
   }
 
-  static async loadState(): Promise<SlideSyncState | null> {
+  static async loadSlideSyncState(): Promise<SlideSyncState | null> {
     try {
       return (await get<SlideSyncState>(SLIDESYNC_KEY)) || null;
     } catch (error) {
@@ -172,7 +178,14 @@ export class PersistenceService {
         };
       }
 
-      return state as PhotoverlayState;
+      return {
+        ...state,
+        namingSettings: state.namingSettings || {
+          keepOriginal: true,
+          type: 'prefix',
+          value: '',
+        },
+      } as PhotoverlayState;
     } catch (error) {
       console.error('Failed to load Photoverlay state:', error);
       return null;

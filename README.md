@@ -1,8 +1,54 @@
 # Studio One
 
+*Read this in other languages: [English](README.md), [Italiano](README.it.md).*
+
 Created by Flavio Biundo - powered by Google Antigravity.
 
-**Studio One** is a sleek, modern suite of tools for processing photos, videos, and audio directly in your browser.
+**Studio One** is a sleek, modern suite of tools for processing pictures, videos, and audio tracks directly in your browser.
+
+> [!TIP]
+> Use Chrome-based browsers for the best performance and compatibility.
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+⚠️ **You need to install [Node.js](https://nodejs.org/)**
+
+## 🌱 Beginner Friendly Installation Steps (Windows only)
+
+1. From the GitHub Studio One repository main page, click on the green "Code" button and download the repository as a ZIP file
+
+2. The downloaded ZIP file contains a directory named "Studio-One-main" - place it somewhere you like on your hard drive
+
+3. Run the file "Start_Production_Server.bat" inside the "Studio-One-main" directory (if the file is blocked by Windows, right-click on it and select "Run as administrator")
+
+4. Wait for installations to complete. If the browser does not open automatically, manually navigate to the local server displayed in the terminal at the end of the process
+
+5. You can now use the tools. Enjoy!
+
+## ⬆️ Update from an older version
+
+### If you installed the zip file
+
+1. Download again the ZIP file from GitHub and delete/replace the old folder (and files)
+
+2. Run the file "Start_Production_Server.bat" inside the "Studio-One-main" directory.
+
+## 🧑💻 Developers Installation Steps (any platform, with Git)
+
+1. Clone the repository
+
+2. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
 
 ## 🛠️ Built With
 
@@ -12,55 +58,6 @@ Created by Flavio Biundo - powered by Google Antigravity.
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
 - **Testing**: [Vitest](https://vitest.dev/)
 
-## 🚀 Getting Started
-
-### Prerequisites
-
-You will need [Node.js](https://nodejs.org/) (LTS version recommended).
-
-### Installation
-
-1. **Clone the repository:**
-
-   ```bash
-   git clone <repository-url>
-   cd StudioOne
-   ```
-
-2. **Install dependencies:**
-
-   ```bash
-   npm install
-   ```
-
-3. **Start the development server:**
-   ```bash
-   npm run dev
-   ```
-
-### Update from an older version
-
-1. **Pull the latest changes:**
-
-   ```bash
-   git checkout main
-   git pull
-   ```
-
-2. **Install dependencies:**
-
-   ```bash
-   npm install
-   ```
-
-3. **Start the development server:**
-   ```bash
-   npm run dev
-   ```
-
-> [!TIP]
-> Use Chrome-based browsers for the best performance and compatibility.
-
 ## 📜 Available Scripts
 
 - `npm run dev`: Starts the Vite development server.
@@ -68,3 +65,6 @@ You will need [Node.js](https://nodejs.org/) (LTS version recommended).
 - `npm run preview`: Locally previews the production build.
 - `npm run test`: Runs the test suite using Vitest.
 - `npm run test:ui`: Opens the Vitest UI for interactive testing.
+- `npm run format`: Formats the code using Prettier.
+- `npm run format:check`: Checks if the code is formatted using Prettier.
+- `npm version`: Increments the version number.

@@ -16,6 +16,12 @@ describe('SlideSyncSidebar', () => {
     zoom: 1,
     offsetX: 0,
     offsetY: 0,
+    watermarkSettings: {
+      file: null,
+      position: TextPosition.TopRight,
+      opacity: 0.2,
+      scale: 0.2,
+    },
   };
 
   const defaultProps = {
@@ -74,6 +80,11 @@ describe('SlideSyncSidebar', () => {
     const zoomSlider = screen.getByRole('slider');
     fireEvent.change(zoomSlider, { target: { value: '2.5' } });
     expect(defaultProps.onUpdate).toHaveBeenCalledWith({ zoom: 2.5 });
+  });
+
+  it('renders watermark settings when a slide is selected', () => {
+    renderWithContext({ ...defaultProps, slide: mockSlide });
+    expect(screen.getAllByText(/Watermark/i).length).toBeGreaterThan(0);
   });
 
   it('calls onDeleteAll when erase button is clicked', () => {
