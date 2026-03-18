@@ -77,7 +77,7 @@ export const translations = {
       },
       videoverlay: {
         description:
-          'Cut, rotate, replace audio, add overlay text captions and watermarks onto a video.',
+          'Trim, rotate, replace audio, add overlay text captions and watermarks onto a video.',
       },
       photoverlay: {
         description: 'Overlay text captions and watermarks onto multiple photos.',
@@ -166,6 +166,7 @@ export const translations = {
       },
       videoverlay: {
         title: 'VideOverlay',
+        trimVideo: 'Trim the video',
         overlaySettings: 'Overlay',
         uploadVideo: 'Select or drop a video',
         awaitingSource: 'Awaiting Source',
@@ -200,7 +201,7 @@ export const translations = {
         exportFailed: 'Export failed. See console for details.',
         rotation: 'Rotation',
         audioSettings: 'Audio',
-        keepAudio: 'Keep Audio',
+        keepAudio: 'Keep',
         removeAudio: 'Remove',
         replaceAudio: 'Replace',
         selectAudio: 'Select Audio',
@@ -404,6 +405,7 @@ export const translations = {
       },
       videoverlay: {
         title: 'VideOverlay',
+        trimVideo: 'Taglia il video',
         overlaySettings: 'Sovraimpressione',
         uploadVideo: 'Seleziona o trascina un video',
         awaitingSource: 'In attesa del video',
@@ -439,7 +441,7 @@ export const translations = {
         exportFailed: 'Esportazione fallita. Vedi la console per i dettagli.',
         rotation: 'Rotazione',
         audioSettings: 'Audio',
-        keepAudio: 'Mantieni Audio',
+        keepAudio: 'Mantieni',
         removeAudio: 'Rimuovi',
         replaceAudio: 'Sostituisci',
         selectAudio: 'Seleziona Audio',
