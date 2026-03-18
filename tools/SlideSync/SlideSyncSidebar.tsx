@@ -184,7 +184,7 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
       onMouseLeave={handleMouseUp}
     >
       <div className="flex items-center justify-center">
-        <h3 className="text-md font-bold text-slate-100 uppercase tracking-tight">
+        <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
           {t.tools.slidesync.mediaSettings}
         </h3>
       </div>
@@ -318,12 +318,12 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
         </div>
       </div>
 
-      <hr className="border-slate-700 my-4" />
+      <hr className="border-slate-700 my-2 pt-4" />
 
       {slide ? (
         <div className="space-y-6 animate-fadeIn pb-8">
           <div className="flex items-center justify-center">
-            <h3 className="text-md font-bold text-slate-100 uppercase tracking-tight">
+            <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
               {t.tools.slidesync.slideProperties}
             </h3>
           </div>
@@ -337,6 +337,10 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
             captionText={slide.text}
             getCaptionStyle={getCaptionStyle}
           />
+
+          <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
+            {t.common.overlay}
+          </h3>
 
           <CaptionSettingsPanel
             settings={slide}

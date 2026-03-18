@@ -153,7 +153,7 @@ export const VideoverlaySidebar: React.FC<VideoverlaySidebarProps> = ({
 
           <div className="space-y-4">
             <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
-              {t.tools.videoverlay.overlaySettings}
+              {t.common.overlay}
             </h3>
 
             <CaptionSettingsPanel
