@@ -208,10 +208,19 @@ export const VideoverlayTool: React.FC = () => {
   }, [isExporting]);
 
   const formatTime = (seconds: number) => {
-    if (!Number.isFinite(seconds) || isNaN(seconds)) return '0:00';
+    if (!Number.isFinite(seconds) || isNaN(seconds)) return '0:00.00';
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    const ms = Math.floor((seconds % 1) * 100);
+    return `${mins}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+  };
+
+  const formatPreciseTime = (seconds: number) => {
+    if (!Number.isFinite(seconds) || isNaN(seconds)) return '0:00.00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    const cents = Math.floor((seconds % 1) * 100);
+    return `${mins}:${secs.toString().padStart(2, '0')}.${cents.toString().padStart(2, '0')}`;
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -799,7 +808,7 @@ export const VideoverlayTool: React.FC = () => {
                     }}
                     formatTime={formatTime}
                     collapsible={true}
-                    compTitle={t.tools.videoverlay.trimVideo}
+                    compTitle={t.tools.videoverlay.trimControls}
                     labels={{
                       setStart: t.tools.audiotrim.setStart,
                       setEnd: t.tools.audiotrim.setEnd,
@@ -830,7 +839,7 @@ export const VideoverlayTool: React.FC = () => {
 
               {metadata && (
                 <>
-                  {metadata && metadata.creationTime && (
+                  {metadata.creationTime && (
                     <div className="flex flex-col">
                       <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
                         <Calendar className="w-3 h-3" /> {t.common.mediaCreated}
@@ -843,6 +852,16 @@ export const VideoverlayTool: React.FC = () => {
                       </p>
                     </div>
                   )}
+                  {metadata.latitude !== undefined && metadata.longitude !== undefined && (
+                    <div className="flex flex-col">
+                      <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
+                        <Flag className="w-3 h-3" /> {t.common.location}
+                      </p>
+                      <p className="text-sm font-bold text-white">
+                        {metadata.latitude.toFixed(4)}, {metadata.longitude.toFixed(4)}
+                      </p>
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -850,23 +869,21 @@ export const VideoverlayTool: React.FC = () => {
             <div className="flex items-center gap-4">
               <div className="hidden lg:flex flex-col items-end mr-4">
                 <p className="text-[12px] font-black uppercase text-slate-500 tracking-widest">
-                  {isExporting
-                    ? t.tools.videoverlay.highQualityRender
-                    : t.tools.videoverlay.processing}
-                </p>
-                <div className="flex items-center gap-2 text-tool-videoverlay text-xs font-bold">
-                  <div className="w-1.5 h-1.5 rounded-full bg-tool-videoverlay animate-pulse"></div>
-                  {isExporting
-                    ? t.tools.videoverlay.frameByFrame
-                    : t.tools.videoverlay.browserNativeRender}
-                </div>
-              </div>
-              <div className="hidden lg:flex flex-col items-end mr-4">
-                <p className="text-[12px] font-black uppercase text-slate-500 tracking-widest">
                   {t.tools.videoverlay.videoOutputTitle}
                 </p>
                 <p className="text-[10px] text-slate-400">{t.tools.videoverlay.videoOutputDesc}</p>
               </div>
+              {metadata && (startTime > 0 || (endTime > 0 && endTime < metadata.duration)) && (
+                <div className="hidden lg:flex flex-col items-end mr-4">
+                  <p className="text-[12px] font-black uppercase text-slate-500 tracking-widest">
+                    {t.common.selectionDuration}
+                  </p>
+                  <div className="flex items-center gap-2 text-tool-videoverlay text-xs font-bold">
+                    <div className="w-1.5 h-1.5 rounded-full bg-tool-videoverlay animate-pulse"></div>
+                    {formatPreciseTime(Math.max(0, endTime - startTime))}
+                  </div>
+                </div>
+              )}
               <button
                 onClick={handleExport}
                 disabled={isExporting}

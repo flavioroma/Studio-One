@@ -830,7 +830,7 @@ export const PhotoverlayTool: React.FC = () => {
               {selectedItem.exifData?.latitude && selectedItem.exifData?.longitude && (
                 <div className="flex flex-col">
                   <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
-                    <MapPin className="w-3 h-3" /> {t.tools.photoverlay.location}
+                    <MapPin className="w-3 h-3" /> {t.common.location}
                   </p>
                   <p className="text-sm font-bold text-white">
                     {selectedItem.exifData.latitude.toFixed(4)},{' '}
