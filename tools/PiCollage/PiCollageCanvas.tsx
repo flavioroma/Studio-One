@@ -143,15 +143,16 @@ export const PiCollageCanvas: React.FC<PiCollageCanvasProps> = ({
     const pic = pictures.find((p) => p.id === id);
     if (!pic || !containerRef.current) return;
 
-    // Use setPointerCapture to track movement outside element
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    // Use export area rect for accurate coordinate calculations
+    const canvasArea = document.getElementById('picollage-export-area');
+    if (!canvasArea) return;
+    const rect = canvasArea.getBoundingClientRect();
 
-    // Get the element being clicked to get its current pixel height
-    // (since height is 'auto' in state)
-    const target = (e.currentTarget as HTMLElement).closest('.transform-gpu') as HTMLElement;
-    const currentHeight = target
-      ? (target.getBoundingClientRect().height / containerSize.height) * 100
-      : 30;
+    // Use setPointerCapture on the container to track movement robustly even for huge images
+    containerRef.current.setPointerCapture(e.pointerId);
+
+    // Calculate height as a percentage of the canvas height
+    const currentHeight = (pic.width / pic.aspectRatio) * (rect.width / rect.height);
 
     setInteraction({
       id,
@@ -236,14 +237,11 @@ export const PiCollageCanvas: React.FC<PiCollageCanvasProps> = ({
       // Since we use CSS aspect-ratio on the div, we only need to update width and x/y
       updates = { x: newX, y: newY, width: newW };
     } else if (interaction.type === 'rotate') {
-      // Calculate angle from center of image
-      const cx = interaction.initialX + interaction.initialWidth / 2;
-      const cy = interaction.initialY + (interaction.initialHeight || 0) / 2;
+      // Use pixel coordinates for rotation to avoid skewing on non-square canvases
+      const cx = rect.left + (interaction.initialX + interaction.initialWidth / 2) * (rect.width / 100);
+      const cy = rect.top + (interaction.initialY + (interaction.initialHeight || 0) / 2) * (rect.height / 100);
 
-      const pxX = ((e.clientX - rect.left) / rect.width) * 100;
-      const pxY = ((e.clientY - rect.top) / rect.height) * 100;
-
-      const angle = Math.atan2(pxY - cy, pxX - cx) * (180 / Math.PI);
+      const angle = Math.atan2(e.clientY - cy, e.clientX - cx) * (180 / Math.PI);
       updates = { rotation: angle + 90 }; // +90 because top handle is at -90deg
     }
 
@@ -251,8 +249,12 @@ export const PiCollageCanvas: React.FC<PiCollageCanvasProps> = ({
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
-    if (interaction) {
-      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    if (interaction && containerRef.current) {
+      try {
+        containerRef.current.releasePointerCapture(e.pointerId);
+      } catch (err) {
+        // Ignore if capture was already released
+      }
       setInteraction(null);
     }
   };
@@ -292,6 +294,7 @@ export const PiCollageCanvas: React.FC<PiCollageCanvasProps> = ({
         })}
         {/* Rotate Handle */}
         <div
+          data-testid="rotate-handle"
           className="absolute -top-10 left-1/2 -translate-x-1/2 w-6 h-6 bg-tool-picollage rounded-full flex items-center justify-center cursor-alias shadow-lg border-2 border-white"
           onPointerDown={(e) => handlePointerDown(e, pic.id, 'rotate')}
         >
@@ -306,12 +309,21 @@ export const PiCollageCanvas: React.FC<PiCollageCanvasProps> = ({
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-full flex items-center justify-center p-4 md:p-8 overflow-hidden"
-      onClick={() => onSelectPicture(null)}
+      className="relative w-full h-full flex items-center justify-center p-4 md:p-8 overflow-hidden touch-none select-none"
+      onPointerDown={(e) => {
+        if (e.target === e.currentTarget) onSelectPicture(null);
+      }}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
     >
       <div
         id="picollage-export-area"
-        className="relative bg-white shadow-2xl overflow-hidden flex-shrink-0"
+        data-testid="picollage-export-area"
+        className="relative bg-white shadow-2xl flex-shrink-0 touch-none select-none"
+        onPointerDown={(e) => {
+          if (e.target === e.currentTarget) onSelectPicture(null);
+        }}
         style={{
           ...getCanvasStyle(),
         }}
@@ -325,7 +337,7 @@ export const PiCollageCanvas: React.FC<PiCollageCanvasProps> = ({
             return (
               <div
                 key={pic.id}
-                className={`absolute transform-gpu`}
+                className={`absolute transform-gpu select-none`}
                 style={{
                   left: `${pic.x}%`,
                   top: `${pic.y}%`,
@@ -341,11 +353,9 @@ export const PiCollageCanvas: React.FC<PiCollageCanvasProps> = ({
                   e.stopPropagation();
                   onSelectPicture(pic.id);
                 }}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
-                onPointerCancel={handlePointerUp}
               >
                 <div
+                  data-testid="image-move-handle"
                   className={`w-full h-full relative group ${activePictureId === pic.id ? 'ring-2 ring-tool-picollage ring-offset-2' : ''}`}
                   onPointerDown={(e) => handlePointerDown(e, pic.id, 'move')}
                   style={{ cursor: interaction && interaction.id === pic.id ? 'grabbing' : 'grab' }}

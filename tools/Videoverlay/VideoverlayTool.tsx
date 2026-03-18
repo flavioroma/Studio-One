@@ -439,7 +439,7 @@ export const VideoverlayTool: React.FC = () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `overlay-${file.name.replace(/\.[^/.]+$/, '')}.mp4`;
+      a.download = `${file.name.replace(/\.[^/.]+$/, '')}.mp4`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (error: any) {

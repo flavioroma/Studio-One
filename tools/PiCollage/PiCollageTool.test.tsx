@@ -175,4 +175,148 @@ describe('PiCollage Aspect Ratio & Export Regression', () => {
 
     createElementSpy.mockRestore();
   });
+
+  it('correctly handles image movement with consistent canvas percentages', async () => {
+    global.URL.createObjectURL = vi.fn(() => 'test-url');
+    renderWithLanguage(<PiCollageTool />);
+
+    // Upload image
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, {
+      target: { files: [new File([''], 't.png', { type: 'image/png' })] },
+    });
+
+    const piece = await screen.findByAltText('Collage Piece');
+    const container = piece.closest('.transform-gpu') as HTMLElement;
+    const exportArea = document.getElementById('picollage-export-area')!;
+    const moveHandle = screen.getByTestId('image-move-handle');
+
+    // Mock dimensions for predictable math
+    vi.spyOn(exportArea, 'getBoundingClientRect').mockReturnValue({
+      width: 1000,
+      height: 1000, // square for simplicity in this test
+      left: 0,
+      top: 0,
+    } as any);
+
+    const canvasContainer = exportArea.parentElement!;
+
+    // Mock Pointer Capture
+    canvasContainer.setPointerCapture = vi.fn();
+    canvasContainer.releasePointerCapture = vi.fn();
+
+    // Initial position is x:20, y:20 (hardcoded in PiCollageTool.tsx for first image)
+    expect(container).toHaveStyle({ left: '20%', top: '20%' });
+
+    // Simulate move: drag from center of image (20% + 30%/2 = 35% -> 350px)
+    fireEvent.pointerDown(moveHandle, { clientX: 350, clientY: 350, pointerId: 1 });
+
+    // Move to 450, 450 (which is +10%)
+    fireEvent.pointerMove(canvasContainer, { clientX: 450, clientY: 450, pointerId: 1 });
+    fireEvent.pointerUp(canvasContainer, { pointerId: 1 });
+
+    // New position: 20+10, 20+10 = 30, 30
+    expect(container).toHaveStyle({ left: '30%', top: '30%' });
+  });
+
+  it('persists selection after movement/interaction', async () => {
+    global.URL.createObjectURL = vi.fn(() => 'test-url');
+    renderWithLanguage(<PiCollageTool />);
+
+    // Upload image
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, {
+      target: { files: [new File([''], 't.png', { type: 'image/png' })] },
+    });
+
+    const piece = await screen.findByAltText('Collage Piece');
+    const moveHandle = screen.getByTestId('image-move-handle');
+    const exportArea = document.getElementById('picollage-export-area')!;
+    const canvasContainer = exportArea.parentElement!;
+
+    // Initial check: handles should be present
+    const getHandles = () => document.querySelectorAll('[style*="cursor: nw-resize"]');
+    expect(getHandles().length).toBe(1);
+
+    // Mock Pointer Capture
+    canvasContainer.setPointerCapture = vi.fn();
+    canvasContainer.releasePointerCapture = vi.fn();
+
+    // Simulate move
+    fireEvent.pointerDown(moveHandle, { clientX: 100, clientY: 100, pointerId: 1 });
+    fireEvent.pointerMove(canvasContainer, { clientX: 150, clientY: 150, pointerId: 1 });
+    fireEvent.pointerUp(canvasContainer, { pointerId: 1 });
+
+    // Selection should PERSIST after interaction
+    expect(getHandles().length).toBe(1);
+
+    // Clicking the background (container) should clear it
+    fireEvent.pointerDown(canvasContainer, { clientX: 0, clientY: 0, pointerId: 2 });
+    expect(getHandles().length).toBe(0);
+  });
+
+  it('maintains isotropic rotation on 16:9 canvases (no skew)', async () => {
+    global.URL.createObjectURL = vi.fn(() => 'test-url');
+    renderWithLanguage(<PiCollageTool />);
+
+    // Upload image
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, {
+      target: { files: [new File([''], 't.png', { type: 'image/png' })] },
+    });
+
+    const exportArea = await screen.findByTestId('picollage-export-area');
+    const canvasContainer = exportArea.parentElement!;
+
+    // Mock 16:9 dimensions (1600x900)
+    vi.spyOn(exportArea, 'getBoundingClientRect').mockReturnValue({
+      width: 1600,
+      height: 900,
+      left: 0,
+      top: 0,
+    } as any);
+
+    // Mock Pointer Capture
+    canvasContainer.setPointerCapture = vi.fn();
+    canvasContainer.releasePointerCapture = vi.fn();
+
+    const rotateHandle = screen.getByTestId('rotate-handle');
+    const piece = screen.getByAltText('Collage Piece').closest('.transform-gpu') as HTMLElement;
+
+    // Initial rotation
+    expect(piece).toHaveStyle({ transform: 'rotate(0deg)' });
+
+    // Center of image in pixels (initialX=20%, initialWidth=30%, width=1600 -> cx = 35% of 1600 = 560)
+    // initialY=20%, initialHeight% = (30 / 1.777) * (1600/900) = 30%. cy = 35% of 900 = 315.
+    
+    // Start rotation drag from handle
+    fireEvent.pointerDown(rotateHandle, { clientX: 560, clientY: 100, pointerId: 1 });
+
+    // Move to (660, 415). dx=100, dy=100 from center(560, 315)
+    // This is a 45 degree angle. atan2(100, 100) = 45.
+    fireEvent.pointerMove(canvasContainer, { clientX: 660, clientY: 415, pointerId: 1 });
+
+    // Result: 45 + 90 = 135 deg
+    expect(piece).toHaveStyle({ transform: 'rotate(135deg)' });
+  });
+
+  it('keeps handles visible and interactable even when image exceeds canvas (no overflow-hidden)', async () => {
+    global.URL.createObjectURL = vi.fn(() => 'test-url');
+    renderWithLanguage(<PiCollageTool />);
+
+    // Upload image
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, {
+      target: { files: [new File([''], 't.png', { type: 'image/png' })] },
+    });
+
+    const exportArea = await screen.findByTestId('picollage-export-area');
+
+    // Verify overflow-hidden is NOT present
+    expect(exportArea).not.toHaveClass('overflow-hidden');
+
+    // Verify handles exist
+    const getHandles = () => document.querySelectorAll('[style*="cursor: nw-resize"]');
+    expect(getHandles().length).toBe(1);
+  });
 });
