@@ -15,6 +15,8 @@ export interface VideoMetadata {
   bitrate: number; // bps (calculated)
   framerate?: number; // Estimated or N/A
   creationTime?: Date;
+  latitude?: number;
+  longitude?: number;
 }
 
 export class MetadataService {
@@ -154,15 +156,29 @@ export class MetadataService {
         } catch (e) {
           console.warn('Could not extract creation time', e);
         }
-
-        resolve({
+        const result: VideoMetadata = {
           width: video.videoWidth,
           height: video.videoHeight,
           duration: duration,
           bitrate: Math.round(bitrate),
           framerate: undefined,
           creationTime,
-        });
+          latitude: undefined,
+          longitude: undefined,
+        };
+
+        // Attempt to extract GPS
+        try {
+          const gps = await MetadataService.getMp4GpsCoordinates(file);
+          if (gps) {
+            result.latitude = gps.latitude;
+            result.longitude = gps.longitude;
+          }
+        } catch (e) {
+          console.warn('Could not extract GPS metadata', e);
+        }
+
+        resolve(result);
       };
       video.onerror = () => {
         clearTimeout(timeoutId);
@@ -289,6 +305,103 @@ export class MetadataService {
         break;
       }
 
+      offset += size;
+    }
+
+    return undefined;
+  }
+
+  // --- MP4/MOV Atom Parsing for GPS ---
+  private static async getMp4GpsCoordinates(
+    file: File
+  ): Promise<{ latitude: number; longitude: number } | undefined> {
+    let offset = 0;
+    const fileSize = file.size;
+
+    while (offset < fileSize) {
+      const headerBlob = file.slice(offset, offset + 8);
+      const headerBuffer = await headerBlob.arrayBuffer();
+      if (headerBuffer.byteLength < 8) break;
+
+      const view = new DataView(headerBuffer);
+      let size = view.getUint32(0);
+      const type = String.fromCharCode(
+        view.getUint8(4),
+        view.getUint8(5),
+        view.getUint8(6),
+        view.getUint8(7)
+      );
+
+      let headerSize = 8;
+      if (size === 1) {
+        const largeSizeBlob = file.slice(offset + 8, offset + 16);
+        const largeSizeBuffer = await largeSizeBlob.arrayBuffer();
+        const largeSizeView = new DataView(largeSizeBuffer);
+        size = largeSizeView.getUint32(0) * 4294967296 + largeSizeView.getUint32(4);
+        headerSize = 16;
+      }
+
+      if (type === 'moov') {
+        const moovEnd = offset + size;
+        let subOffset = offset + headerSize;
+
+        while (subOffset < moovEnd) {
+          const subHeaderBlob = file.slice(subOffset, subOffset + 8);
+          const subHeaderBuffer = await subHeaderBlob.arrayBuffer();
+          if (subHeaderBuffer.byteLength < 8) break;
+
+          const subView = new DataView(subHeaderBuffer);
+          const subSize = subView.getUint32(0);
+          const subType = String.fromCharCode(
+            subView.getUint8(4),
+            subView.getUint8(5),
+            subView.getUint8(6),
+            subView.getUint8(7)
+          );
+
+          if (subType === 'udta') {
+            const udtaEnd = subOffset + subSize;
+            let udtaSubOffset = subOffset + 8;
+
+            while (udtaSubOffset < udtaEnd) {
+              const itemHeaderBlob = file.slice(udtaSubOffset, udtaSubOffset + 8);
+              const itemHeaderBuffer = await itemHeaderBlob.arrayBuffer();
+              if (itemHeaderBuffer.byteLength < 8) break;
+
+              const itemView = new DataView(itemHeaderBuffer);
+              const itemSize = itemView.getUint32(0);
+              const itemType = String.fromCharCode(
+                itemView.getUint8(4),
+                itemView.getUint8(5),
+                itemView.getUint8(6),
+                itemView.getUint8(7)
+              );
+
+              if (itemType === '©xyz') {
+                // Found it! format is usually something like: +27.1234+098.5678/
+                // Read the content after the 8-byte header
+                const dataBlob = file.slice(udtaSubOffset + 8, udtaSubOffset + itemSize);
+                const dataBuffer = await dataBlob.arrayBuffer();
+                const decoder = new TextDecoder();
+                const text = decoder.decode(dataBuffer);
+
+                // Basic coordinate extraction: look for [+-]decimal [+-]decimal
+                const match = text.match(/([+-]\d+\.\d+)([+-]\d+\.\d+)/);
+                if (match) {
+                  return {
+                    latitude: parseFloat(match[1]),
+                    longitude: parseFloat(match[2]),
+                  };
+                }
+              }
+              udtaSubOffset += itemSize;
+            }
+          }
+          subOffset += subSize;
+        }
+      }
+
+      if (size === 0) break;
       offset += size;
     }
 

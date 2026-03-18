@@ -18,6 +18,8 @@ export interface TimeRangeSelectorProps {
   };
   startAddon?: React.ReactNode;
   endAddon?: React.ReactNode;
+  collapsible?: boolean;
+  compTitle?: string;
 }
 
 export const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
@@ -32,7 +34,10 @@ export const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
   labels,
   startAddon,
   endAddon,
+  collapsible = false,
+  compTitle,
 }) => {
+  const [isCollapsed, setIsCollapsed] = useState(collapsible);
   const [startMins, setStartMins] = useState('0');
   const [startSecs, setStartSecs] = useState('0');
   const [startCents, setStartCents] = useState('0');
@@ -79,34 +84,50 @@ export const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
     : '[&::-webkit-slider-thumb]:bg-tool-videoverlay [&::-moz-range-thumb]:bg-tool-videoverlay';
 
   return (
-    <div className="bg-slate-800/80 backdrop-blur-sm p-8 rounded-3xl border border-slate-700">
-      {/* Marker and Current Time Row */}
-      <div className="flex items-center justify-between mb-10 gap-6">
+    <div className={`bg-slate-800/80 backdrop-blur-sm ${isCollapsed ? 'p-3' : 'p-3 md:p-4 xl:p-8'} rounded-xl xl:rounded-3xl border border-slate-700 transition-all duration-300`}>
+      {collapsible && (
         <button
-          onClick={handleSetStartFromCurrent}
-          className={`flex-1 group/btn flex items-center justify-center gap-2 px-4 py-3 bg-slate-700 ${textClass} ${hoverBgClass} border ${borderClass} rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95`}
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className={`w-full flex items-center justify-center mb-0 transition-colors group/toggle gap-2`}
         >
-          <Flag className={`w-3.5 h-3.5 group-hover/btn:scale-110 transition-transform ${textClass}`} />{' '}
-          {labels.setStart}
+          <span className={`text-[11px] font-black uppercase tracking-[0.2em] ${textClass} group-hover/toggle:opacity-80 transition-all`}>
+            {compTitle || 'Trim Controls'}
+          </span>
+          <div className={`p-1 rounded-lg bg-slate-700/50 group-hover/toggle:bg-slate-600 transition-colors border ${borderClass}`}>
+            {isCollapsed ? <ChevronRight className={`w-3.5 h-3.5 ${textClass}`} /> : <ChevronLeft className={`w-3.5 h-3.5 rotate-90 ${textClass}`} />}
+          </div>
         </button>
+      )}
 
-        <div className={`font-mono text-md ${textClass} bg-black/40 px-8 py-2 rounded-2xl border border-black/40 tabular-nums shadow-inner ring-1 ring-white/5 shrink-0`}>
-          {formatTime(currentTime)}
-        </div>
+      {!isCollapsed && (
+        <>
+          {/* Marker and Current Time Row */}
+          <div className={`flex items-center justify-between mt-4 mb-3 xl:mb-10 gap-2 xl:gap-6 animate-fadeIn`}>
+            <button
+              onClick={handleSetStartFromCurrent}
+              className={`flex-1 group/btn flex items-center justify-center gap-1.5 xl:gap-2 px-3 py-1.5 xl:px-4 xl:py-3 bg-slate-700 ${textClass} ${hoverBgClass} border ${borderClass} rounded-lg xl:rounded-xl text-[10px] xl:text-xs font-bold uppercase tracking-wider transition-all active:scale-95`}
+            >
+              <Flag className={`w-3 h-3 xl:w-3.5 xl:h-3.5 group-hover/btn:scale-110 transition-transform ${textClass}`} />{' '}
+              {labels.setStart}
+            </button>
 
-        <button
-          onClick={handleSetEndFromCurrent}
-          className={`flex-1 group/btn flex items-center justify-center gap-2 px-4 py-3 bg-slate-700 ${textClass} ${hoverBgClass} border ${borderClass} rounded-xl text-xs font-bold uppercase tracking-wider transition-all active:scale-95`}
-        >
-          <Flag className={`w-3.5 h-3.5 fill-current group-hover/btn:scale-110 transition-transform ${textClass}`} />{' '}
-          {labels.setEnd}
-        </button>
-      </div>
+            <div className={`font-mono text-sm xl:text-md ${textClass} bg-black/40 px-4 py-1 xl:px-8 xl:py-2 rounded-xl xl:rounded-2xl border border-black/40 tabular-nums shadow-inner ring-1 ring-white/5 shrink-0`}>
+              {formatTime(currentTime)}
+            </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <button
+              onClick={handleSetEndFromCurrent}
+              className={`flex-1 group/btn flex items-center justify-center gap-1.5 xl:gap-2 px-3 py-1.5 xl:px-4 xl:py-3 bg-slate-700 ${textClass} ${hoverBgClass} border ${borderClass} rounded-lg xl:rounded-xl text-[10px] xl:text-xs font-bold uppercase tracking-wider transition-all active:scale-95`}
+            >
+              <Flag className={`w-3 h-3 xl:w-3.5 xl:h-3.5 fill-current group-hover/btn:scale-110 transition-transform ${textClass}`} />{' '}
+              {labels.setEnd}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 xl:gap-12 animate-fadeIn">
         {/* Start Marker Column */}
-        <div className="space-y-6 flex flex-col justify-between">
-          <div className="space-y-4">
+        <div className="space-y-3 xl:space-y-6 flex flex-col justify-between">
+          <div className="space-y-2 xl:space-y-4">
             <div className="flex justify-between items-center px-1">
               <label className="text-[12px] font-black uppercase tracking-widest text-slate-500">
                 {labels.selectionStart}
@@ -214,8 +235,8 @@ export const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
         </div>
 
         {/* End Marker Column */}
-        <div className="space-y-6 flex flex-col justify-between">
-          <div className="space-y-4">
+        <div className="space-y-3 xl:space-y-6 flex flex-col justify-between">
+          <div className="space-y-2 xl:space-y-4">
             <div className="flex justify-between items-center px-1">
               <div className="flex items-center gap-1.5 bg-slate-900/50 p-1.5 rounded-lg border border-slate-700/50">
                 <input
@@ -322,6 +343,8 @@ export const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
           {endAddon}
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 };

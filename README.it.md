@@ -7,7 +7,7 @@ Creato da Flavio Biundo - potenziato da Google Antigravity.
 **Studio One** è una collezione di strumenti moderna ed elegante per l'elaborazione di foto, video e tracce audio direttamente nel browser.
 
 > [!TIP]
-> Per prestazioni e compatibilità ottimali, usa browser basati su Chrome.
+> Per un'esperienza ottimale (specialmente per gli strumenti video), si consiglia l'uso di browser basati su **Chromium** come **Google Chrome**, **Microsoft Edge**, **Brave** o **Opera**. Firefox ha attualmente un supporto limitato per alcune funzionalità avanzate di elaborazione video.
 
 ## 🚀 Per Iniziare
 

@@ -131,6 +131,34 @@ describe('MetadataService', () => {
       expect(metadata.creationTime?.getFullYear()).toBe(2024);
     });
 
+    it('handles GPS coordinate extraction from video', async () => {
+      const mockFile = new File(['fake-video-content'], 'test.mp4');
+      const mockVideo = {
+        duration: 10,
+        videoWidth: 1280,
+        videoHeight: 720,
+        onloadedmetadata: null as any,
+        set src(val: string) {
+          setTimeout(() => this.onloadedmetadata(), 0);
+        },
+      };
+      vi.spyOn(document, 'createElement').mockReturnValue(mockVideo as any);
+      vi.spyOn(MetadataService as any, 'getMp4CreationTime').mockResolvedValue(
+        new Date(2024, 0, 1)
+      );
+
+      // Mock getMp4GpsCoordinates
+      vi.spyOn(MetadataService as any, 'getMp4GpsCoordinates').mockResolvedValue({
+        latitude: 45.4642,
+        longitude: 9.19,
+      });
+
+      const metadata = await MetadataService.getVideoMetadata(mockFile);
+
+      expect(metadata.latitude).toBe(45.4642);
+      expect(metadata.longitude).toBe(9.19);
+    });
+
     it('rejects if video metadata loading times out', async () => {
       const mockFile = new File(['fake-video-content'], 'test.mp4');
       vi.useFakeTimers();
