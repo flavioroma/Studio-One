@@ -1,6 +1,6 @@
-# Studio One
+:it: [Italiano](README.it.md)
 
-*Read this in other languages: [English](README.md), [Italiano](README.it.md).*
+# Studio One
 
 Created by Flavio Biundo - powered by Google Antigravity.
 
@@ -13,19 +13,23 @@ Created by Flavio Biundo - powered by Google Antigravity.
 
 ### Prerequisites
 
-⚠️ **You need to install [Node.js](https://nodejs.org/)**
+⚠️ **Installing [Node.js](https://nodejs.org/) is required**
+
+**Note**: _Proceed with the installation regardless of any warnings Windows might display, and allow network connections if prompted by your firewall or antivirus._
 
 ## 🌱 Beginner Friendly Installation Steps (Windows only)
 
-1. From the GitHub Studio One repository main page, click on the green "Code" button and download the repository as a ZIP file
+1. From the GitHub "Studio One" repository main page, click on the green "Code" button and download the repository as a ZIP file
 
-2. The downloaded ZIP file contains a directory named "Studio-One-main" - place it somewhere you like on your hard drive
+2. Extract the ZIP file and place the directory named "Studio-One-main" wherever you prefer on your device
 
-3. Run the file "Start_Production_Server.bat" inside the "Studio-One-main" directory (if the file is blocked by Windows, right-click on it and select "Run as administrator")
+3. Run the file "Start_Production_Server.bat" inside the "Studio-One-main" directory - if the file is blocked by Windows, right-click on it and select "Run as administrator"
 
-4. Wait for installations to complete. If the browser does not open automatically, manually navigate to the local server displayed in the terminal at the end of the process
+4. Wait for installations to complete
 
-5. You can now use the tools. Enjoy!
+5. At the end of the process, the browser should open automatically - if that does not happen, manually navigate to the local server address displayed in the terminal
+
+6. You can now use the tools. Enjoy!
 
 ## ⬆️ Update from an older version
 
