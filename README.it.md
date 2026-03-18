@@ -1,13 +1,13 @@
-# Studio One
+:en: [English](README.md)
 
-*Leggi in un'altra lingua: [English](README.md), [Italiano](README.it.md).*
+# Studio One
 
 Creato da Flavio Biundo - potenziato da Google Antigravity.
 
-**Studio One** è una suite moderna ed elegante di strumenti per elaborare foto, video e tracce audio direttamente nel tuo browser.
+**Studio One** è una collezione di strumenti moderna ed elegante per l'elaborazione di foto, video e tracce audio direttamente nel browser.
 
 > [!TIP]
-> Usa browser basati su Chrome per prestazioni e compatibilità ottimali.
+> Per prestazioni e compatibilità ottimali, usa browser basati su Chrome.
 
 ## 🚀 Per Iniziare
 
@@ -15,17 +15,21 @@ Creato da Flavio Biundo - potenziato da Google Antigravity.
 
 ⚠️ **È necessario installare [Node.js](https://nodejs.org/)**
 
+**Nota**: _Procedere all'installazione anche se Windows potrebbe mostrare avvisi, e consentire le connessioni se il firewall o l'antivirus lo richiedono._
+
 ## 🌱 Installazione per Principianti (solo Windows)
 
-1. Dalla pagina principale del repository di Studio One su GitHub, clicca sul pulsante verde "Code" e scarica il repository come file ZIP
+1. Dalla pagina principale del repository di "Studio One" su GitHub, clicca sul pulsante verde "Code" e scarica il repository come file ZIP
 
-2. Il file ZIP scaricato contiene una cartella chiamata "Studio-One-main" - posizionala dove preferisci sul tuo disco rigido
+2. Estrai il file ZIP e posiziona la cartella chiamata "Studio-One-main" dove preferisci sul tuo dispositivo
 
-3. Esegui il file "Start_Production_Server.bat" all'interno della cartella "Studio-One-main" (se Windows blocca il file, fai clic con il tasto destro e seleziona "Esegui come amministratore")
+3. Esegui il file "Start_Production_Server.bat" all'interno della cartella "Studio-One-main" - se Windows blocca il file, fai clic con il tasto destro e seleziona "Esegui come amministratore"
 
-4. Attendi il completamento delle installazioni. Se il browser non si apre automaticamente, naviga manualmente verso l'indirizzo locale mostrato nel terminale alla fine del processo
+4. Attendi il completamento delle installazioni
 
-5. Ora puoi usare gli strumenti. Buon divertimento!
+5. Al completamento, il browser si dovrebbe aprire automaticamente - se questo non succede, naviga manualmente verso l'indirizzo locale (local server) mostrato nel terminale alla fine del processo.
+
+6. Ora puoi usare gli strumenti. Buon divertimento!
 
 ## ⬆️ Aggiornamento da una versione precedente
 
