@@ -27,6 +27,7 @@ export const translations = {
       output: 'Output:',
       duration: 'Duration',
       selectionDuration: 'Selection Duration',
+      overlay: 'Overlay',
     },
     captions: {
       captionText: 'Caption Text',
@@ -178,7 +179,6 @@ export const translations = {
       videoverlay: {
         title: 'VideOverlay',
         trimControls: 'Trimming controls',
-        overlaySettings: 'Overlay',
         uploadVideo: 'Select or drop a video',
         awaitingSource: 'Awaiting Source',
         removeVideo: 'Remove Video',
@@ -217,7 +217,6 @@ export const translations = {
       },
       photoverlay: {
         title: 'PhotOverlay',
-        overlaySettings: 'Overlay',
         framing: 'Framing',
         selectPhoto: 'Select a photo to add overlays',
         uploadPhotos: 'Select or drop Photos',
@@ -304,6 +303,7 @@ export const translations = {
       output: 'Output:',
       duration: 'Durata',
       selectionDuration: 'Durata della selezione',
+      overlay: 'Sovraimpressione',
     },
     captions: {
       captionText: 'Testo Didascalia',
@@ -456,7 +456,6 @@ export const translations = {
       videoverlay: {
         title: 'VideOverlay',
         trimControls: 'Taglia il video',
-        overlaySettings: 'Sovraimpressione',
         uploadVideo: 'Seleziona o trascina un video',
         awaitingSource: 'In attesa del video',
         removeVideo: 'Rimuovi Video',
@@ -496,7 +495,6 @@ export const translations = {
       },
       photoverlay: {
         title: 'PhotOverlay',
-        overlaySettings: 'Sovraimpressione',
         framing: 'Inquadratura',
         selectPhoto: 'Seleziona una foto per aggiungere overlay',
         uploadPhotos: 'Seleziona o trascina foto',

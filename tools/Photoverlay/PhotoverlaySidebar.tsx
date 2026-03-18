@@ -202,7 +202,7 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
           </>
 
           <h2 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
-            {t.tools.photoverlay.overlaySettings}
+            {t.common.overlay}
           </h2>
 
           <div className="p-4 bg-slate-700/50 rounded-2xl border border-slate-600 hover:border-tool-photoverlay/40 hover:bg-slate-700/50 transition-all">
