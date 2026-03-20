@@ -27,7 +27,7 @@ export const FramingSettingsPanel: React.FC<FramingSettingsPanelProps> = ({
 
   return (
     <CollapsiblePanel 
-      title={t.tools.photoverlay.framing} 
+      title={t.common.framing} 
       themeColor={themeColor}
       defaultExpanded={defaultExpanded}
     >

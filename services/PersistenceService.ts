@@ -11,6 +11,7 @@ import {
   FramingSettings,
   WatermarkSettings,
   FilterMode,
+  BorderSize,
 } from '../types';
 
 const SLIDESYNC_KEY = 'slidesync_state_v1';
@@ -54,6 +55,8 @@ export interface PhotoItemState {
   watermarkPosition?: TextPosition;
   framingSettings?: FramingSettings;
   filter?: FilterMode;
+  borderSize?: BorderSize;
+  borderColor?: TextColor;
 }
 
 export interface PhotoverlayState {
@@ -64,6 +67,7 @@ export interface PhotoverlayState {
   exportAsArchive?: boolean;
   namingSettings?: NamingSettings;
   preserveMetadata?: boolean;
+  applyBorderToAll?: boolean;
 }
 
 export interface AudioTrackItem {

@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Slide, AspectRatio, TextPosition, FilterMode } from '../../types';
+import { Slide, AspectRatio, TextPosition, FilterMode, BorderSize, TextColor } from '../../types';
 import { AudioTrackItem } from '../../services/PersistenceService';
 import { calculateCaptionMetrics, calculateCaptionPosition } from '../../utils/captionUtils';
 import {
@@ -13,11 +13,11 @@ import {
   ChevronDown,
   Tablet,
 } from 'lucide-react';
-import { CaptionSettingsPanel } from '../../components/CaptionSettingsPanel';
-import { WatermarkSettingsPanel } from '../../components/WatermarkSettingsPanel';
-import { MagnificationSettingsPanel } from '../../components/MagnificationSettingsPanel';
-import { FilterSettingsPanel } from '../../components/FilterSettingsPanel';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { OverlaySettingsPanel } from '../../components/OverlaySettingsPanel';
+import { FramingSettingsPanel } from '../../components/FramingSettingsPanel';
+import { FilterSettingsPanel } from '../../components/FilterSettingsPanel';
+import { BorderSettingsPanel } from '../../components/BorderSettingsPanel';
 
 interface SlideSyncSidebarProps {
   slide: Slide | null; // Allow null for when no slide is selected
@@ -35,6 +35,12 @@ interface SlideSyncSidebarProps {
   isAudioRendering?: boolean;
   hasContent: boolean;
   onDeleteAll: () => void;
+  applyToAll?: boolean;
+  onApplyToAllChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  applyFilterToAll?: boolean;
+  onApplyFilterToAllChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  applyBorderToAll?: boolean;
+  onApplyBorderToAllChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
@@ -53,11 +59,15 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
   isAudioRendering = false,
   hasContent,
   onDeleteAll,
+  applyToAll = false,
+  onApplyToAllChange,
+  applyFilterToAll = false,
+  onApplyFilterToAllChange,
+  applyBorderToAll = false,
+  onApplyBorderToAllChange,
 }) => {
   const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [lastPos, setLastPos] = useState({ x: 0, y: 0 });
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [showAudioTrimMenu, setShowAudioTrimMenu] = useState(false);
 
@@ -100,32 +110,6 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
     }
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    setLastPos({ x: e.clientX, y: e.clientY });
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !containerRef.current || !slide) return;
-
-    const rect = containerRef.current.getBoundingClientRect();
-    const dx = e.clientX - lastPos.x;
-    const dy = e.clientY - lastPos.y;
-
-    const moveX = (dx / rect.width) * 100;
-    const moveY = (dy / rect.height) * 100;
-
-    onUpdate({
-      offsetX: Math.max(-400, Math.min(400, (slide.offsetX || 0) + moveX)),
-      offsetY: Math.max(-400, Math.min(400, (slide.offsetY || 0) + moveY)),
-    });
-
-    setLastPos({ x: e.clientX, y: e.clientY });
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
 
   // Improved Caption Preview Logic to match Canvas Rendering exactly
   const getCaptionStyle = (): React.CSSProperties => {
@@ -175,11 +159,7 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
   };
 
   return (
-    <div
-      className="space-y-6 flex flex-col h-full"
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-    >
+    <div className="space-y-6 flex flex-col h-full">
       <div className="flex items-center justify-center">
         <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
           {t.tools.slidesync.mediaSettings}
@@ -324,38 +304,54 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
               {t.tools.slidesync.slideProperties}
             </h3>
           </div>
+          <div ref={containerRef}>
+            <FramingSettingsPanel
+              key={`framing-${slide.id}`}
+              imageUrl={slide.previewUrl}
+              settings={slide}
+              onUpdate={onUpdate}
+              aspectRatio={aspectRatio}
+              themeColor="tool-slidesync"
+              defaultExpanded={
+                slide.zoom !== 1 ||
+                slide.offsetX !== 0 ||
+                slide.offsetY !== 0
+              }
+            />
+          </div>
 
-          <MagnificationSettingsPanel
-            imageUrl={slide.previewUrl}
-            settings={slide}
-            onUpdate={onUpdate}
-            aspectRatio={aspectRatio}
-            themeColor="tool-slidesync"
-            captionText={slide.text}
-            getCaptionStyle={getCaptionStyle}
-          />
-
-          {/* Filter Settings */}
           <FilterSettingsPanel
+            key={`filter-${slide.id}`}
             currentFilter={slide.filter}
             onChange={(filter) => onUpdate({ filter })}
             themeColor="tool-slidesync"
+            collapsible={true}
+            applyToAll={applyFilterToAll}
+            onApplyToAllChange={onApplyFilterToAllChange}
+            defaultExpanded={
+              !!slide.filter && slide.filter !== FilterMode.Normal
+            }
           />
 
-          <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
-            {t.common.overlay}
-          </h3>
-
-          <CaptionSettingsPanel
-            settings={slide}
-            onUpdate={onUpdate}
-            onAutoCaption={onAutoCaption}
-            isProcessing={isProcessing}
+          <BorderSettingsPanel
+            key={`border-${slide.id}`}
+            borderSize={slide.borderSize || BorderSize.None}
+            borderColor={slide.borderColor || TextColor.White}
+            onSizeChange={(borderSize) => onUpdate({ borderSize })}
+            onColorChange={(borderColor) => onUpdate({ borderColor })}
             themeColor="tool-slidesync"
+            applyToAll={applyBorderToAll}
+            onApplyToAllChange={onApplyBorderToAllChange}
+            defaultExpanded={!!slide.borderSize}
           />
 
-          <WatermarkSettingsPanel
-            settings={
+          <OverlaySettingsPanel
+            key={`overlay-${slide.id}`}
+            applyToAll={applyToAll}
+            onApplyToAllChange={onApplyToAllChange}
+            captionSettings={slide}
+            onCaptionUpdate={(updates) => onUpdate(updates)}
+            watermarkSettings={
               slide.watermarkSettings || {
                 file: null,
                 position: TextPosition.TopRight,
@@ -363,7 +359,7 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
                 scale: 0.2,
               }
             }
-            onUpdate={(updates) =>
+            onWatermarkUpdate={(updates) =>
               onUpdate({
                 watermarkSettings: {
                   ...(slide.watermarkSettings || {
@@ -376,7 +372,13 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
                 },
               })
             }
+            onAutoCaption={onAutoCaption}
+            isProcessing={isProcessing}
             themeColor="tool-slidesync"
+            defaultExpanded={
+              (slide.text && slide.text !== '') ||
+              !!slide.watermarkSettings?.file
+            }
           />
         </div>
       ) : (

@@ -52,7 +52,7 @@ export const FilterSettingsPanel: React.FC<FilterSettingsPanelProps> = ({
   const content = (
     <div className="space-y-4">
       {onApplyToAllChange && (
-        <div className="p-4 bg-slate-700/50 rounded-2xl border border-slate-600 hover:bg-slate-700/50 transition-all mb-2"
+        <div className="p-4 bg-slate-700/50 rounded-2xl border border-slate-600 hover:bg-slate-700/50 transition-all mb-4"
              style={{ borderColor: applyToAll ? `var(--${themeColor})` : undefined }}>
           <label className="flex items-center gap-3 cursor-pointer group">
             <div
@@ -65,7 +65,7 @@ export const FilterSettingsPanel: React.FC<FilterSettingsPanelProps> = ({
               {applyToAll && <Check className="w-3.5 h-3.5 text-white stroke-[3px]" />}
             </div>
             <span className="text-xs font-bold text-slate-300 group-hover:text-slate-100 transition-colors">
-              {t.tools.photoverlay.applyFilterToAll}
+              {themeColor === 'tool-slidesync' ? t.tools.slidesync.applyFilterToAll : t.tools.photoverlay.applyFilterToAll}
             </span>
             <input
               type="checkbox"

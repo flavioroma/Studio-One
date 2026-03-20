@@ -20,9 +20,7 @@ export const MagnificationSettingsPanel: React.FC<MagnificationSettingsPanelProp
   onUpdate,
   aspectRatio,
   sourceDimensions,
-  themeColor = 'tool-slidesync',
-  captionText,
-  getCaptionStyle,
+  themeColor,
 }) => {
   const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -123,8 +121,6 @@ export const MagnificationSettingsPanel: React.FC<MagnificationSettingsPanelProp
             className="max-w-full max-h-full w-auto h-auto object-contain border border-white/20 shadow-2xl"
           />
         </div>
-
-        {captionText && getCaptionStyle && <div style={getCaptionStyle()}>{captionText}</div>}
 
         <div className={`absolute inset-0 border ${themeClasses.border} pointer-events-none z-10`}>
           <div className="w-full h-full grid grid-cols-3 grid-rows-3 opacity-10">

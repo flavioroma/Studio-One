@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { PiCollagePicture, AspectRatio, BorderSize, FilterMode } from '../../types';
+import { PiCollagePicture, AspectRatio, BorderSize, FilterMode, TextPosition } from '../../types';
 import { RotateCw } from 'lucide-react';
+import { calculateCaptionMetrics } from '../../utils/captionUtils';
 
 interface PiCollageCanvasProps {
   pictures: PiCollagePicture[];
@@ -386,11 +387,53 @@ export const PiCollageCanvas: React.FC<PiCollageCanvasProps> = ({
                         width: '100%',
                         height: '100%',
                         objectFit: 'cover',
-                        transform: `translate(${pic.offsetX}%, ${pic.offsetY}%) scale(${pic.zoom})`,
+                        transform: `translate(${pic.framingSettings.offsetX}%, ${pic.framingSettings.offsetY}%) scale(${pic.framingSettings.zoom})`,
                       }}
                       draggable={false}
                     />
                   </div>
+
+                  {/* Watermark Preview */}
+                  {pic.watermarkSettings?.file && (
+                    <img
+                      src={URL.createObjectURL(pic.watermarkSettings.file)}
+                      alt="Watermark"
+                      className="absolute pointer-events-none"
+                      style={{
+                        width: `${pic.watermarkSettings.scale * 100}%`,
+                        opacity: pic.watermarkSettings.opacity,
+                        zIndex: 20,
+                        ...(pic.watermarkSettings.position === TextPosition.TopLeft && { top: '5%', left: '5%' }),
+                        ...(pic.watermarkSettings.position === TextPosition.TopRight && { top: '5%', right: '5%' }),
+                        ...(pic.watermarkSettings.position === TextPosition.BottomLeft && { bottom: '5%', left: '5%' }),
+                        ...(pic.watermarkSettings.position === TextPosition.BottomRight && { bottom: '5%', right: '5%' }),
+                        ...(pic.watermarkSettings.position === TextPosition.Center && { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }),
+                        ...(pic.watermarkSettings.position === TextPosition.TopCenter && { top: '5%', left: '50%', transform: 'translate(-50%, 0)' }),
+                        ...(pic.watermarkSettings.position === TextPosition.BottomCenter && { bottom: '5%', left: '50%', transform: 'translate(-50%, 0)' }),
+                      }}
+                    />
+                  )}
+
+                  {/* Caption Preview */}
+                  {pic.captionSettings?.text && (
+                    <div
+                      className="absolute inset-0 pointer-events-none flex"
+                      style={{
+                        color: pic.captionSettings.color,
+                        textShadow: '2px 2px 8px rgba(0,0,0,0.8)',
+                        fontWeight: 'bold',
+                        fontStyle: pic.captionSettings.isItalic ? 'italic' : 'normal',
+                        fontFamily: 'Inter, sans-serif',
+                        padding: '5%',
+                        justifyContent: pic.captionSettings.position.includes('Left') ? 'flex-start' : pic.captionSettings.position.includes('Right') ? 'flex-end' : 'center',
+                        alignItems: pic.captionSettings.position.includes('Top') ? 'flex-start' : pic.captionSettings.position.includes('Bottom') ? 'flex-end' : 'center',
+                        textAlign: pic.captionSettings.position.includes('Left') ? 'left' : pic.captionSettings.position.includes('Right') ? 'right' : 'center',
+                        fontSize: 'clamp(10px, 4cqi, 40px)', // Dynamic font size based on container width
+                      }}
+                    >
+                      {pic.captionSettings.text}
+                    </div>
+                  )}
                 </div>
 
                 {renderHandles(pic)}

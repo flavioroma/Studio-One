@@ -1,9 +1,12 @@
 import React from 'react';
 import { Trash2, Monitor, Smartphone, Square, Tablet } from 'lucide-react';
-import { AspectRatio, PiCollagePicture, BorderSize, FilterMode } from '../../types';
+import { AspectRatio, PiCollagePicture, BorderSize, FilterMode, CaptionSettings, WatermarkSettings, FramingSettings, TextColor, TextPosition, TextSize } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { FileDropZone } from '../../components/FileDropZone';
 import { FilterSettingsPanel } from '../../components/FilterSettingsPanel';
+import { BorderSettingsPanel } from '../../components/BorderSettingsPanel';
+import { FramingSettingsPanel } from '../../components/FramingSettingsPanel';
+import { OverlaySettingsPanel } from '../../components/OverlaySettingsPanel';
 
 interface PiCollageSidebarProps {
   pictures: PiCollagePicture[];
@@ -12,6 +15,17 @@ interface PiCollageSidebarProps {
   onImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onAspectRatioChange: (ratio: AspectRatio) => void;
   onUpdatePicture: (id: string, updates: Partial<PiCollagePicture>) => void;
+  onCaptionUpdate: (updates: Partial<CaptionSettings>) => void;
+  onWatermarkUpdate: (updates: Partial<WatermarkSettings>) => void;
+  onFramingUpdate: (updates: Partial<FramingSettings>) => void;
+  onFilterUpdate: (filter: FilterMode) => void;
+  onBorderUpdate: (updates: Partial<{ borderSize: BorderSize; borderColor: TextColor }>) => void;
+  applyToAll: boolean;
+  onApplyToAllChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  applyFilterToAll: boolean;
+  onApplyFilterToAllChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  applyBorderToAll: boolean;
+  onApplyBorderToAllChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onDeleteProject: () => void;
 }
 
@@ -22,6 +36,17 @@ export const PiCollageSidebar: React.FC<PiCollageSidebarProps> = ({
   onImageUpload,
   onAspectRatioChange,
   onUpdatePicture,
+  onCaptionUpdate,
+  onWatermarkUpdate,
+  onFramingUpdate,
+  onFilterUpdate,
+  onBorderUpdate,
+  applyToAll,
+  onApplyToAllChange,
+  applyFilterToAll,
+  onApplyFilterToAllChange,
+  applyBorderToAll,
+  onApplyBorderToAllChange,
   onDeleteProject,
 }) => {
   const { t } = useLanguage();
@@ -32,15 +57,6 @@ export const PiCollageSidebar: React.FC<PiCollageSidebarProps> = ({
     { id: AspectRatio.Portrait_3_4, label: '3:4', icon: Tablet },
     { id: AspectRatio.Square_1_1, label: '1:1', icon: Square },
   ];
-
-  const borderOptions = [
-    { id: BorderSize.None, label: t.tools.picollage.borderNone },
-    { id: BorderSize.Small, label: t.tools.picollage.borderSmall },
-    { id: BorderSize.Medium, label: t.tools.picollage.borderMedium },
-    { id: BorderSize.Large, label: t.tools.picollage.borderLarge },
-  ];
-
-
 
   const activePicture = pictures.find((p) => p.id === activePictureId);
 
@@ -62,7 +78,7 @@ export const PiCollageSidebar: React.FC<PiCollageSidebarProps> = ({
           />
         </div>
       ) : (
-        <div className="flex-1 space-y-8 animate-fadeIn overflow-y-auto pb-8 pr-2 custom-scrollbar">
+        <div className="flex-1 space-y-6 animate-fadeIn overflow-y-auto pb-8 pr-2 custom-scrollbar">
           {/* Output Resolution Settings */}
           <div className="space-y-4">
             <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
@@ -100,70 +116,61 @@ export const PiCollageSidebar: React.FC<PiCollageSidebarProps> = ({
               </div>
             ) : (
               <div className="space-y-6">
-                {/* Border Settings */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    {t.tools.picollage.border}
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {borderOptions.map((opt) => (
-                      <button
-                        key={opt.id}
-                        onClick={() => onUpdatePicture(activePicture.id, { borderSize: opt.id })}
-                        className={`p-2 rounded-lg text-[10px] font-bold uppercase transition-all border ${
-                          activePicture.borderSize === opt.id
-                            ? 'bg-tool-picollage/20 border-tool-picollage text-tool-picollage'
-                            : 'bg-slate-700/50 border-slate-600 hover:border-tool-picollage/40'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                {/* Framing Settings */}
+                <FramingSettingsPanel
+                  key={`framing-${activePicture.id}`}
+                  imageUrl={activePicture.previewUrl}
+                  settings={activePicture.framingSettings}
+                  onUpdate={onFramingUpdate}
+                  aspectRatio={AspectRatio.Original}
+                  themeColor="tool-picollage"
+                  defaultExpanded={
+                    activePicture.framingSettings.zoom !== 1 ||
+                    activePicture.framingSettings.offsetX !== 0 ||
+                    activePicture.framingSettings.offsetY !== 0
+                  }
+                />
 
                 {/* Filter Settings */}
                 <FilterSettingsPanel
+                  key={`filter-${activePicture.id}`}
                   currentFilter={activePicture.filter}
-                  onChange={(filter) => onUpdatePicture(activePicture.id, { filter })}
+                  onChange={onFilterUpdate}
                   themeColor="tool-picollage"
+                  collapsible
+                  applyToAll={applyFilterToAll}
+                  onApplyToAllChange={onApplyFilterToAllChange}
+                  defaultExpanded={activePicture.filter !== FilterMode.Normal}
                 />
 
-                {/* Framing/Magnification Settings */}
-                <div className="space-y-4 bg-slate-700/30 p-4 rounded-xl border border-slate-600/50">
-                  <div className="space-y-1">
-                    <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase">
-                      <span>{t.tools.slidesync.magnification}</span>
-                      <span className="text-tool-picollage">{activePicture.zoom.toFixed(2)}x</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0.1"
-                      max="3"
-                      step="0.01"
-                      value={activePicture.zoom}
-                      onChange={(e) =>
-                        onUpdatePicture(activePicture.id, { zoom: parseFloat(e.target.value) })
-                      }
-                      className="w-full h-1.5 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-tool-picollage"
-                    />
-                  </div>
+                {/* Border Settings */}
+                <BorderSettingsPanel
+                  key={`border-${activePicture.id}`}
+                  borderSize={activePicture.borderSize}
+                  borderColor={activePicture.borderColor}
+                  onSizeChange={(borderSize) => onBorderUpdate({ borderSize })}
+                  onColorChange={(borderColor) => onBorderUpdate({ borderColor })}
+                  themeColor="tool-picollage"
+                  applyToAll={applyBorderToAll}
+                  onApplyToAllChange={onApplyBorderToAllChange}
+                  defaultExpanded={activePicture.borderSize !== BorderSize.None}
+                />
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => onUpdatePicture(activePicture.id, { offsetX: 0 })}
-                      className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-[9px] font-black uppercase flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      {t.tools.slidesync.centerX}
-                    </button>
-                    <button
-                      onClick={() => onUpdatePicture(activePicture.id, { offsetY: 0 })}
-                      className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-[9px] font-black uppercase flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      {t.tools.slidesync.centerY}
-                    </button>
-                  </div>
-                </div>
+                {/* Overlay Settings */}
+                <OverlaySettingsPanel
+                  key={`overlay-${activePicture.id}`}
+                  applyToAll={applyToAll}
+                  onApplyToAllChange={onApplyToAllChange}
+                  captionSettings={activePicture.captionSettings}
+                  onCaptionUpdate={onCaptionUpdate}
+                  watermarkSettings={activePicture.watermarkSettings}
+                  onWatermarkUpdate={onWatermarkUpdate}
+                  themeColor="tool-picollage"
+                  defaultExpanded={
+                    (activePicture.captionSettings?.text && activePicture.captionSettings.text !== '') ||
+                    !!activePicture.watermarkSettings?.file
+                  }
+                />
               </div>
             )}
           </div>

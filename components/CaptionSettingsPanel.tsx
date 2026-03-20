@@ -54,6 +54,25 @@ export const CaptionSettingsPanel: React.FC<CaptionSettingsPanelProps> = ({
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
             {t.captions.captionText}
           </label>
+          {/* {onAutoCaption && (
+            <button
+              onClick={onAutoCaption}
+              disabled={isProcessing}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-black uppercase transition-all ${
+                isProcessing
+                  ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                  : `bg-slate-700 text-slate-300 hover:text-white hover:bg-slate-600`
+              }`}
+              title={t.tools.slidesync.autoCaption}
+            >
+              {isProcessing ? (
+                <div className="w-3 h-3 border-2 border-slate-500 border-t-slate-300 rounded-full animate-spin" />
+              ) : (
+                <Wand2 className={`w-3 h-3 ${themeColor === 'tool-slidesync' ? 'text-tool-slidesync' : 'text-tool-photoverlay'}`} />
+              )}
+              {isProcessing ? t.captions.thinking : t.tools.slidesync.analyze}
+            </button>
+          )} */}
         </div>
         <textarea
           value={settings.text}

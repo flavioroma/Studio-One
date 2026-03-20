@@ -11,10 +11,12 @@ import {
   FramingSettings,
   AspectRatio,
   FilterMode,
+  BorderSize,
 } from '../../types';
 import { FramingSettingsPanel } from '../../components/FramingSettingsPanel';
 import { OverlaySettingsPanel } from '../../components/OverlaySettingsPanel';
 import { FilterSettingsPanel } from '../../components/FilterSettingsPanel';
+import { BorderSettingsPanel } from '../../components/BorderSettingsPanel';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { FileDropZone } from '../../components/FileDropZone';
 
@@ -30,6 +32,9 @@ interface PhotoverlaySidebarProps {
   onWatermarkUpdate: (updates: Partial<WatermarkSettings>) => void;
   onFramingUpdate: (updates: Partial<FramingSettings>) => void;
   onFilterUpdate: (filter: FilterMode) => void;
+  onBorderUpdate: (updates: Partial<{ borderSize: BorderSize; borderColor: TextColor }>) => void;
+  applyBorderToAll: boolean;
+  onApplyBorderToAllChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   namingSettings: NamingSettings;
   onNamingUpdate: (updates: Partial<NamingSettings>) => void;
   preserveMetadata: boolean;
@@ -49,6 +54,9 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
   onWatermarkUpdate,
   onFramingUpdate,
   onFilterUpdate,
+  onBorderUpdate,
+  applyBorderToAll,
+  onApplyBorderToAllChange,
   namingSettings,
   onNamingUpdate,
   preserveMetadata,
@@ -228,6 +236,21 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
               defaultExpanded={
                 !!selectedItem.filter && selectedItem.filter !== FilterMode.Normal
               }
+            />
+          )}
+
+          {/* New Collapsible Border Section */}
+          {selectedItem && (
+            <BorderSettingsPanel
+              key={`border-${selectedItem.id}`}
+              borderSize={selectedItem.borderSize || BorderSize.None}
+              borderColor={selectedItem.borderColor || TextColor.White}
+              onSizeChange={(borderSize) => onBorderUpdate({ borderSize })}
+              onColorChange={(borderColor) => onBorderUpdate({ borderColor })}
+              themeColor="tool-photoverlay"
+              applyToAll={applyBorderToAll}
+              onApplyToAllChange={onApplyBorderToAllChange}
+              defaultExpanded={!!selectedItem.borderSize}
             />
           )}
 

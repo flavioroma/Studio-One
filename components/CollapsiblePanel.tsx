@@ -18,34 +18,34 @@ export const CollapsiblePanel: React.FC<CollapsiblePanelProps> = ({
 
   const themeClasses = {
     'tool-photoverlay': {
-      text: 'text-tool-photoverlay',
-      border: 'border-tool-photoverlay/30',
-      bg: 'bg-tool-photoverlay/10',
+      hover: 'group-hover:text-tool-photoverlay',
+      hoverIconBg: 'group-hover:bg-tool-photoverlay/10',
+      hoverIconBorder: 'group-hover:border-tool-photoverlay/30',
     },
     'tool-slidesync': {
-      text: 'text-tool-slidesync',
-      border: 'border-tool-slidesync/30',
-      bg: 'bg-tool-slidesync/10',
+      hover: 'group-hover:text-tool-slidesync',
+      hoverIconBg: 'group-hover:bg-tool-slidesync/10',
+      hoverIconBorder: 'group-hover:border-tool-slidesync/30',
     },
     'tool-videoverlay': {
-      text: 'text-tool-videoverlay',
-      border: 'border-tool-videoverlay/30',
-      bg: 'bg-tool-videoverlay/10',
+      hover: 'group-hover:text-tool-videoverlay',
+      hoverIconBg: 'group-hover:bg-tool-videoverlay/10',
+      hoverIconBorder: 'group-hover:border-tool-videoverlay/30',
     },
-    // 'tool-videomagnifier': {
-    //   text: 'text-tool-videomagnifier',
-    //   border: 'border-tool-videomagnifier/30',
-    //   bg: 'bg-tool-videomagnifier/10',
-    // },
     'tool-picollage': {
-      text: 'text-tool-picollage',
-      border: 'border-tool-picollage/30',
-      bg: 'bg-tool-picollage/10',
+      hover: 'group-hover:text-tool-picollage',
+      hoverIconBg: 'group-hover:bg-tool-picollage/10',
+      hoverIconBorder: 'group-hover:border-tool-picollage/30',
+    },
+    'tool-audiotrim': {
+      hover: 'group-hover:text-tool-audiotrim',
+      hoverIconBg: 'group-hover:bg-tool-audiotrim/10',
+      hoverIconBorder: 'group-hover:border-tool-audiotrim/30',
     },
   }[themeColor] || {
-    text: 'text-slate-100',
-    border: 'border-slate-600',
-    bg: 'bg-slate-700/50',
+    hover: 'group-hover:text-white',
+    hoverIconBg: 'group-hover:bg-slate-700',
+    hoverIconBorder: 'group-hover:border-slate-500',
   };
 
   return (
@@ -54,12 +54,12 @@ export const CollapsiblePanel: React.FC<CollapsiblePanelProps> = ({
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full flex items-center gap-3 group transition-all"
       >
-        <div className={`p-1.5 rounded-lg bg-slate-700/50 group-hover:bg-slate-700 transition-colors border border-slate-600 group-hover:border-slate-500 shadow-sm`}>
+        <div className={`p-1 rounded-md transition-all duration-300 ${themeClasses.hoverIconBg} ${themeClasses.hoverIconBorder} shadow-sm`}>
           <ChevronRight 
-            className={`w-4 h-4 text-slate-400 group-hover:text-slate-100 transition-all duration-300 ${isExpanded ? 'rotate-90' : ''}`} 
+            className={`w-4 h-4 text-slate-300 ${themeClasses.hover} transition-all duration-300 ${isExpanded ? 'rotate-90' : ''}`} 
           />
         </div>
-        <span className="text-xs font-black text-slate-100 uppercase tracking-[0.2em] group-hover:text-white transition-colors">
+        <span className={`text-xs font-black text-slate-300 uppercase tracking-wider ${themeClasses.hover} transition-colors`}>
           {title}
         </span>
         <div className="flex-1 h-px bg-slate-700/50"></div>

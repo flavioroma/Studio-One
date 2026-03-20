@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { PlayCircle, Trash2 } from 'lucide-react';
-import { Slide, TextPosition, TextColor, AspectRatio, TextSize, FilterMode } from '../../types';
+import { Slide, TextPosition, TextColor, AspectRatio, TextSize, FilterMode, BorderSize } from '../../types';
 import { generateCaptionForImage } from '../../services/geminiService';
 import { PersistenceService, AudioTrackItem } from '../../services/PersistenceService';
 import { SlideSyncSidebar } from './SlideSyncSidebar';
@@ -9,6 +9,7 @@ import { VideoPreview } from './VideoPreview';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { renderTrimmedAudioToFile } from '../../utils/audioUtils';
+import { useApplyToAll } from '../../hooks/useApplyToAll';
 
 export const SlideSyncTool: React.FC = () => {
   const { t } = useLanguage();
@@ -24,6 +25,9 @@ export const SlideSyncTool: React.FC = () => {
   const [showEraseConfirm, setShowEraseConfirm] = useState(false);
   const [slideToDeleteId, setSlideToDeleteId] = useState<string | null>(null);
   const [audioTrimTracks, setAudioTrimTracks] = useState<AudioTrackItem[]>([]);
+  const [showApplyAllConfirm, setShowApplyAllConfirm] = useState(false);
+  const [showApplyFilterAllConfirm, setShowApplyFilterAllConfirm] = useState(false);
+  const [showApplyBorderAllConfirm, setShowApplyBorderAllConfirm] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -140,6 +144,56 @@ export const SlideSyncTool: React.FC = () => {
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [slides, audioFile, aspectRatio]);
+
+  const activeSlide = slides.find((s) => s.id === activeSlideId);
+
+  const overlayApply = useApplyToAll<Slide>({
+    items: slides,
+    selectedItem: activeSlide || null,
+    onApply: (selected) => {
+      setSlides((prev) =>
+        prev.map((s) => ({
+          ...s,
+          text: selected.text,
+          color: selected.color,
+          position: selected.position,
+          textSize: selected.textSize,
+          isItalic: selected.isItalic,
+          watermarkSettings: selected.watermarkSettings
+            ? { ...selected.watermarkSettings }
+            : undefined,
+        }))
+      );
+    },
+    isCustomized: (item, selected) =>
+      (item.text && item.text !== selected.text) ||
+      (item.watermarkSettings?.file &&
+        item.watermarkSettings.file !== selected.watermarkSettings?.file),
+  });
+
+  const filterApply = useApplyToAll<Slide>({
+    items: slides,
+    selectedItem: activeSlide || null,
+    onApply: (selected) => {
+      setSlides((prev) => prev.map((s) => ({ ...s, filter: selected.filter })));
+    },
+    isCustomized: (item, selected) => item.filter !== selected.filter,
+  });
+  const borderApply = useApplyToAll<Slide>({
+    items: slides,
+    selectedItem: activeSlide || null,
+    onApply: (selected) => {
+      setSlides((prev) =>
+        prev.map((s) => ({
+          ...s,
+          borderSize: selected.borderSize,
+          borderColor: selected.borderColor,
+        }))
+      );
+    },
+    isCustomized: (item, selected) =>
+      item.borderSize !== selected.borderSize || item.borderColor !== selected.borderColor,
+  });
   useEffect(() => {
     if (!activeSlideId || slides.length === 0 || audioDuration === 0) return;
 
@@ -161,15 +215,24 @@ export const SlideSyncTool: React.FC = () => {
         id: Math.random().toString(36).substring(7),
         file: file as File,
         previewUrl: URL.createObjectURL(file as File),
-        text: '',
-        color: TextColor.White,
-        position: TextPosition.BottomLeft,
-        textSize: TextSize.Small,
-        isItalic: false,
+        text: overlayApply.applyToAll && activeSlide ? activeSlide.text : '',
+        color: overlayApply.applyToAll && activeSlide ? activeSlide.color : TextColor.White,
+        position:
+          overlayApply.applyToAll && activeSlide ? activeSlide.position : TextPosition.BottomLeft,
+        textSize: overlayApply.applyToAll && activeSlide ? activeSlide.textSize : TextSize.Small,
+        isItalic: overlayApply.applyToAll && activeSlide ? !!activeSlide.isItalic : false,
         zoom: 1.0,
         offsetX: 0,
         offsetY: 0,
-        filter: FilterMode.Normal,
+        filter: filterApply.applyToAll && activeSlide ? activeSlide.filter : FilterMode.Normal,
+        borderSize: borderApply.applyToAll && activeSlide ? activeSlide.borderSize : BorderSize.None,
+        borderColor: borderApply.applyToAll && activeSlide ? activeSlide.borderColor : TextColor.White,
+        watermarkSettings:
+          overlayApply.applyToAll && activeSlide
+            ? activeSlide.watermarkSettings
+              ? { ...activeSlide.watermarkSettings }
+              : undefined
+            : undefined,
       }));
       setSlides((prev) => [...prev, ...newSlides]);
       if (!activeSlideId && newSlides.length > 0) {
@@ -185,7 +248,35 @@ export const SlideSyncTool: React.FC = () => {
   };
 
   const updateSlide = (id: string, updates: Partial<Slide>) => {
-    setSlides((prev) => prev.map((s) => (s.id === id ? { ...s, ...updates } : s)));
+    setSlides((prev) =>
+      prev.map((s) => {
+        if (s.id === id) {
+          return { ...s, ...updates };
+        }
+        // If updating overlay properties and applyToAll is active
+        const overlayProps = [
+          'text',
+          'color',
+          'position',
+          'textSize',
+          'isItalic',
+          'watermarkSettings',
+        ];
+        if (overlayApply.applyToAll && overlayProps.some((p) => p in updates)) {
+          return { ...s, ...updates };
+        }
+        // If updating filter and applyFilterToAll is active
+        if (filterApply.applyToAll && 'filter' in updates) {
+          return { ...s, ...updates };
+        }
+        // If updating border and applyBorderToAll is active
+        const borderProps = ['borderSize', 'borderColor'];
+        if (borderApply.applyToAll && borderProps.some((p) => p in updates)) {
+          return { ...s, ...updates };
+        }
+        return s;
+      })
+    );
   };
 
   const deleteSlide = (id: string) => {
@@ -237,7 +328,6 @@ export const SlideSyncTool: React.FC = () => {
     }
   };
 
-  const activeSlide = slides.find((s) => s.id === activeSlideId);
 
   const handleEraseProject = () => {
     slides.forEach((s) => URL.revokeObjectURL(s.previewUrl));
@@ -287,6 +377,12 @@ export const SlideSyncTool: React.FC = () => {
           isAudioRendering={isAudioRendering}
           hasContent={slides.length > 0 || audioFile !== null}
           onDeleteAll={() => setShowEraseConfirm(true)}
+          applyToAll={overlayApply.applyToAll}
+          onApplyToAllChange={overlayApply.handleApplyToAllChange}
+          applyFilterToAll={filterApply.applyToAll}
+          onApplyFilterToAllChange={filterApply.handleApplyToAllChange}
+          applyBorderToAll={borderApply.applyToAll}
+          onApplyBorderToAllChange={borderApply.handleApplyToAllChange}
         />
       </div>
 
@@ -359,6 +455,38 @@ export const SlideSyncTool: React.FC = () => {
         confirmLabel={t.common.yesRemove}
         cancelLabel={t.common.cancel}
         Icon={Trash2}
+      />
+
+      <ConfirmationModal
+        isOpen={overlayApply.showConfirm}
+        onClose={() => overlayApply.setShowConfirm(false)}
+        onConfirm={() => overlayApply.confirmApply(true)}
+        title={t.tools.slidesync.applyToAllTitle}
+        message={t.tools.slidesync.applyToAllMsg}
+        confirmLabel={t.tools.photoverlay.yesApply}
+        cancelLabel={t.common.cancel}
+        Icon={PlayCircle}
+      />
+
+      <ConfirmationModal
+        isOpen={filterApply.showConfirm}
+        onClose={() => filterApply.setShowConfirm(false)}
+        onConfirm={() => filterApply.confirmApply(true)}
+        title={t.tools.slidesync.applyFilterToAllTitle}
+        message={t.tools.slidesync.applyFilterToAllMsg}
+        confirmLabel={t.tools.photoverlay.yesApply}
+        cancelLabel={t.common.cancel}
+        Icon={PlayCircle}
+      />
+      <ConfirmationModal
+        isOpen={borderApply.showConfirm}
+        onClose={() => borderApply.setShowConfirm(false)}
+        onConfirm={() => borderApply.confirmApply(true)}
+        title={t.tools.slidesync.applyToAllTitle}
+        message={t.tools.slidesync.applyToAllMsg}
+        confirmLabel={t.tools.photoverlay.yesApply}
+        cancelLabel={t.common.cancel}
+        Icon={PlayCircle}
       />
     </div>
   );

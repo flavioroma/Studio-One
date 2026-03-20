@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Slide, AspectRatio, ExportFormat, FilterMode } from '../../types';
+import { Slide, AspectRatio, ExportFormat, FilterMode, BorderSize } from '../../types';
 import {
   calculateCaptionMetrics,
   calculateCaptionPosition,
@@ -174,7 +174,28 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
             ? 'sepia(100%)'
             : 'none';
 
-      ctx.drawImage(img, baseX + userX, baseY + userY, w, h);
+      // Draw Border
+      if (currentSlide.borderSize && currentSlide.borderSize > 0) {
+        ctx.fillStyle = currentSlide.borderColor || '#ffffff';
+        ctx.fillRect(baseX + userX, baseY + userY, w, h);
+      }
+
+      // Draw image inside border (clip or just draw over)
+      // For SlideSync, we can just draw over if we adjust the dimensions or just draw the border around the image.
+      // PiCollage draws the border filling the whole rect, then clips for the image.
+      // Let's follow PiCollage logic for consistency.
+      const bSize = (currentSlide.borderSize || 0) * (CANVAS_HEIGHT / 1080); // Scale border size
+      
+      if (bSize > 0) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(baseX + userX + bSize, baseY + userY + bSize, w - 2 * bSize, h - 2 * bSize);
+        ctx.clip();
+        ctx.drawImage(img, baseX + userX, baseY + userY, w, h);
+        ctx.restore();
+      } else {
+        ctx.drawImage(img, baseX + userX, baseY + userY, w, h);
+      }
 
       // Reset filter so caption/watermark are unaffected
       ctx.filter = 'none';

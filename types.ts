@@ -82,6 +82,8 @@ export interface Slide extends FramingSettings {
   isItalic?: boolean;
   watermarkSettings?: WatermarkSettings;
   filter?: FilterMode;
+  borderSize?: BorderSize;
+  borderColor?: TextColor;
 }
 
 export interface VideoConfig {
@@ -119,6 +121,8 @@ export interface PhotoItem {
   watermarkSettings: WatermarkSettings;
   framingSettings: FramingSettings;
   filter?: FilterMode;
+  borderSize?: BorderSize;
+  borderColor?: TextColor;
   metadata: { width: number; height: number } | null;
   exifData: any | null;
 }
@@ -150,14 +154,14 @@ export interface PiCollagePicture {
   rotation: number;
   scaleX: number;
   scaleY: number;
-  zoom: number; // For the image inside its frame
-  offsetX: number; // Pan center X
-  offsetY: number; // Pan center Y
+  framingSettings: FramingSettings;
 
   // Properties
   borderSize: BorderSize;
   borderColor: TextColor;
   filter: FilterMode;
+  captionSettings: CaptionSettings;
+  watermarkSettings: WatermarkSettings;
 
   // State
   zIndex: number;

@@ -32,6 +32,8 @@ export const translations = {
       filterNormal: 'Normal',
       filterGrayscale: 'Grayscale',
       filterSepia: 'Sepia',
+      framing: 'Framing',
+      color: 'Color',
     },
     captions: {
       captionText: 'Caption Text',
@@ -179,6 +181,14 @@ export const translations = {
         yesRemoveAll: 'Yes, Remove All',
         removeSlideTitle: 'Remove Slide?',
         removeSlideMsg: 'Are you sure you want to remove this slide? This action cannot be undone.',
+        applyToAll: 'Apply this overlay to all slides',
+        applyFilterToAll: 'Apply this filter to all slides',
+        applyToAllTitle: 'Apply to All Slides?',
+        applyToAllMsg: 'This will overwrite the custom overlay settings of your other slides. Are you sure?',
+        applyFilterToAllTitle: 'Apply to All Slides?',
+        applyFilterToAllMsg: 'This will overwrite the current filter settings of your other slides. Are you sure?',
+        analyze: 'Analyze',
+        autoCaption: 'AI Caption',
       },
       videoverlay: {
         title: 'VideOverlay',
@@ -221,7 +231,6 @@ export const translations = {
       },
       photoverlay: {
         title: 'PhotOverlay',
-        framing: 'Framing',
         uploadPhotos: 'Select or drop Photos',
         awaitingSource: 'Awaiting Source',
         removePhoto: 'Remove Photo',
@@ -312,6 +321,8 @@ export const translations = {
       filterNormal: 'Normale',
       filterGrayscale: 'Scala di grigi',
       filterSepia: 'Seppia',
+      framing: 'Inquadratura',
+      color: 'Colore',
     },
     captions: {
       captionText: 'Testo Didascalia',
@@ -460,6 +471,16 @@ export const translations = {
         removeSlideTitle: 'Rimuovere Immagine?',
         removeSlideMsg:
           "Sei sicuro di voler rimuovere questa immagine? L'azione non può essere annullata.",
+        applyToAll: 'Applica questa sovraimpressione a tutte le immagini',
+        applyFilterToAll: 'Applica questo filtro a tutte le immagini',
+        applyToAllTitle: 'Applicare a Tutte le Immagini?',
+        applyToAllMsg:
+          'Questo sovrascriverà le impostazioni personalizzate delle altre immagini. Sei sicuro?',
+        applyFilterToAllTitle: 'Applicare a Tutte le Immagini?',
+        applyFilterToAllMsg:
+          'Questo sovrascriverà le impostazioni dei filtri delle altre immagini. Sei sicuro?',
+        analyze: 'Analizza',
+        autoCaption: 'AI Caption',
       },
       videoverlay: {
         title: 'VideOverlay',
@@ -503,7 +524,6 @@ export const translations = {
       },
       photoverlay: {
         title: 'PhotOverlay',
-        framing: 'Inquadratura',
         uploadPhotos: 'Seleziona o trascina foto',
         awaitingSource: 'In attesa delle foto',
         removePhoto: 'Rimuovi Foto',

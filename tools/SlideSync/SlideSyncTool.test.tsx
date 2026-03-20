@@ -12,9 +12,29 @@ vi.mock('../../services/PersistenceService', () => ({
   },
 }));
 
-// Mock URL.createObjectURL
 global.URL.createObjectURL = vi.fn(() => 'mock-url');
 global.URL.revokeObjectURL = vi.fn();
+
+// Mock Canvas
+HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
+  drawImage: vi.fn(),
+  fillText: vi.fn(),
+  measureText: vi.fn().mockReturnValue({ width: 100 }),
+  fillRect: vi.fn(),
+} as any);
+
+HTMLCanvasElement.prototype.toBlob = vi.fn((callback) => {
+  callback(new Blob([''], { type: 'image/jpeg' }));
+});
+
+// Mock Icons
+vi.mock('lucide-react', async () => {
+  const actual = await vi.importActual('lucide-react');
+  return {
+    ...actual,
+    PlayCircle: () => <div data-testid="play-circle-icon" />,
+  };
+});
 
 describe('SlideSyncTool', () => {
   beforeEach(() => {
@@ -65,6 +85,9 @@ describe('SlideSyncTool', () => {
 
     await screen.findByAltText('Slide 1');
 
+    // Expand Overlay panel
+    fireEvent.click(screen.getByText(/Overlay/i));
+
     // Add text
     const textarea = screen.getByPlaceholderText(/Enter overlay text/i);
     fireEvent.change(textarea, { target: { value: 'Test Slide Text' } });
@@ -84,6 +107,7 @@ describe('SlideSyncTool', () => {
     fireEvent.change(input, { target: { files: [file] } });
 
     await screen.findByAltText('Slide 1');
+    fireEvent.click(screen.getByText(/Overlay/i));
     fireEvent.change(screen.getByPlaceholderText(/Enter overlay text/i), {
       target: { value: 'Test' },
     });
@@ -102,6 +126,7 @@ describe('SlideSyncTool', () => {
     fireEvent.change(input, { target: { files: [file] } });
 
     await screen.findByAltText('Slide 1');
+    fireEvent.click(screen.getByText(/Overlay/i));
     fireEvent.change(screen.getByPlaceholderText(/Enter overlay text/i), {
       target: { value: 'Test' },
     });
@@ -121,6 +146,9 @@ describe('SlideSyncTool', () => {
     fireEvent.change(input, { target: { files: [file] } });
 
     await screen.findByAltText('Slide 1');
+
+    // Expand Framing panel
+    fireEvent.click(screen.getByText(/Framing/i));
 
     // Change zoom
     const zoomSlider = await screen.findByRole('slider', { name: /magnification/i });

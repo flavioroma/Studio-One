@@ -1,13 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { PiCollagePicture, AspectRatio, BorderSize, FilterMode, TextColor } from '../../types';
+import { PiCollagePicture, AspectRatio, BorderSize, FilterMode, TextColor, FramingSettings, CaptionSettings, WatermarkSettings, TextPosition, TextSize } from '../../types';
 import { PersistenceService } from '../../services/PersistenceService';
 import { PiCollageSidebar } from './PiCollageSidebar';
 import { PiCollageFooter } from './PiCollageFooter';
 import { PiCollageSettingsBar } from './PiCollageSettingsBar';
 import { PiCollageCanvas } from './PiCollageCanvas';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Check } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useApplyToAll } from '../../hooks/useApplyToAll';
+import { calculateCaptionMetrics, calculateCaptionPosition, calculateWatermarkPosition } from '../../utils/captionUtils';
 
 export const PiCollageTool: React.FC = () => {
   const { t } = useLanguage();
@@ -16,6 +18,55 @@ export const PiCollageTool: React.FC = () => {
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>(AspectRatio.Landscape_16_9);
   const [exportFormat, setExportFormat] = useState<'png' | 'jpg'>('png');
   const [showEraseConfirm, setShowEraseConfirm] = useState(false);
+
+  const activePicture = pictures.find((p) => p.id === activePictureId) || null;
+
+  const overlayApply = useApplyToAll<PiCollagePicture>({
+    items: pictures,
+    selectedItem: activePicture,
+    onApply: (selected) => {
+      setPictures((prev) =>
+        prev.map((p) => ({
+          ...p,
+          captionSettings: { ...selected.captionSettings },
+          watermarkSettings: { ...selected.watermarkSettings },
+        }))
+      );
+    },
+    isCustomized: (item, selected) =>
+      (item.captionSettings.text && item.captionSettings.text !== selected.captionSettings.text) ||
+      (!!item.watermarkSettings.file && item.watermarkSettings.file !== selected.watermarkSettings.file),
+  });
+
+  const filterApply = useApplyToAll<PiCollagePicture>({
+    items: pictures,
+    selectedItem: activePicture,
+    onApply: (selected) => {
+      setPictures((prev) =>
+        prev.map((p) => ({
+          ...p,
+          filter: selected.filter,
+        }))
+      );
+    },
+    isCustomized: (item, selected) => item.filter !== selected.filter,
+  });
+
+  const borderApply = useApplyToAll<PiCollagePicture>({
+    items: pictures,
+    selectedItem: activePicture,
+    onApply: (selected) => {
+      setPictures((prev) =>
+        prev.map((p) => ({
+          ...p,
+          borderSize: selected.borderSize,
+          borderColor: selected.borderColor,
+        }))
+      );
+    },
+    isCustomized: (item, selected) =>
+      item.borderSize !== selected.borderSize || item.borderColor !== selected.borderColor,
+  });
 
   const isLoadedRef = useRef(false);
 
@@ -32,6 +83,24 @@ export const PiCollageTool: React.FC = () => {
             zIndex: Math.max(1, p.zIndex || 1),
             x: Math.max(-p.width + 10, Math.min(90, p.x)),
             y: Math.max(-100, Math.min(90, p.y)), // Safety clamp
+            // Handle structure migration (even if user says they don't care, it's safer)
+            framingSettings: p.framingSettings || {
+              zoom: (p as any).zoom || 1,
+              offsetX: (p as any).offsetX || 0,
+              offsetY: (p as any).offsetY || 0,
+            },
+            captionSettings: p.captionSettings || {
+              text: '',
+              color: TextColor.White,
+              position: TextPosition.BottomLeft,
+              textSize: TextSize.Small,
+            },
+            watermarkSettings: p.watermarkSettings || {
+              file: null,
+              position: TextPosition.TopRight,
+              opacity: 0.2,
+              scale: 0.2,
+            },
           };
         });
         setPictures(restored);
@@ -69,10 +138,7 @@ export const PiCollageTool: React.FC = () => {
         });
 
         const ar = img.width / img.height;
-        const maxZ =
-          pictures.length > 0
-            ? Math.max(...pictures.map((p) => p.zIndex), ...newPics.map((p) => p.zIndex))
-            : 0;
+        const maxZ = Math.max(0, ...pictures.map((p) => p.zIndex), ...newPics.map((p) => p.zIndex));
 
         newPics.push({
           id: Math.random().toString(36).substring(7),
@@ -86,12 +152,26 @@ export const PiCollageTool: React.FC = () => {
           rotation: 0,
           scaleX: 1,
           scaleY: 1,
-          zoom: 1,
-          offsetX: 0,
-          offsetY: 0,
+          framingSettings: {
+            zoom: 1,
+            offsetX: 0,
+            offsetY: 0,
+          },
           borderSize: BorderSize.Small,
           borderColor: TextColor.White,
           filter: FilterMode.Normal,
+          captionSettings: {
+            text: '',
+            color: TextColor.White,
+            position: TextPosition.BottomLeft,
+            textSize: TextSize.Small,
+          },
+          watermarkSettings: {
+            file: null,
+            position: TextPosition.TopRight,
+            opacity: 0.2,
+            scale: 0.2,
+          },
           zIndex: maxZ + 1,
           isVisible: true,
         });
@@ -114,6 +194,60 @@ export const PiCollageTool: React.FC = () => {
       }
       return next;
     });
+  };
+
+  const handleCaptionUpdate = (updates: Partial<CaptionSettings>) => {
+    setPictures((prev) =>
+      prev.map((p) => {
+        if (overlayApply.applyToAll || p.id === activePictureId) {
+          return { ...p, captionSettings: { ...p.captionSettings, ...updates } };
+        }
+        return p;
+      })
+    );
+  };
+
+  const handleWatermarkUpdate = (updates: Partial<WatermarkSettings>) => {
+    setPictures((prev) =>
+      prev.map((p) => {
+        if (overlayApply.applyToAll || p.id === activePictureId) {
+          return { ...p, watermarkSettings: { ...p.watermarkSettings, ...updates } };
+        }
+        return p;
+      })
+    );
+  };
+
+  const handleFramingUpdate = (updates: Partial<FramingSettings>) => {
+    if (!activePictureId) return;
+    updatePicture(activePictureId, {
+      framingSettings: {
+        ...pictures.find((p) => p.id === activePictureId)!.framingSettings,
+        ...updates,
+      },
+    });
+  };
+
+  const handleFilterUpdate = (filter: FilterMode) => {
+    setPictures((prev) =>
+      prev.map((p) => {
+        if (filterApply.applyToAll || p.id === activePictureId) {
+          return { ...p, filter };
+        }
+        return p;
+      })
+    );
+  };
+
+  const handleBorderUpdate = (updates: Partial<{ borderSize: BorderSize; borderColor: TextColor }>) => {
+    setPictures((prev) =>
+      prev.map((p) => {
+        if (borderApply.applyToAll || p.id === activePictureId) {
+          return { ...p, ...updates };
+        }
+        return p;
+      })
+    );
   };
 
   const getCanvasDimensions = () => {
@@ -167,19 +301,34 @@ export const PiCollageTool: React.FC = () => {
         if (pic.filter === FilterMode.Sepia) filterStr += 'sepia(100%) ';
         if (filterStr) ctx.filter = filterStr.trim();
 
+        // Apply framing (zoom and offsets)
+        const zoom = pic.framingSettings.zoom || 1.0;
+        const offsetX = (pic.framingSettings.offsetX || 0) * (pxW / 100);
+        const offsetY = (pic.framingSettings.offsetY || 0) * (pxH / 100);
+
+        const drawWidth = pxW * zoom;
+        const drawHeight = pxH * zoom;
+        const drawX = (pxW - drawWidth) / 2 + offsetX;
+        const drawY = (pxH - drawHeight) / 2 + offsetY;
+
         // Draw Border
         if (pic.borderSize > 0) {
-          ctx.fillStyle = pic.borderColor;
-          ctx.fillRect(-pxW / 2, -pxH / 2, pxW, pxH);
+          ctx.fillStyle = pic.borderColor || '#ffffff';
+          ctx.fillRect(drawX - pxW / 2, drawY - pxH / 2, drawWidth, drawHeight);
         }
 
         // Clip area for image contents inside border
-        // Scale border size for 4K (base resolution was 1080 vertical/square, now 2160)
+        // Scale border size for 4K
         const bSize = pic.borderSize * 2;
+        const clipX = drawX - pxW / 2 + bSize;
+        const clipY = drawY - pxH / 2 + bSize;
+        const clipW = drawWidth - 2 * bSize;
+        const clipH = drawHeight - 2 * bSize;
+
+        ctx.save();
         ctx.beginPath();
-        // The internal area
-        ctx.rect(-pxW / 2 + bSize, -pxH / 2 + bSize, pxW - 2 * bSize, pxH - 2 * bSize);
-        ctx.clip(); // clip to inside border
+        ctx.rect(clipX, clipY, clipW, clipH);
+        ctx.clip();
 
         // Load image
         const img = new Image();
@@ -188,34 +337,55 @@ export const PiCollageTool: React.FC = () => {
           img.onload = resolve;
         });
 
-        // Calculate object-fit: cover with zoom and offset
-        const iw = img.width;
-        const ih = img.height;
-        const bw = pxW - 2 * bSize;
-        const bh = pxH - 2 * bSize;
+        // Draw Image
+        ctx.drawImage(img, drawX - pxW / 2, drawY - pxH / 2, drawWidth, drawHeight);
+        ctx.restore();
 
-        const imgRatio = iw / ih;
-        const boxRatio = bw / bh;
+        // Watermark
+        if (pic.watermarkSettings?.file) {
+          const wImg = await new Promise<HTMLImageElement>((resolve, reject) => {
+            const tempImg = new Image();
+            tempImg.onload = () => resolve(tempImg);
+            tempImg.onerror = reject;
+            tempImg.src = URL.createObjectURL(pic.watermarkSettings.file!);
+          });
 
-        let drawW = bw;
-        let drawH = bh;
+          const w = pxW * pic.watermarkSettings.scale;
+          const imgAR = wImg.width / wImg.height;
+          const h = w / imgAR;
+          const pos = calculateWatermarkPosition(pxW, pxH, w, h, pic.watermarkSettings.position);
 
-        if (imgRatio > boxRatio) {
-          drawW = bh * imgRatio;
-        } else {
-          drawH = bw / imgRatio;
+          ctx.save();
+          ctx.globalAlpha = pic.watermarkSettings.opacity;
+          ctx.drawImage(wImg, pos.x - pxW / 2, pos.y - pxH / 2, w, h);
+          ctx.restore();
+          URL.revokeObjectURL(wImg.src);
         }
 
-        // Apply zoom
-        drawW *= pic.zoom;
-        drawH *= pic.zoom;
+        // Caption
+        if (pic.captionSettings?.text) {
+          const metrics = calculateCaptionMetrics(pxW, pxH, {
+            text: pic.captionSettings.text,
+            textSize: pic.captionSettings.textSize,
+          });
+          const position = calculateCaptionPosition(pxW, pxH, metrics, pic.captionSettings.position);
 
-        // Apply Pan Offset
-        const tX = -drawW / 2 + (pic.offsetX / 100) * drawW;
-        const tY = -drawH / 2 + (pic.offsetY / 100) * drawH;
+          const fontStyle = pic.captionSettings.isItalic ? 'italic' : 'normal';
+          ctx.save();
+          ctx.font = `${fontStyle} bold ${metrics.fontSize}px Inter, sans-serif`;
+          ctx.fillStyle = pic.captionSettings.color;
+          ctx.textAlign = position.textAlign as CanvasTextAlign;
+          ctx.textBaseline = 'alphabetic';
+          ctx.shadowColor = 'rgba(0,0,0,0.8)';
+          ctx.shadowBlur = metrics.fontSize * 0.15;
+          ctx.shadowOffsetX = metrics.fontSize * 0.04;
+          ctx.shadowOffsetY = metrics.fontSize * 0.04;
 
-        // Draw Image
-        ctx.drawImage(img, tX, tY, drawW, drawH);
+          metrics.lines.forEach((line, i) => {
+            ctx.fillText(line, position.x - pxW / 2, position.y - pxH / 2 + i * metrics.lineHeight);
+          });
+          ctx.restore();
+        }
 
         ctx.restore();
       }
@@ -295,6 +465,17 @@ export const PiCollageTool: React.FC = () => {
           onImageUpload={handleImageUpload}
           onAspectRatioChange={setAspectRatio}
           onUpdatePicture={updatePicture}
+          onCaptionUpdate={handleCaptionUpdate}
+          onWatermarkUpdate={handleWatermarkUpdate}
+          onFramingUpdate={handleFramingUpdate}
+          onFilterUpdate={handleFilterUpdate}
+          onBorderUpdate={handleBorderUpdate}
+          applyToAll={overlayApply.applyToAll}
+          onApplyToAllChange={overlayApply.handleApplyToAllChange}
+          applyFilterToAll={filterApply.applyToAll}
+          onApplyFilterToAllChange={filterApply.handleApplyToAllChange}
+          applyBorderToAll={borderApply.applyToAll}
+          onApplyBorderToAllChange={borderApply.handleApplyToAllChange}
           onDeleteProject={() => setShowEraseConfirm(true)}
         />
       </div>
@@ -373,6 +554,45 @@ export const PiCollageTool: React.FC = () => {
         confirmLabel={t.tools.slidesync.yesRemoveAll}
         cancelLabel={t.common.cancel}
         Icon={Trash2}
+      />
+
+      <ConfirmationModal
+        isOpen={overlayApply.showConfirm}
+        onClose={() => overlayApply.setShowConfirm(false)}
+        onConfirm={() => overlayApply.confirmApply(true)}
+        title={t.tools.photoverlay.applyToAllTitle}
+        message={t.tools.photoverlay.applyToAllMsg}
+        confirmLabel={t.tools.photoverlay.yesApply}
+        cancelLabel={t.common.cancel}
+        Icon={Check}
+        iconColor="text-tool-picollage"
+        confirmButtonClass="bg-tool-picollage hover:opacity-90"
+      />
+
+      <ConfirmationModal
+        isOpen={filterApply.showConfirm}
+        onClose={() => filterApply.setShowConfirm(false)}
+        onConfirm={() => filterApply.confirmApply(true)}
+        title={t.tools.photoverlay.applyFilterToAllTitle}
+        message={t.tools.photoverlay.applyFilterToAllMsg}
+        confirmLabel={t.tools.photoverlay.yesApply}
+        cancelLabel={t.common.cancel}
+        Icon={Check}
+        iconColor="text-tool-picollage"
+        confirmButtonClass="bg-tool-picollage hover:opacity-90"
+      />
+
+      <ConfirmationModal
+        isOpen={borderApply.showConfirm}
+        onClose={() => borderApply.setShowConfirm(false)}
+        onConfirm={() => borderApply.confirmApply(true)}
+        title={t.tools.photoverlay.applyToAllTitle}
+        message={t.tools.photoverlay.applyToAllMsg}
+        confirmLabel={t.tools.photoverlay.yesApply}
+        cancelLabel={t.common.cancel}
+        Icon={Check}
+        iconColor="text-tool-picollage"
+        confirmButtonClass="bg-tool-picollage hover:opacity-90"
       />
     </div>
   );

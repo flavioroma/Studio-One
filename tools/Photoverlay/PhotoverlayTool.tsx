@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  Image as ImageIcon,
+  Check,
   Download,
   Trash2,
   Loader2,
@@ -8,8 +8,9 @@ import {
   MapPin,
   Monitor,
   Plus,
-  Check,
+  Image as ImageIcon,
 } from 'lucide-react';
+import { useApplyToAll } from '../../hooks/useApplyToAll';
 import {
   TextPosition,
   TextColor,
@@ -20,6 +21,7 @@ import {
   NamingSettings,
   FramingSettings,
   FilterMode,
+  BorderSize,
 } from '../../types';
 import { PersistenceService } from '../../services/PersistenceService';
 import {
@@ -37,13 +39,8 @@ export const PhotoverlayTool: React.FC = () => {
   const { t } = useLanguage();
   const [items, setItems] = useState<PhotoItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [applyToAll, setApplyToAll] = useState(false);
-  const [applyFilterToAll, setApplyFilterToAll] = useState(false);
-
   const [isExporting, setIsExporting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showApplyAllConfirm, setShowApplyAllConfirm] = useState(false);
-  const [showApplyFilterAllConfirm, setShowApplyFilterAllConfirm] = useState(false);
   const [itemToDeleteId, setItemToDeleteId] = useState<string | null>(null);
   const [namingSettings, setNamingSettings] = useState<NamingSettings>({
     keepOriginal: true,
@@ -51,6 +48,7 @@ export const PhotoverlayTool: React.FC = () => {
     value: '',
   });
   const [preserveMetadata, setPreserveMetadata] = useState(true);
+  const [showApplyBorderAllConfirm, setShowApplyBorderAllConfirm] = useState(false);
 
   // Preview Sizing
   const [containerSize, setContainerSize] = useState<{ width: number; height: number }>({
@@ -171,6 +169,8 @@ export const PhotoverlayTool: React.FC = () => {
           offsetY: 0,
         },
         filter: applyFilterToAll && selectedItem ? selectedItem.filter : FilterMode.Normal,
+        borderSize: applyBorderToAll && selectedItem ? selectedItem.borderSize : BorderSize.None,
+        borderColor: applyBorderToAll && selectedItem ? selectedItem.borderColor : TextColor.White,
         metadata: dimensions,
         exifData: exif,
       });
@@ -184,6 +184,59 @@ export const PhotoverlayTool: React.FC = () => {
       return updated;
     });
   };
+
+  const overlayApply = useApplyToAll<PhotoItem>({
+    items,
+    selectedItem,
+    onApply: (selected) => {
+      setItems((prev) =>
+        prev.map((item) => ({
+          ...item,
+          captionSettings: { ...selected.captionSettings },
+          watermarkSettings: { ...selected.watermarkSettings },
+        }))
+      );
+    },
+    isCustomized: (item, selected) =>
+      (item.captionSettings.text && item.captionSettings.text !== selected.captionSettings.text) ||
+      (item.watermarkSettings.file && item.watermarkSettings.file !== selected.watermarkSettings.file),
+  });
+
+  const filterApply = useApplyToAll<PhotoItem>({
+    items,
+    selectedItem,
+    onApply: (selected) => {
+      setItems((prev) =>
+        prev.map((item) => ({
+          ...item,
+          filter: selected.filter,
+        }))
+      );
+    },
+    isCustomized: (item, selected) => item.filter !== selected.filter,
+  });
+  const borderApply = useApplyToAll<PhotoItem>({
+    items,
+    selectedItem,
+    onApply: (selected) => {
+      setItems((prev) =>
+        prev.map((item) => ({
+          ...item,
+          borderSize: selected.borderSize,
+          borderColor: selected.borderColor,
+        }))
+      );
+    },
+    isCustomized: (item, selected) =>
+      item.borderSize !== selected.borderSize || item.borderColor !== selected.borderColor,
+  });
+
+  const applyToAll = overlayApply.applyToAll;
+  const setApplyToAll = overlayApply.setApplyToAll;
+  const applyFilterToAll = filterApply.applyToAll;
+  const setApplyFilterToAll = filterApply.setApplyToAll;
+  const applyBorderToAll = borderApply.applyToAll;
+  const setApplyBorderToAll = borderApply.setApplyToAll;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -220,6 +273,8 @@ export const PhotoverlayTool: React.FC = () => {
             offsetY: 0,
           },
           filter: item.filter || FilterMode.Normal,
+          borderSize: item.borderSize || BorderSize.None,
+          borderColor: item.borderColor || TextColor.White,
           metadata: null,
           exifData: null,
         }));
@@ -286,10 +341,13 @@ export const PhotoverlayTool: React.FC = () => {
         watermarkPosition: item.watermarkSettings.position,
         framingSettings: item.framingSettings,
         filter: item.filter,
+        borderSize: item.borderSize,
+        borderColor: item.borderColor,
       })),
       selectedId,
       applyToAll,
       applyFilterToAll,
+      applyBorderToAll,
       namingSettings,
       preserveMetadata,
     });
@@ -319,7 +377,7 @@ export const PhotoverlayTool: React.FC = () => {
   const handleCaptionUpdate = (updates: Partial<CaptionSettings>) => {
     setItems((prev) =>
       prev.map((item) => {
-        if (applyToAll || item.id === selectedId) {
+        if (overlayApply.applyToAll || item.id === selectedId) {
           return { ...item, captionSettings: { ...item.captionSettings, ...updates } };
         }
         return item;
@@ -330,7 +388,7 @@ export const PhotoverlayTool: React.FC = () => {
   const handleWatermarkUpdate = (updates: Partial<WatermarkSettings>) => {
     setItems((prev) =>
       prev.map((item) => {
-        if (applyToAll || item.id === selectedId) {
+        if (overlayApply.applyToAll || item.id === selectedId) {
           return { ...item, watermarkSettings: { ...item.watermarkSettings, ...updates } };
         }
         return item;
@@ -351,7 +409,7 @@ export const PhotoverlayTool: React.FC = () => {
   const handleFilterUpdate = (filter: FilterMode) => {
     setItems((prev) =>
       prev.map((item) => {
-        if (applyFilterToAll || item.id === selectedId) {
+        if (filterApply.applyToAll || item.id === selectedId) {
           return { ...item, filter };
         }
         return item;
@@ -359,77 +417,19 @@ export const PhotoverlayTool: React.FC = () => {
     );
   };
 
-  const handleApplyToAllChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.checked;
-    if (newValue) {
-      // Check if there are other photos with different settings
-      const hasCaptionOrWatermark = items.some(
-        (item) =>
-          item.id !== selectedId &&
-          ((item.captionSettings.text &&
-            item.captionSettings.text !== selectedItem?.captionSettings.text) ||
-            (item.watermarkSettings.file &&
-              item.watermarkSettings.file !== selectedItem?.watermarkSettings.file))
-      );
-      if (hasCaptionOrWatermark && items.length > 1) {
-        setShowApplyAllConfirm(true);
-      } else {
-        confirmApplyToAll(true);
-      }
-    } else {
-      setApplyToAll(false);
-    }
-  };
+  const handleApplyToAllChange = overlayApply.handleApplyToAllChange;
+  const handleApplyFilterToAllChange = filterApply.handleApplyToAllChange;
+  const handleApplyBorderToAllChange = borderApply.handleApplyToAllChange;
 
-  const confirmApplyToAll = (value: boolean) => {
-    if (value && selectedItem) {
-      setItems((prev) =>
-        prev.map((item) => ({
-          ...item,
-          captionSettings: { ...selectedItem.captionSettings },
-          watermarkSettings: { ...selectedItem.watermarkSettings },
-        }))
-      );
-      setApplyToAll(true);
-    } else {
-      // If rejected, don't set applyToAll to true
-      setApplyToAll(false);
-    }
-    setShowApplyAllConfirm(false);
-  };
-
-  const handleApplyFilterToAllChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.checked;
-    if (newValue) {
-      // Check if there are other photos with different filters
-      const hasDifferentFilter = items.some(
-        (item) =>
-          item.id !== selectedId &&
-          item.filter !== selectedItem?.filter
-      );
-      if (hasDifferentFilter && items.length > 1) {
-        setShowApplyFilterAllConfirm(true);
-      } else {
-        confirmApplyFilterToAll(true);
-      }
-    } else {
-      setApplyFilterToAll(false);
-    }
-  };
-
-  const confirmApplyFilterToAll = (value: boolean) => {
-    if (value && selectedItem) {
-      setItems((prev) =>
-        prev.map((item) => ({
-          ...item,
-          filter: selectedItem.filter,
-        }))
-      );
-      setApplyFilterToAll(true);
-    } else {
-      setApplyFilterToAll(false);
-    }
-    setShowApplyFilterAllConfirm(false);
+  const handleBorderUpdate = (updates: Partial<{ borderSize: BorderSize; borderColor: TextColor }>) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (borderApply.applyToAll || item.id === selectedId) {
+          return { ...item, ...updates };
+        }
+        return item;
+      })
+    );
   };
 
   const handleExport = async () => {
@@ -464,7 +464,24 @@ export const PhotoverlayTool: React.FC = () => {
         const drawX = (canvas.width - drawWidth) / 2 + offsetX;
         const drawY = (canvas.height - drawHeight) / 2 + offsetY;
 
-        ctx.drawImage(imgElement, drawX, drawY, drawWidth, drawHeight);
+        // Draw Border
+        if (item.borderSize && item.borderSize > 0) {
+          ctx.fillStyle = item.borderColor || '#ffffff';
+          ctx.fillRect(drawX, drawY, drawWidth, drawHeight);
+        }
+
+        // Clip area for image content
+        const bSize = item.borderSize || 0;
+        if (bSize > 0) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(drawX + bSize, drawY + bSize, drawWidth - 2 * bSize, drawHeight - 2 * bSize);
+          ctx.clip();
+          ctx.drawImage(imgElement, drawX, drawY, drawWidth, drawHeight);
+          ctx.restore();
+        } else {
+          ctx.drawImage(imgElement, drawX, drawY, drawWidth, drawHeight);
+        }
 
         // Apply filter
         if (item.filter === FilterMode.Grayscale) {
@@ -745,6 +762,9 @@ export const PhotoverlayTool: React.FC = () => {
         onWatermarkUpdate={handleWatermarkUpdate}
         onFramingUpdate={handleFramingUpdate}
         onFilterUpdate={handleFilterUpdate}
+        onBorderUpdate={handleBorderUpdate}
+        applyBorderToAll={applyBorderToAll}
+        onApplyBorderToAllChange={handleApplyBorderToAllChange}
         namingSettings={namingSettings}
         onNamingUpdate={(updates) => setNamingSettings((prev) => ({ ...prev, ...updates }))}
         preserveMetadata={preserveMetadata}
@@ -787,6 +807,8 @@ export const PhotoverlayTool: React.FC = () => {
                       : selectedItem?.filter === FilterMode.Sepia
                         ? 'sepia(100%)'
                         : 'none',
+                    outline: selectedItem?.borderSize && selectedItem.borderSize > 0 ? `${selectedItem.borderSize / 2}px solid ${selectedItem.borderColor}` : 'none',
+                    outlineOffset: `-${(selectedItem?.borderSize || 0) / 2}px`,
                   }}
                 />
 
@@ -970,9 +992,9 @@ export const PhotoverlayTool: React.FC = () => {
       />
 
       <ConfirmationModal
-        isOpen={showApplyAllConfirm}
-        onClose={() => confirmApplyToAll(false)}
-        onConfirm={() => confirmApplyToAll(true)}
+        isOpen={overlayApply.showConfirm}
+        onClose={() => overlayApply.setShowConfirm(false)}
+        onConfirm={() => overlayApply.confirmApply(true)}
         title={t.tools.photoverlay.applyToAllTitle}
         message={t.tools.photoverlay.applyToAllMsg}
         confirmLabel={t.tools.photoverlay.yesApply}
@@ -983,9 +1005,9 @@ export const PhotoverlayTool: React.FC = () => {
       />
 
       <ConfirmationModal
-        isOpen={showApplyFilterAllConfirm}
-        onClose={() => confirmApplyFilterToAll(false)}
-        onConfirm={() => confirmApplyFilterToAll(true)}
+        isOpen={filterApply.showConfirm}
+        onClose={() => filterApply.setShowConfirm(false)}
+        onConfirm={() => filterApply.confirmApply(true)}
         title={t.tools.photoverlay.applyFilterToAllTitle}
         message={t.tools.photoverlay.applyFilterToAllMsg}
         confirmLabel={t.tools.photoverlay.yesApply}
@@ -1011,6 +1033,18 @@ export const PhotoverlayTool: React.FC = () => {
         Icon={Trash2}
         iconColor="text-red-500"
         confirmButtonClass="bg-red-500 hover:bg-red-600"
+      />
+      <ConfirmationModal
+        isOpen={borderApply.showConfirm}
+        onClose={() => borderApply.setShowConfirm(false)}
+        onConfirm={() => borderApply.confirmApply(true)}
+        title={t.tools.photoverlay.applyToAllTitle}
+        message={t.tools.photoverlay.applyToAllMsg}
+        confirmLabel={t.tools.photoverlay.yesApply}
+        cancelLabel={t.common.cancel}
+        Icon={Check}
+        iconColor="text-tool-photoverlay"
+        confirmButtonClass="bg-tool-photoverlay hover:opacity-90"
       />
     </div>
   );
