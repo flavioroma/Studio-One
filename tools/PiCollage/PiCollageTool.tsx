@@ -23,10 +23,17 @@ export const PiCollageTool: React.FC = () => {
     const load = async () => {
       const state = await PersistenceService.loadPiCollageState();
       if (state) {
-        const restored = state.pictures.map((p) => ({
-          ...p,
-          previewUrl: URL.createObjectURL(p.file),
-        }));
+        const restored = state.pictures.map((p) => {
+          // Estimate height percentage if possible, or use a safe range
+          // The exact canvas ratio might change, so we use a conservative range
+          return {
+            ...p,
+            previewUrl: URL.createObjectURL(p.file),
+            zIndex: Math.max(1, p.zIndex || 1),
+            x: Math.max(-p.width + 10, Math.min(90, p.x)),
+            y: Math.max(-100, Math.min(90, p.y)), // Safety clamp
+          };
+        });
         setPictures(restored);
         setAspectRatio(state.aspectRatio);
         setExportFormat(state.exportFormat);
@@ -230,7 +237,14 @@ export const PiCollageTool: React.FC = () => {
     if (!activePictureId) return;
     const p = pictures.find((p) => p.id === activePictureId);
     if (!p) return;
-    updatePicture(activePictureId, { x: p.x + dx, y: p.y + dy });
+
+    const { w, h } = getCanvasDimensions();
+    const heightPerc = (p.width / p.aspectRatio) * (w / h);
+
+    const nextX = Math.max(-p.width + 10, Math.min(90, p.x + dx));
+    const nextY = Math.max(-heightPerc + 10, Math.min(90, p.y + dy));
+
+    updatePicture(activePictureId, { x: nextX, y: nextY });
   };
 
   const rotateActive = (deg: number) => {
@@ -242,9 +256,32 @@ export const PiCollageTool: React.FC = () => {
 
   const reorderZ = (dir: 1 | -1) => {
     if (!activePictureId) return;
-    const p = pictures.find((p) => p.id === activePictureId);
-    if (!p) return;
-    updatePicture(activePictureId, { zIndex: p.zIndex + dir });
+    
+    // 1. Sort pictures by current zIndex
+    const sorted = [...pictures].sort((a, b) => a.zIndex - b.zIndex);
+    const idx = sorted.findIndex((p) => p.id === activePictureId);
+    
+    if (idx === -1) return;
+    
+    // 2. Identify the target index for swapping
+    const nextIdx = idx + dir;
+    if (nextIdx < 0 || nextIdx >= sorted.length) return;
+
+    // 3. Swap the elements in the sorted copy
+    const newSortOrder = [...sorted];
+    const current = newSortOrder[idx];
+    const neighbor = newSortOrder[nextIdx];
+    newSortOrder[idx] = neighbor;
+    newSortOrder[nextIdx] = current;
+
+    // 4. Re-assign zIndex values (1..N) to all pictures based on the new visual order.
+    // This keeps the zIndex state clean and ensures 1 click always = 1 visual swap.
+    setPictures((prev) =>
+      prev.map((p) => {
+        const newPos = newSortOrder.findIndex((o) => o.id === p.id);
+        return { ...p, zIndex: newPos + 1 };
+      })
+    );
   };
 
   return (

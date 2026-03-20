@@ -40,10 +40,10 @@ export const FilterSettingsPanel: React.FC<FilterSettingsPanelProps> = ({
   };
 
   return (
-    <div className="space-y-2">
-      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+    <div className="space-y-4">
+      <h2 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
         {t.common.filters}
-      </label>
+      </h2>
       <div className="grid grid-cols-3 gap-2">
         {options.map((opt) => (
           <button

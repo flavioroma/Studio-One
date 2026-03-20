@@ -319,4 +319,56 @@ describe('PiCollage Aspect Ratio & Export Regression', () => {
     const getHandles = () => document.querySelectorAll('[style*="cursor: nw-resize"]');
     expect(getHandles().length).toBe(1);
   });
+  it('correctly swaps layers and keeps zIndex normalized when moving forward/backward', async () => {
+    global.URL.createObjectURL = vi.fn(() => 'test-url');
+    renderWithLanguage(<PiCollageTool />);
+
+    // Mock images upload
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file1 = new File(['1'], 'img1.png', { type: 'image/png' });
+    const file2 = new File(['2'], 'img2.png', { type: 'image/png' });
+    const file3 = new File(['3'], 'img3.png', { type: 'image/png' });
+
+    fireEvent.change(input, { target: { files: [file1, file2, file3] } });
+
+    await waitFor(() => expect(screen.getAllByAltText('Collage Piece')).toHaveLength(3), {
+      timeout: 3000,
+    });
+
+    const pieces = screen.getAllByAltText('Collage Piece');
+    const getZIndex = (el: HTMLElement) => {
+      const container = el.closest('.transform-gpu') as HTMLElement;
+      return parseInt(container.style.zIndex || '0');
+    };
+
+    // Initial order should be 1, 2, 3
+    expect(getZIndex(pieces[0])).toBe(1);
+    expect(getZIndex(pieces[1])).toBe(2);
+    expect(getZIndex(pieces[2])).toBe(3);
+
+    // Select the second image (zIndex 2)
+    fireEvent.click(pieces[1].closest('[data-testid="image-move-handle"]')!);
+
+    // Click "Bring Forward"
+    const bringForwardBtn = screen.getByTitle(/Bring Forward/i);
+    fireEvent.click(bringForwardBtn);
+
+    // Now pieces[1] should be 3, and pieces[2] should be 2
+    expect(getZIndex(pieces[1])).toBe(3);
+    expect(getZIndex(pieces[2])).toBe(2);
+    expect(getZIndex(pieces[0])).toBe(1);
+
+    // Click "Send Backward" (currently 3, should go back to 2)
+    const sendBackwardBtn = screen.getByTitle(/Send Backward/i);
+    fireEvent.click(sendBackwardBtn);
+
+    expect(getZIndex(pieces[1])).toBe(2);
+    expect(getZIndex(pieces[2])).toBe(3);
+
+    // Click "Send Backward" again (currently 2, should go to 1)
+    fireEvent.click(sendBackwardBtn);
+    expect(getZIndex(pieces[1])).toBe(1);
+    expect(getZIndex(pieces[0])).toBe(2);
+    expect(getZIndex(pieces[2])).toBe(3);
+  });
 });

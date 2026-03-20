@@ -4,11 +4,10 @@ import {
   ArrowDown,
   ArrowLeft,
   ArrowRight,
+  ArrowUpFromLine,
+  ArrowDownFromLine,
   RotateCw,
   RotateCcw,
-  CopyPlus,
-  SquareStack,
-  SquareDashedBottom,
 } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 
@@ -73,14 +72,14 @@ export const PiCollageSettingsBar: React.FC<PiCollageSettingsBarProps> = ({
           className={buttonClass}
           title={t.tools.picollage.bringForward}
         >
-          <SquareStack className="w-4 h-4" />
+          <ArrowUpFromLine className="w-4 h-4" />
         </button>
         <button
           onClick={onSendBackward}
           className={buttonClass}
           title={t.tools.picollage.sendBackward}
         >
-          <SquareDashedBottom className="w-4 h-4" />
+          <ArrowDownFromLine className="w-4 h-4" />
         </button>
       </div>
     </div>

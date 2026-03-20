@@ -182,10 +182,17 @@ export const PiCollageCanvas: React.FC<PiCollageCanvasProps> = ({
     let updates: Partial<PiCollagePicture> = {};
 
     if (interaction.type === 'move') {
-      updates = {
-        x: interaction.initialX + dx,
-        y: interaction.initialY + dy,
-      };
+      let newX = interaction.initialX + dx;
+      let newY = interaction.initialY + dy;
+
+      const pic = pictures.find((p) => p.id === interaction.id);
+      if (pic) {
+        const currentHeightPerc = (pic.width / pic.aspectRatio) * (rect.width / rect.height);
+        newX = Math.max(-pic.width + 10, Math.min(90, newX));
+        newY = Math.max(-currentHeightPerc + 10, Math.min(90, newY));
+      }
+
+      updates = { x: newX, y: newY };
     } else if (interaction.type === 'resize' && interaction.handle) {
       const pic = pictures.find((p) => p.id === interaction.id);
       if (!pic) return;
