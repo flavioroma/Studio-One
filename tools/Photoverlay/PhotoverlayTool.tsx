@@ -19,6 +19,7 @@ import {
   WatermarkSettings,
   NamingSettings,
   FramingSettings,
+  FilterMode,
 } from '../../types';
 import { PersistenceService } from '../../services/PersistenceService';
 import {
@@ -167,6 +168,7 @@ export const PhotoverlayTool: React.FC = () => {
           offsetX: 0,
           offsetY: 0,
         },
+        filter: FilterMode.Normal,
         metadata: dimensions,
         exifData: exif,
       });
@@ -339,6 +341,17 @@ export const PhotoverlayTool: React.FC = () => {
     );
   };
 
+  const handleFilterUpdate = (filter: FilterMode) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id === selectedId) {
+          return { ...item, filter };
+        }
+        return item;
+      })
+    );
+  };
+
   const handleApplyToAllChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.checked;
     if (newValue) {
@@ -411,6 +424,29 @@ export const PhotoverlayTool: React.FC = () => {
         const drawY = (canvas.height - drawHeight) / 2 + offsetY;
 
         ctx.drawImage(imgElement, drawX, drawY, drawWidth, drawHeight);
+
+        // Apply filter
+        if (item.filter === FilterMode.Grayscale) {
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imageData.data;
+          for (let i = 0; i < data.length; i += 4) {
+            const avg = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+            data[i] = avg;
+            data[i + 1] = avg;
+            data[i + 2] = avg;
+          }
+          ctx.putImageData(imageData, 0, 0);
+        } else if (item.filter === FilterMode.Sepia) {
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imageData.data;
+          for (let i = 0; i < data.length; i += 4) {
+            const r = data[i], g = data[i + 1], b = data[i + 2];
+            data[i]     = Math.min(255, r * 0.393 + g * 0.769 + b * 0.189);
+            data[i + 1] = Math.min(255, r * 0.349 + g * 0.686 + b * 0.168);
+            data[i + 2] = Math.min(255, r * 0.272 + g * 0.534 + b * 0.131);
+          }
+          ctx.putImageData(imageData, 0, 0);
+        }
 
         // Watermark
         if (item.watermarkSettings.file) {
@@ -663,6 +699,7 @@ export const PhotoverlayTool: React.FC = () => {
         onCaptionUpdate={handleCaptionUpdate}
         onWatermarkUpdate={handleWatermarkUpdate}
         onFramingUpdate={handleFramingUpdate}
+        onFilterUpdate={handleFilterUpdate}
         namingSettings={namingSettings}
         onNamingUpdate={(updates) => setNamingSettings((prev) => ({ ...prev, ...updates }))}
         preserveMetadata={preserveMetadata}
@@ -700,6 +737,11 @@ export const PhotoverlayTool: React.FC = () => {
                   style={{
                     transform: `translate(${selectedItem?.framingSettings?.offsetX || 0}%, ${selectedItem?.framingSettings?.offsetY || 0}%) scale(${selectedItem?.framingSettings?.zoom || 1})`,
                     transition: 'transform 0.2s ease-out',
+                    filter: selectedItem?.filter === FilterMode.Grayscale
+                      ? 'grayscale(100%)'
+                      : selectedItem?.filter === FilterMode.Sepia
+                        ? 'sepia(100%)'
+                        : 'none',
                   }}
                 />
 

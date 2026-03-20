@@ -10,10 +10,12 @@ import {
   NamingSettings,
   FramingSettings,
   AspectRatio,
+  FilterMode,
 } from '../../types';
 import { CaptionSettingsPanel } from '../../components/CaptionSettingsPanel';
 import { WatermarkSettingsPanel } from '../../components/WatermarkSettingsPanel';
 import { MagnificationSettingsPanel } from '../../components/MagnificationSettingsPanel';
+import { FilterSettingsPanel } from '../../components/FilterSettingsPanel';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { FileDropZone } from '../../components/FileDropZone';
 
@@ -26,6 +28,7 @@ interface PhotoverlaySidebarProps {
   onCaptionUpdate: (updates: Partial<CaptionSettings>) => void;
   onWatermarkUpdate: (updates: Partial<WatermarkSettings>) => void;
   onFramingUpdate: (updates: Partial<FramingSettings>) => void;
+  onFilterUpdate: (filter: FilterMode) => void;
   namingSettings: NamingSettings;
   onNamingUpdate: (updates: Partial<NamingSettings>) => void;
   preserveMetadata: boolean;
@@ -42,6 +45,7 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
   onCaptionUpdate,
   onWatermarkUpdate,
   onFramingUpdate,
+  onFilterUpdate,
   namingSettings,
   onNamingUpdate,
   preserveMetadata,
@@ -200,6 +204,15 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
               </div>
             )}
           </>
+
+          {/* Filter Settings */}
+          {selectedItem && (
+            <FilterSettingsPanel
+              currentFilter={selectedItem.filter}
+              onChange={onFilterUpdate}
+              themeColor="tool-photoverlay"
+            />
+          )}
 
           <h2 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
             {t.common.overlay}

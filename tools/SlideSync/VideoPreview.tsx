@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Slide, AspectRatio, ExportFormat } from '../../types';
+import { Slide, AspectRatio, ExportFormat, FilterMode } from '../../types';
 import {
   calculateCaptionMetrics,
   calculateCaptionPosition,
@@ -166,7 +166,18 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
       const userX = (offsetX / 100) * CANVAS_WIDTH;
       const userY = (offsetY / 100) * CANVAS_HEIGHT;
 
+      // Apply filter before drawing image
+      ctx.filter =
+        currentSlide.filter === FilterMode.Grayscale
+          ? 'grayscale(100%)'
+          : currentSlide.filter === FilterMode.Sepia
+            ? 'sepia(100%)'
+            : 'none';
+
       ctx.drawImage(img, baseX + userX, baseY + userY, w, h);
+
+      // Reset filter so caption/watermark are unaffected
+      ctx.filter = 'none';
     } catch (e) {}
 
     if (currentSlide.text) {

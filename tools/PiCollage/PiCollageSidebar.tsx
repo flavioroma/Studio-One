@@ -3,6 +3,7 @@ import { Trash2, Monitor, Smartphone, Square, Tablet } from 'lucide-react';
 import { AspectRatio, PiCollagePicture, BorderSize, FilterMode } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { FileDropZone } from '../../components/FileDropZone';
+import { FilterSettingsPanel } from '../../components/FilterSettingsPanel';
 
 interface PiCollageSidebarProps {
   pictures: PiCollagePicture[];
@@ -39,11 +40,7 @@ export const PiCollageSidebar: React.FC<PiCollageSidebarProps> = ({
     { id: BorderSize.Large, label: t.tools.picollage.borderLarge },
   ];
 
-  const filterOptions = [
-    { id: FilterMode.Normal, label: t.tools.picollage.filterNormal },
-    { id: FilterMode.Grayscale, label: t.tools.picollage.filterGrayscale },
-    { id: FilterMode.Sepia, label: t.tools.picollage.filterSepia },
-  ];
+
 
   const activePicture = pictures.find((p) => p.id === activePictureId);
 
@@ -126,26 +123,11 @@ export const PiCollageSidebar: React.FC<PiCollageSidebarProps> = ({
                 </div>
 
                 {/* Filter Settings */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                    {t.tools.picollage.filters}
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {filterOptions.map((opt) => (
-                      <button
-                        key={opt.id}
-                        onClick={() => onUpdatePicture(activePicture.id, { filter: opt.id })}
-                        className={`p-2 rounded-lg text-[10px] font-bold uppercase transition-all border ${
-                          activePicture.filter === opt.id
-                            ? 'bg-tool-picollage/20 border-tool-picollage text-tool-picollage'
-                            : 'bg-slate-700/50 border-slate-600 hover:border-tool-picollage/40'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <FilterSettingsPanel
+                  currentFilter={activePicture.filter}
+                  onChange={(filter) => onUpdatePicture(activePicture.id, { filter })}
+                  themeColor="tool-picollage"
+                />
 
                 {/* Framing/Magnification Settings */}
                 <div className="space-y-4 bg-slate-700/30 p-4 rounded-xl border border-slate-600/50">

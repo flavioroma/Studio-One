@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { PlayCircle, Trash2 } from 'lucide-react';
-import { Slide, TextPosition, TextColor, AspectRatio, TextSize } from '../../types';
+import { Slide, TextPosition, TextColor, AspectRatio, TextSize, FilterMode } from '../../types';
 import { generateCaptionForImage } from '../../services/geminiService';
 import { PersistenceService, AudioTrackItem } from '../../services/PersistenceService';
 import { SlideSyncSidebar } from './SlideSyncSidebar';
@@ -169,6 +169,7 @@ export const SlideSyncTool: React.FC = () => {
         zoom: 1.0,
         offsetX: 0,
         offsetY: 0,
+        filter: FilterMode.Normal,
       }));
       setSlides((prev) => [...prev, ...newSlides]);
       if (!activeSlideId && newSlides.length > 0) {

@@ -1,12 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Slide, AspectRatio, TextPosition } from '../../types';
+import { Slide, AspectRatio, TextPosition, FilterMode } from '../../types';
 import { AudioTrackItem } from '../../services/PersistenceService';
 import { calculateCaptionMetrics, calculateCaptionPosition } from '../../utils/captionUtils';
 import {
-  Maximize,
-  Move,
-  AlignHorizontalSpaceAround,
-  AlignVerticalSpaceAround,
   Plus,
   Music,
   Trash2,
@@ -20,6 +16,7 @@ import {
 import { CaptionSettingsPanel } from '../../components/CaptionSettingsPanel';
 import { WatermarkSettingsPanel } from '../../components/WatermarkSettingsPanel';
 import { MagnificationSettingsPanel } from '../../components/MagnificationSettingsPanel';
+import { FilterSettingsPanel } from '../../components/FilterSettingsPanel';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface SlideSyncSidebarProps {
@@ -336,6 +333,13 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
             themeColor="tool-slidesync"
             captionText={slide.text}
             getCaptionStyle={getCaptionStyle}
+          />
+
+          {/* Filter Settings */}
+          <FilterSettingsPanel
+            currentFilter={slide.filter}
+            onChange={(filter) => onUpdate({ filter })}
+            themeColor="tool-slidesync"
           />
 
           <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">

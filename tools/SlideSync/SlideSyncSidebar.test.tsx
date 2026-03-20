@@ -2,7 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { SlideSyncSidebar } from './SlideSyncSidebar';
 import { LanguageProvider } from '../../contexts/LanguageContext';
-import { AspectRatio, TextColor, TextPosition, TextSize } from '../../types';
+import { AspectRatio, TextColor, TextPosition, TextSize, FilterMode } from '../../types';
 
 describe('SlideSyncSidebar', () => {
   const mockSlide = {
@@ -85,6 +85,21 @@ describe('SlideSyncSidebar', () => {
   it('renders watermark settings when a slide is selected', () => {
     renderWithContext({ ...defaultProps, slide: mockSlide });
     expect(screen.getAllByText(/Watermark/i).length).toBeGreaterThan(0);
+  });
+
+  it('renders filter buttons when a slide is selected', () => {
+    renderWithContext({ ...defaultProps, slide: mockSlide });
+    expect(screen.getByText(/Filters/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Normal/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Grayscale/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sepia/i)).toBeInTheDocument();
+  });
+
+  it('calls onUpdate with grayscale filter when Grayscale button is clicked', () => {
+    renderWithContext({ ...defaultProps, slide: mockSlide });
+    const bwBtn = screen.getByText(/Grayscale/i);
+    fireEvent.click(bwBtn);
+    expect(defaultProps.onUpdate).toHaveBeenCalledWith({ filter: FilterMode.Grayscale });
   });
 
   it('calls onDeleteAll when erase button is clicked', () => {

@@ -81,6 +81,7 @@ export interface Slide extends FramingSettings {
   textSize: TextSize;
   isItalic?: boolean;
   watermarkSettings?: WatermarkSettings;
+  filter?: FilterMode;
 }
 
 export interface VideoConfig {
@@ -117,6 +118,7 @@ export interface PhotoItem {
   captionSettings: CaptionSettings;
   watermarkSettings: WatermarkSettings;
   framingSettings: FramingSettings;
+  filter?: FilterMode;
   metadata: { width: number; height: number } | null;
   exifData: any | null;
 }
