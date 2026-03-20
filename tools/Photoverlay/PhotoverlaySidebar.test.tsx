@@ -10,6 +10,8 @@ describe('PhotoverlaySidebar', () => {
     selectedItem: null,
     applyToAll: false,
     onApplyToAllChange: vi.fn(),
+    applyFilterToAll: false,
+    onApplyFilterToAllChange: vi.fn(),
     onFileChange: vi.fn(),
     onCaptionUpdate: vi.fn(),
     onWatermarkUpdate: vi.fn(),
@@ -85,6 +87,7 @@ describe('PhotoverlaySidebar', () => {
       },
       watermarkSettings: { file: null, position: TextPosition.TopRight, opacity: 0.2, scale: 0.2 },
       framingSettings: { zoom: 1, offsetX: 0, offsetY: 0 },
+      filter: FilterMode.Normal,
       metadata: null,
       exifData: null,
     };
@@ -115,7 +118,7 @@ describe('PhotoverlaySidebar', () => {
       },
       watermarkSettings: { file: null, position: TextPosition.TopRight, opacity: 0.2, scale: 0.2 },
       framingSettings: { zoom: 1, offsetX: 0, offsetY: 0 },
-      filter: FilterMode.Normal,
+      filter: FilterMode.Grayscale,
       metadata: null,
       exifData: null,
     };
@@ -140,7 +143,7 @@ describe('PhotoverlaySidebar', () => {
       },
       watermarkSettings: { file: null, position: TextPosition.TopRight, opacity: 0.2, scale: 0.2 },
       framingSettings: { zoom: 1, offsetX: 0, offsetY: 0 },
-      filter: FilterMode.Normal,
+      filter: FilterMode.Grayscale,
       metadata: null,
       exifData: null,
     };

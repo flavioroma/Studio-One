@@ -38,10 +38,12 @@ export const PhotoverlayTool: React.FC = () => {
   const [items, setItems] = useState<PhotoItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [applyToAll, setApplyToAll] = useState(false);
+  const [applyFilterToAll, setApplyFilterToAll] = useState(false);
 
   const [isExporting, setIsExporting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showApplyAllConfirm, setShowApplyAllConfirm] = useState(false);
+  const [showApplyFilterAllConfirm, setShowApplyFilterAllConfirm] = useState(false);
   const [itemToDeleteId, setItemToDeleteId] = useState<string | null>(null);
   const [namingSettings, setNamingSettings] = useState<NamingSettings>({
     keepOriginal: true,
@@ -168,7 +170,7 @@ export const PhotoverlayTool: React.FC = () => {
           offsetX: 0,
           offsetY: 0,
         },
-        filter: FilterMode.Normal,
+        filter: applyFilterToAll && selectedItem ? selectedItem.filter : FilterMode.Normal,
         metadata: dimensions,
         exifData: exif,
       });
@@ -217,6 +219,7 @@ export const PhotoverlayTool: React.FC = () => {
             offsetX: 0,
             offsetY: 0,
           },
+          filter: item.filter || FilterMode.Normal,
           metadata: null,
           exifData: null,
         }));
@@ -245,6 +248,7 @@ export const PhotoverlayTool: React.FC = () => {
               captionSettings: item.captionSettings,
               watermarkSettings: item.watermarkSettings,
               framingSettings: item.framingSettings,
+              filter: item.filter,
               metadata: dimensions,
               exifData: exif,
             };
@@ -254,6 +258,7 @@ export const PhotoverlayTool: React.FC = () => {
         setItems(finalItems);
         setSelectedId(state.selectedId || finalItems[0].id);
         setApplyToAll(state.applyToAll || false);
+        setApplyFilterToAll(state.applyFilterToAll || false);
         if (state.namingSettings) {
           setNamingSettings(state.namingSettings);
         }
@@ -280,9 +285,11 @@ export const PhotoverlayTool: React.FC = () => {
         watermarkFile: item.watermarkSettings.file,
         watermarkPosition: item.watermarkSettings.position,
         framingSettings: item.framingSettings,
+        filter: item.filter,
       })),
       selectedId,
       applyToAll,
+      applyFilterToAll,
       namingSettings,
       preserveMetadata,
     });
@@ -295,7 +302,7 @@ export const PhotoverlayTool: React.FC = () => {
       clearTimeout(timeoutId);
       saveState();
     };
-  }, [items, selectedId, applyToAll, namingSettings, preserveMetadata]);
+  }, [items, selectedId, applyToAll, applyFilterToAll, namingSettings, preserveMetadata]);
 
   // Handle browser refresh/close
   useEffect(() => {
@@ -307,7 +314,7 @@ export const PhotoverlayTool: React.FC = () => {
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [items, selectedId, applyToAll, namingSettings, preserveMetadata]);
+  }, [items, selectedId, applyToAll, applyFilterToAll, namingSettings, preserveMetadata]);
 
   const handleCaptionUpdate = (updates: Partial<CaptionSettings>) => {
     setItems((prev) =>
@@ -344,7 +351,7 @@ export const PhotoverlayTool: React.FC = () => {
   const handleFilterUpdate = (filter: FilterMode) => {
     setItems((prev) =>
       prev.map((item) => {
-        if (item.id === selectedId) {
+        if (applyFilterToAll || item.id === selectedId) {
           return { ...item, filter };
         }
         return item;
@@ -389,6 +396,40 @@ export const PhotoverlayTool: React.FC = () => {
       setApplyToAll(false);
     }
     setShowApplyAllConfirm(false);
+  };
+
+  const handleApplyFilterToAllChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.checked;
+    if (newValue) {
+      // Check if there are other photos with different filters
+      const hasDifferentFilter = items.some(
+        (item) =>
+          item.id !== selectedId &&
+          item.filter !== selectedItem?.filter
+      );
+      if (hasDifferentFilter && items.length > 1) {
+        setShowApplyFilterAllConfirm(true);
+      } else {
+        confirmApplyFilterToAll(true);
+      }
+    } else {
+      setApplyFilterToAll(false);
+    }
+  };
+
+  const confirmApplyFilterToAll = (value: boolean) => {
+    if (value && selectedItem) {
+      setItems((prev) =>
+        prev.map((item) => ({
+          ...item,
+          filter: selectedItem.filter,
+        }))
+      );
+      setApplyFilterToAll(true);
+    } else {
+      setApplyFilterToAll(false);
+    }
+    setShowApplyFilterAllConfirm(false);
   };
 
   const handleExport = async () => {
@@ -574,7 +615,8 @@ export const PhotoverlayTool: React.FC = () => {
       !!item.watermarkSettings.file ||
       item.framingSettings.zoom !== 1 ||
       item.framingSettings.offsetX !== 0 ||
-      item.framingSettings.offsetY !== 0;
+      item.framingSettings.offsetY !== 0 ||
+      item.filter !== FilterMode.Normal;
 
     if (isCustomized) {
       setItemToDeleteId(id);
@@ -593,6 +635,7 @@ export const PhotoverlayTool: React.FC = () => {
       items: [],
       selectedId: null,
       applyToAll: false,
+      applyFilterToAll: false,
     });
   };
 
@@ -695,6 +738,8 @@ export const PhotoverlayTool: React.FC = () => {
         selectedItem={selectedItem}
         applyToAll={applyToAll}
         onApplyToAllChange={handleApplyToAllChange}
+        applyFilterToAll={applyFilterToAll}
+        onApplyFilterToAllChange={handleApplyFilterToAllChange}
         onFileChange={handleFileChange}
         onCaptionUpdate={handleCaptionUpdate}
         onWatermarkUpdate={handleWatermarkUpdate}
@@ -800,7 +845,8 @@ export const PhotoverlayTool: React.FC = () => {
                         item.watermarkSettings.file ||
                         item.framingSettings.zoom !== 1 ||
                         item.framingSettings.offsetX !== 0 ||
-                        item.framingSettings.offsetY !== 0) && (
+                        item.framingSettings.offsetY !== 0 ||
+                        item.filter !== FilterMode.Normal) && (
                         <div className="absolute top-2 right-2 z-10">
                           <div
                             className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"
@@ -919,6 +965,8 @@ export const PhotoverlayTool: React.FC = () => {
         confirmLabel={t.tools.photoverlay.yesRemoveAll}
         cancelLabel={t.common.cancel}
         Icon={Trash2}
+        iconColor="text-red-500"
+        confirmButtonClass="bg-red-500 hover:bg-red-600"
       />
 
       <ConfirmationModal
@@ -930,6 +978,21 @@ export const PhotoverlayTool: React.FC = () => {
         confirmLabel={t.tools.photoverlay.yesApply}
         cancelLabel={t.common.cancel}
         Icon={Check}
+        iconColor="text-tool-photoverlay"
+        confirmButtonClass="bg-tool-photoverlay hover:opacity-90"
+      />
+
+      <ConfirmationModal
+        isOpen={showApplyFilterAllConfirm}
+        onClose={() => confirmApplyFilterToAll(false)}
+        onConfirm={() => confirmApplyFilterToAll(true)}
+        title={t.tools.photoverlay.applyFilterToAllTitle}
+        message={t.tools.photoverlay.applyFilterToAllMsg}
+        confirmLabel={t.tools.photoverlay.yesApply}
+        cancelLabel={t.common.cancel}
+        Icon={Check}
+        iconColor="text-tool-photoverlay"
+        confirmButtonClass="bg-tool-photoverlay hover:opacity-90"
       />
 
       <ConfirmationModal
@@ -946,6 +1009,8 @@ export const PhotoverlayTool: React.FC = () => {
         confirmLabel={t.common.yesRemove}
         cancelLabel={t.common.cancel}
         Icon={Trash2}
+        iconColor="text-red-500"
+        confirmButtonClass="bg-red-500 hover:bg-red-600"
       />
     </div>
   );

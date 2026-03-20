@@ -222,7 +222,6 @@ export const translations = {
       photoverlay: {
         title: 'PhotOverlay',
         framing: 'Framing',
-        selectPhoto: 'Select a photo to add overlays',
         uploadPhotos: 'Select or drop Photos',
         awaitingSource: 'Awaiting Source',
         removePhoto: 'Remove Photo',
@@ -233,17 +232,22 @@ export const translations = {
         exportFailed: 'Export failed. See console.',
         panImage: 'Pan Image',
         applyToAll: 'Apply this overlay to all photos',
+        applyFilterToAll: 'Apply this filter to all photos',
         exportAllPhotos: 'EXPORT ALL PHOTOS',
         keepOriginalNames: 'Keep the original names of files',
         applyToAllTitle: 'Apply to All Photos?',
         applyToAllMsg:
           'This will overwrite the custom overlay settings of your other photos. Are you sure?',
+        applyFilterToAllTitle: 'Apply to All Photos?',
+        applyFilterToAllMsg:
+          'This will overwrite the current filter settings of your other photos. Are you sure?',
         yesApply: 'Yes, Apply',
         removeAllPhotosTitle: 'Remove All Photos?',
         removeAllPhotosMsg:
           'Are you sure you want to remove all photos? This action cannot be undone.',
         yesRemoveAll: 'Yes, Remove All',
         preserveMetadata: 'Preserve image metadata',
+        pictureProperties: 'Picture Properties',
       },
       picollage: {
         title: 'PiCollage',
@@ -500,7 +504,6 @@ export const translations = {
       photoverlay: {
         title: 'PhotOverlay',
         framing: 'Inquadratura',
-        selectPhoto: 'Seleziona una foto per aggiungere overlay',
         uploadPhotos: 'Seleziona o trascina foto',
         awaitingSource: 'In attesa delle foto',
         removePhoto: 'Rimuovi Foto',
@@ -512,17 +515,22 @@ export const translations = {
         exportFailed: 'Esportazione fallita. Vedi la console.',
         panImage: 'Sposta Immagine',
         applyToAll: 'Applica questa sovraimpressione a tutte le foto',
+        applyFilterToAll: 'Applica questo filtro a tutte le foto',
         exportAllPhotos: 'ESPORTA TUTTE LE FOTO',
         keepOriginalNames: 'Mantieni i nomi originali dei file',
         applyToAllTitle: 'Applicare a Tutte le Foto?',
         applyToAllMsg:
           'Questo sovrascriverà le impostazioni personalizzate delle altre foto. Sei sicuro?',
+        applyFilterToAllTitle: 'Applicare a Tutte le Foto?',
+        applyFilterToAllMsg:
+          'Questo sovrascriverà le impostazioni dei filtri delle altre foto. Sei sicuro?',
         yesApply: 'Sì, Applica',
         removeAllPhotosTitle: 'Rimuovere Tutte le Foto?',
         removeAllPhotosMsg:
           "Sei sicuro di voler rimuovere tutte le foto? L'azione non può essere annullata.",
         yesRemoveAll: 'Sì, Rimuovi Tutte',
         preserveMetadata: 'Preserve i metadati delle immagini',
+        pictureProperties: 'Proprietà Immagine',
       },
       picollage: {
         title: 'PiCollage',

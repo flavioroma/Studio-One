@@ -12,9 +12,8 @@ import {
   AspectRatio,
   FilterMode,
 } from '../../types';
-import { CaptionSettingsPanel } from '../../components/CaptionSettingsPanel';
-import { WatermarkSettingsPanel } from '../../components/WatermarkSettingsPanel';
-import { MagnificationSettingsPanel } from '../../components/MagnificationSettingsPanel';
+import { FramingSettingsPanel } from '../../components/FramingSettingsPanel';
+import { OverlaySettingsPanel } from '../../components/OverlaySettingsPanel';
 import { FilterSettingsPanel } from '../../components/FilterSettingsPanel';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { FileDropZone } from '../../components/FileDropZone';
@@ -24,6 +23,8 @@ interface PhotoverlaySidebarProps {
   selectedItem: PhotoItem | null;
   applyToAll: boolean;
   onApplyToAllChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  applyFilterToAll: boolean;
+  onApplyFilterToAllChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onCaptionUpdate: (updates: Partial<CaptionSettings>) => void;
   onWatermarkUpdate: (updates: Partial<WatermarkSettings>) => void;
@@ -41,6 +42,8 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
   selectedItem,
   applyToAll,
   onApplyToAllChange,
+  applyFilterToAll,
+  onApplyFilterToAllChange,
   onFileChange,
   onCaptionUpdate,
   onWatermarkUpdate,
@@ -187,59 +190,54 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
               </div>
             </div>
           </div>
-          <h2 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
-            {t.tools.photoverlay.framing}
-          </h2>
-          <>
-            {selectedItem && (
-              <div className="px-1">
-                <MagnificationSettingsPanel
-                  imageUrl={selectedItem.imageUrl}
-                  settings={selectedItem.framingSettings}
-                  onUpdate={onFramingUpdate}
-                  aspectRatio={AspectRatio.Original}
-                  sourceDimensions={selectedItem.metadata}
-                  themeColor="tool-photoverlay"
-                />
-              </div>
-            )}
-          </>
 
-          {/* Filter Settings */}
+          <hr className="border-slate-700 my-2 pt-4" />
+
+          <h3 className="mt-2 text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
+            {t.tools.photoverlay.pictureProperties}
+          </h3>
+
+          {/* New Collapsible Framing Section */}
           {selectedItem && (
-            <FilterSettingsPanel
-              currentFilter={selectedItem.filter}
-              onChange={onFilterUpdate}
+            <FramingSettingsPanel
+              key={`framing-${selectedItem.id}`}
+              imageUrl={selectedItem.imageUrl}
+              settings={selectedItem.framingSettings}
+              onUpdate={onFramingUpdate}
+              aspectRatio={AspectRatio.Original}
+              sourceDimensions={selectedItem.metadata}
               themeColor="tool-photoverlay"
+              defaultExpanded={
+                selectedItem.framingSettings.zoom !== 1 ||
+                selectedItem.framingSettings.offsetX !== 0 ||
+                selectedItem.framingSettings.offsetY !== 0
+              }
             />
           )}
 
-          <h2 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
-            {t.common.overlay}
-          </h2>
+          {/* New Collapsible Filter Section */}
+          {selectedItem && (
+            <FilterSettingsPanel
+              key={`filter-${selectedItem.id}`}
+              currentFilter={selectedItem.filter}
+              onChange={onFilterUpdate}
+              themeColor="tool-photoverlay"
+              collapsible
+              applyToAll={applyFilterToAll}
+              onApplyToAllChange={onApplyFilterToAllChange}
+              defaultExpanded={
+                !!selectedItem.filter && selectedItem.filter !== FilterMode.Normal
+              }
+            />
+          )}
 
-          <div className="p-4 bg-slate-700/50 rounded-2xl border border-slate-600 hover:border-tool-photoverlay/40 hover:bg-slate-700/50 transition-all">
-            <label className="flex items-center gap-3 cursor-pointer group">
-              <div
-                className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${applyToAll ? 'bg-tool-photoverlay border-tool-photoverlay' : 'border-slate-500 group-hover:border-tool-photoverlay/80'}`}
-              >
-                {applyToAll && <Check className="w-3.5 h-3.5 text-white stroke-[3px]" />}
-              </div>
-              <span className="text-xs font-bold text-slate-300 group-hover:text-slate-100 transition-colors">
-                {t.tools.photoverlay.applyToAll}
-              </span>
-              <input
-                type="checkbox"
-                checked={applyToAll}
-                onChange={onApplyToAllChange}
-                className="hidden"
-              />
-            </label>
-          </div>
-
-          <div className="space-y-8 animate-fadeIn pb-8">
-            <CaptionSettingsPanel
-              settings={
+          {/* New Collapsible Overlay Section */}
+          {selectedItem && (
+            <OverlaySettingsPanel
+              key={`overlay-${selectedItem.id}`}
+              applyToAll={applyToAll}
+              onApplyToAllChange={onApplyToAllChange}
+              captionSettings={
                 selectedItem?.captionSettings || {
                   text: '',
                   color: TextColor.White,
@@ -248,12 +246,8 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
                   isItalic: false,
                 }
               }
-              onUpdate={onCaptionUpdate}
-              themeColor="tool-photoverlay"
-            />
-
-            <WatermarkSettingsPanel
-              settings={
+              onCaptionUpdate={onCaptionUpdate}
+              watermarkSettings={
                 selectedItem?.watermarkSettings || {
                   file: null,
                   position: TextPosition.TopRight,
@@ -261,10 +255,14 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
                   scale: 0.2,
                 }
               }
-              onUpdate={onWatermarkUpdate}
+              onWatermarkUpdate={onWatermarkUpdate}
               themeColor="tool-photoverlay"
+              defaultExpanded={
+                (selectedItem?.captionSettings?.text && selectedItem.captionSettings.text !== '') ||
+                !!selectedItem?.watermarkSettings?.file
+              }
             />
-          </div>
+          )}
 
           <div className="pt-6 mt-auto border-t border-slate-700">
             <button

@@ -10,6 +10,7 @@ import {
   NamingSettings,
   FramingSettings,
   WatermarkSettings,
+  FilterMode,
 } from '../types';
 
 const SLIDESYNC_KEY = 'slidesync_state_v1';
@@ -52,27 +53,17 @@ export interface PhotoItemState {
   watermarkFile?: File | null;
   watermarkPosition?: TextPosition;
   framingSettings?: FramingSettings;
+  filter?: FilterMode;
 }
 
 export interface PhotoverlayState {
   items: PhotoItemState[];
   selectedId: string | null;
   applyToAll: boolean;
+  applyFilterToAll?: boolean;
   exportAsArchive?: boolean;
   namingSettings?: NamingSettings;
   preserveMetadata?: boolean;
-}
-
-// For backward compatibility
-export interface LegacyPhotoverlayState {
-  file: File | null;
-  caption: string;
-  color: TextColor;
-  position: TextPosition;
-  textSize: TextSize;
-  isItalic?: boolean;
-  watermarkFile?: File | null;
-  watermarkPosition?: TextPosition;
 }
 
 export interface AudioTrackItem {
@@ -86,14 +77,6 @@ export interface AudioTrackItem {
 export interface AudioTrimState {
   tracks: AudioTrackItem[];
   selectedId: string | null;
-}
-
-// For backward compatibility
-export interface LegacyAudioTrimState {
-  file: File | null;
-  startTime: number;
-  endTime: number;
-  exportFormat: 'wav' | 'mp3';
 }
 
 export interface PiCollageState {
@@ -150,33 +133,9 @@ export class PersistenceService {
 
   static async loadPhotoverlayState(): Promise<PhotoverlayState | null> {
     try {
-      const state = await get<any>(PHOTOVERLAY_KEY);
+      const state = await get<PhotoverlayState>(PHOTOVERLAY_KEY);
       if (!state) return null;
 
-      // Migrate legacy state
-      if ('file' in state) {
-        const legacy = state as LegacyPhotoverlayState;
-        if (!legacy.file) return null;
-
-        const id = Math.random().toString(36).substr(2, 9);
-        return {
-          items: [
-            {
-              id,
-              file: legacy.file,
-              caption: legacy.caption || '',
-              color: legacy.color || TextColor.White,
-              position: legacy.position || TextPosition.BottomLeft,
-              textSize: legacy.textSize || TextSize.Small,
-              isItalic: legacy.isItalic || false,
-              watermarkFile: legacy.watermarkFile || null,
-              watermarkPosition: legacy.watermarkPosition || TextPosition.TopRight,
-            },
-          ],
-          selectedId: id,
-          applyToAll: true,
-        };
-      }
 
       return {
         ...state,
@@ -203,28 +162,9 @@ export class PersistenceService {
 
   static async loadAudioTrimState(): Promise<AudioTrimState | null> {
     try {
-      const state = await get<any>(AUDIOTRIM_KEY);
+      const state = await get<AudioTrimState>(AUDIOTRIM_KEY);
       if (!state) return null;
 
-      // Migrate legacy single-file state
-      if ('file' in state) {
-        const legacy = state as LegacyAudioTrimState;
-        if (!legacy.file) return null;
-
-        const id = Math.random().toString(36).substr(2, 9);
-        return {
-          tracks: [
-            {
-              id,
-              file: legacy.file,
-              startTime: legacy.startTime,
-              endTime: legacy.endTime,
-              exportFormat: legacy.exportFormat,
-            },
-          ],
-          selectedId: id,
-        };
-      }
 
       return state as AudioTrimState;
     } catch (error) {

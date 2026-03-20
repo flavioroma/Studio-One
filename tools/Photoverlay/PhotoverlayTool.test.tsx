@@ -130,6 +130,9 @@ describe('PhotoverlayTool', () => {
     renderWithContext();
     await uploadFile();
 
+    // Expand Overlay panel
+    fireEvent.click(screen.getByText(/Overlay/i));
+
     // Add caption
     const textarea = screen.getByPlaceholderText(/Enter overlay text/i);
     fireEvent.change(textarea, { target: { value: 'Test Caption' } });
@@ -146,6 +149,7 @@ describe('PhotoverlayTool', () => {
     renderWithContext();
     await uploadFile();
 
+    fireEvent.click(screen.getByText(/Overlay/i));
     fireEvent.change(screen.getByPlaceholderText(/Enter overlay text/i), {
       target: { value: 'Test' },
     });
@@ -163,6 +167,7 @@ describe('PhotoverlayTool', () => {
     renderWithContext();
     await uploadFile();
 
+    fireEvent.click(screen.getByText(/Overlay/i));
     fireEvent.change(screen.getByPlaceholderText(/Enter overlay text/i), {
       target: { value: 'Test' },
     });
@@ -180,6 +185,9 @@ describe('PhotoverlayTool', () => {
   it('shows confirmation modal when image has been zoomed', async () => {
     renderWithContext();
     await uploadFile();
+
+    // Expand Framing panel
+    fireEvent.click(screen.getByText(/Framing/i));
 
     // Wait for the slider to be available
     const zoomSlider = await screen.findByRole('slider', { name: /magnification/i });
@@ -219,10 +227,12 @@ describe('PhotoverlayTool', () => {
     // but we can check if it gets updated when we change the first one.
 
     // 2. Set zoom on first photo
+    fireEvent.click(screen.getByText(/Framing/i));
     const zoomSlider = await screen.findByRole('slider', { name: /magnification/i });
     fireEvent.change(zoomSlider, { target: { value: '1.5' } });
 
     // 3. Enable "Apply to All"
+    fireEvent.click(screen.getByText(/Overlay/i));
     const applyToAllCheckbox = screen.getByLabelText(
       /Apply this overlay to all photos/i
     ) as HTMLInputElement;
@@ -233,19 +243,29 @@ describe('PhotoverlayTool', () => {
     fireEvent.click(thumbs[1]);
 
     // 5. Check if zoom is still 1.0 for the second photo
+    fireEvent.click(screen.getByText(/Framing/i));
     const zoomSlider2 = await screen.findByRole('slider', { name: /magnification/i });
     expect(zoomSlider2).toHaveValue('1');
 
     // 6. Switch back to first photo and set a caption
     fireEvent.click(thumbs[0]);
+    // Note: No need to expand Overlay here because it was expanded earlier and switching photos keeps it expanded 
+    // Wait, switching photos might re-render Sidebar and defaultExpanded might be used again.
+    // However, PhotoverlaySidebar uses key={`overlay-${selectedItem.id}`} which means it remounts.
+    // If it remounts, defaultExpanded will be re-evaluated.
+    // If we JUST switched to photo 0, and photo 0 already had caption settings (it doesn't yet), it would be expanded.
+    // But it's empty, so it will be collapsed again.
+    fireEvent.click(screen.getByText(/Overlay/i));
     const textarea = screen.getByPlaceholderText(/Enter overlay text/i);
     fireEvent.change(textarea, { target: { value: 'Global Caption' } });
 
     // 7. Switch to second photo and check if caption applied
     fireEvent.click(thumbs[1]);
+    // It should be expanded now because it HAS a caption (Global Caption)
     expect(screen.getByPlaceholderText(/Enter overlay text/i)).toHaveValue('Global Caption');
 
     // 8. While applyToAll is on, change zoom on second photo
+    fireEvent.click(screen.getByText(/Framing/i));
     const zoomSlider3 = await screen.findByRole('slider', { name: /magnification/i });
     fireEvent.change(zoomSlider3, { target: { value: '2.0' } });
 
