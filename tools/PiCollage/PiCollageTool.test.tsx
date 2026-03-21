@@ -319,6 +319,7 @@ describe('PiCollage Aspect Ratio & Export Regression', () => {
     const getHandles = () => document.querySelectorAll('[style*="cursor: nw-resize"]');
     expect(getHandles().length).toBe(1);
   });
+
   it('correctly swaps layers and keeps zIndex normalized when moving forward/backward', async () => {
     global.URL.createObjectURL = vi.fn(() => 'test-url');
     renderWithLanguage(<PiCollageTool />);

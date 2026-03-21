@@ -201,6 +201,9 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
             )}
           </div>
           {audioTrimTracks.length > 0 && !audioFile && (
+            <div className="text-xs font-semibold text-slate-400 text-center">---{t.common.or}---</div>
+          )}
+          {audioTrimTracks.length > 0 && !audioFile && (
             <div className="relative">
               <button
                 onClick={() => {
@@ -249,7 +252,7 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
           )}
         </div>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 mb-8">
           <label className="text-sm font-semibold text-slate-400">
             {t.tools.slidesync.uploadImages}
           </label>
@@ -271,11 +274,11 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
             </label>
           </div>
         </div>
-
+        <hr className="border-slate-700 my-2 pt-4" />
         <div className="flex flex-col gap-4">
-          <label className="text-sm font-semibold text-slate-400">
-            {t.tools.slidesync.videoFormat}
-          </label>
+          <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
+            {t.common.aspectRatio}
+          </h3>
           <div className="grid grid-cols-2 gap-2">
             {formatOptions.map((opt) => (
               <button

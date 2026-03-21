@@ -167,8 +167,12 @@ export const SlideSyncTool: React.FC = () => {
     },
     isCustomized: (item, selected) =>
       (item.text && item.text !== selected.text) ||
-      (item.watermarkSettings?.file &&
-        item.watermarkSettings.file !== selected.watermarkSettings?.file),
+      (item.watermarkSettings?.file && (
+        item.watermarkSettings.file !== selected.watermarkSettings?.file ||
+        item.watermarkSettings?.opacity !== selected.watermarkSettings?.opacity ||
+        item.watermarkSettings?.scale !== selected.watermarkSettings?.scale ||
+        item.watermarkSettings?.position !== selected.watermarkSettings?.position
+      )),
   });
 
   const filterApply = useApplyToAll<Slide>({

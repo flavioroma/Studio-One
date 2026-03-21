@@ -82,7 +82,7 @@ export const PiCollageSidebar: React.FC<PiCollageSidebarProps> = ({
           {/* Output Resolution Settings */}
           <div className="space-y-4">
             <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
-              {t.tools.picollage.aspectRatio}
+              {t.common.aspectRatio}
             </h3>
             <div className="grid grid-cols-2 gap-2">
               {formatOptions.map((opt) => (

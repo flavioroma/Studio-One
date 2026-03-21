@@ -838,14 +838,14 @@ export const PhotoverlayTool: React.FC = () => {
                   className="flex items-center gap-6 overflow-x-auto py-4 px-4 hide-scrollbar select-none"
                 >
                   <style>{`
-                                        .hide-scrollbar::-webkit-scrollbar {
-                                          display: none;
-                                        }
-                                        .hide-scrollbar {
-                                          -ms-overflow-style: none;
-                                          scrollbar-width: none;
-                                        }
-                                    `}</style>
+                    .hide-scrollbar::-webkit-scrollbar {
+                      display: none;
+                    }
+                    .hide-scrollbar {
+                      -ms-overflow-style: none;
+                      scrollbar-width: none;
+                    }
+                  `}</style>
                   {items.map((item) => (
                     <div
                       key={item.id}
