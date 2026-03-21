@@ -9,13 +9,23 @@ describe('SlideSyncSidebar', () => {
     id: '1',
     file: new File([], 'img.jpg'),
     previewUrl: 'blob:1',
-    text: 'Slide 1',
-    color: TextColor.White,
-    position: TextPosition.Center,
-    textSize: TextSize.Small,
-    zoom: 1,
-    offsetX: 0,
-    offsetY: 0,
+    framingSettings: {
+      zoom: 1,
+      offsetX: 0,
+      offsetY: 0,
+    },
+    filterSettings: FilterMode.Normal,
+    borderSettings: {
+      size: 0,
+      color: TextColor.White,
+    },
+    captionSettings: {
+      text: 'Slide 1',
+      color: TextColor.White,
+      position: TextPosition.Center,
+      textSize: TextSize.Small,
+      isItalic: false,
+    },
     watermarkSettings: {
       file: null,
       position: TextPosition.TopRight,
@@ -86,7 +96,7 @@ describe('SlideSyncSidebar', () => {
 
     const zoomSlider = screen.getByRole('slider');
     fireEvent.change(zoomSlider, { target: { value: '2.5' } });
-    expect(defaultProps.onUpdate).toHaveBeenCalledWith({ zoom: 2.5 });
+    expect(defaultProps.onUpdate).toHaveBeenCalledWith({ framingSettings: { zoom: 2.5, offsetX: 0, offsetY: 0 } });
   });
 
   it('renders watermark settings when a slide is selected', () => {
@@ -114,7 +124,7 @@ describe('SlideSyncSidebar', () => {
 
     const bwBtn = screen.getByText(/Grayscale/i);
     fireEvent.click(bwBtn);
-    expect(defaultProps.onUpdate).toHaveBeenCalledWith({ filter: FilterMode.Grayscale });
+    expect(defaultProps.onUpdate).toHaveBeenCalledWith({ filterSettings: FilterMode.Grayscale });
   });
 
   it('calls onDeleteAll when erase button is clicked', () => {

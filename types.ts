@@ -71,20 +71,7 @@ export interface FramingSettings {
   offsetY: number; // -400 to 400 (percentage of offset from center)
 }
 
-export interface Slide extends FramingSettings {
-  id: string;
-  file: File;
-  previewUrl: string;
-  text: string;
-  color: TextColor;
-  position: TextPosition;
-  textSize: TextSize;
-  isItalic?: boolean;
-  watermarkSettings?: WatermarkSettings;
-  filter?: FilterMode;
-  borderSize?: BorderSize;
-  borderColor?: TextColor;
-}
+export interface Slide extends ImageItem {}
 
 export interface VideoConfig {
   width: number;
@@ -113,16 +100,23 @@ export interface NamingSettings {
   value: string;
 }
 
-export interface PhotoItem {
+export interface BorderSettings {
+  size: BorderSize;
+  color: TextColor;
+}
+
+export interface ImageItem {
   id: string;
   file: File;
-  imageUrl: string;
+  previewUrl: string;
+  framingSettings: FramingSettings;
+  filterSettings: FilterMode;
+  borderSettings: BorderSettings;
   captionSettings: CaptionSettings;
   watermarkSettings: WatermarkSettings;
-  framingSettings: FramingSettings;
-  filter?: FilterMode;
-  borderSize?: BorderSize;
-  borderColor?: TextColor;
+}
+
+export interface PhotoItem extends ImageItem {
   metadata: { width: number; height: number } | null;
   exifData: any | null;
 }
@@ -140,10 +134,7 @@ export enum FilterMode {
   Sepia = 'sepia',
 }
 
-export interface PiCollagePicture {
-  id: string;
-  file: File;
-  previewUrl: string;
+export interface PiCollagePicture extends ImageItem {
   aspectRatio: number; // width / height
 
   // Transform and Framing
@@ -154,14 +145,6 @@ export interface PiCollagePicture {
   rotation: number;
   scaleX: number;
   scaleY: number;
-  framingSettings: FramingSettings;
-
-  // Properties
-  borderSize: BorderSize;
-  borderColor: TextColor;
-  filter: FilterMode;
-  captionSettings: CaptionSettings;
-  watermarkSettings: WatermarkSettings;
 
   // State
   zIndex: number;

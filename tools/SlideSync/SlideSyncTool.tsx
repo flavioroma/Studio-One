@@ -154,11 +154,13 @@ export const SlideSyncTool: React.FC = () => {
       setSlides((prev) =>
         prev.map((s) => ({
           ...s,
-          text: selected.text,
-          color: selected.color,
-          position: selected.position,
-          textSize: selected.textSize,
-          isItalic: selected.isItalic,
+          captionSettings: {
+            text: selected.captionSettings.text,
+            color: selected.captionSettings.color,
+            position: selected.captionSettings.position,
+            textSize: selected.captionSettings.textSize,
+            isItalic: selected.captionSettings.isItalic,
+          },
           watermarkSettings: selected.watermarkSettings
             ? { ...selected.watermarkSettings }
             : undefined,
@@ -166,7 +168,7 @@ export const SlideSyncTool: React.FC = () => {
       );
     },
     isCustomized: (item, selected) =>
-      (item.text && item.text !== selected.text) ||
+      (item.captionSettings.text && item.captionSettings.text !== selected.captionSettings.text) ||
       (item.watermarkSettings?.file && (
         item.watermarkSettings.file !== selected.watermarkSettings?.file ||
         item.watermarkSettings?.opacity !== selected.watermarkSettings?.opacity ||
@@ -179,9 +181,9 @@ export const SlideSyncTool: React.FC = () => {
     items: slides,
     selectedItem: activeSlide || null,
     onApply: (selected) => {
-      setSlides((prev) => prev.map((s) => ({ ...s, filter: selected.filter })));
+      setSlides((prev) => prev.map((s) => ({ ...s, filterSettings: selected.filterSettings })));
     },
-    isCustomized: (item, selected) => item.filter !== selected.filter,
+    isCustomized: (item, selected) => item.filterSettings !== selected.filterSettings,
   });
   const borderApply = useApplyToAll<Slide>({
     items: slides,
@@ -190,13 +192,15 @@ export const SlideSyncTool: React.FC = () => {
       setSlides((prev) =>
         prev.map((s) => ({
           ...s,
-          borderSize: selected.borderSize,
-          borderColor: selected.borderColor,
+          borderSettings: {
+            size: selected.borderSettings.size,
+            color: selected.borderSettings.color,
+          },
         }))
       );
     },
     isCustomized: (item, selected) =>
-      item.borderSize !== selected.borderSize || item.borderColor !== selected.borderColor,
+      item.borderSettings.size !== selected.borderSettings.size || item.borderSettings.color !== selected.borderSettings.color,
   });
   useEffect(() => {
     if (!activeSlideId || slides.length === 0 || audioDuration === 0) return;
@@ -219,18 +223,23 @@ export const SlideSyncTool: React.FC = () => {
         id: Math.random().toString(36).substring(7),
         file: file as File,
         previewUrl: URL.createObjectURL(file as File),
-        text: overlayApply.applyToAll && activeSlide ? activeSlide.text : '',
-        color: overlayApply.applyToAll && activeSlide ? activeSlide.color : TextColor.White,
-        position:
-          overlayApply.applyToAll && activeSlide ? activeSlide.position : TextPosition.BottomLeft,
-        textSize: overlayApply.applyToAll && activeSlide ? activeSlide.textSize : TextSize.Small,
-        isItalic: overlayApply.applyToAll && activeSlide ? !!activeSlide.isItalic : false,
-        zoom: 1.0,
-        offsetX: 0,
-        offsetY: 0,
-        filter: filterApply.applyToAll && activeSlide ? activeSlide.filter : FilterMode.Normal,
-        borderSize: borderApply.applyToAll && activeSlide ? activeSlide.borderSize : BorderSize.None,
-        borderColor: borderApply.applyToAll && activeSlide ? activeSlide.borderColor : TextColor.White,
+        captionSettings: {
+          text: overlayApply.applyToAll && activeSlide ? activeSlide.captionSettings.text : '',
+          color: overlayApply.applyToAll && activeSlide ? activeSlide.captionSettings.color : TextColor.White,
+          position: overlayApply.applyToAll && activeSlide ? activeSlide.captionSettings.position : TextPosition.BottomLeft,
+          textSize: overlayApply.applyToAll && activeSlide ? activeSlide.captionSettings.textSize : TextSize.Small,
+          isItalic: overlayApply.applyToAll && activeSlide ? !!activeSlide.captionSettings.isItalic : false,
+        },
+        framingSettings: {
+          zoom: 1.0,
+          offsetX: 0,
+          offsetY: 0,
+        },
+        filterSettings: filterApply.applyToAll && activeSlide ? activeSlide.filterSettings : FilterMode.Normal,
+        borderSettings: {
+          size: borderApply.applyToAll && activeSlide ? activeSlide.borderSettings.size : BorderSize.None,
+          color: borderApply.applyToAll && activeSlide ? activeSlide.borderSettings.color : TextColor.White,
+        },
         watermarkSettings:
           overlayApply.applyToAll && activeSlide
             ? activeSlide.watermarkSettings
@@ -259,22 +268,18 @@ export const SlideSyncTool: React.FC = () => {
         }
         // If updating overlay properties and applyToAll is active
         const overlayProps = [
-          'text',
-          'color',
-          'position',
-          'textSize',
-          'isItalic',
+          'captionSettings',
           'watermarkSettings',
         ];
         if (overlayApply.applyToAll && overlayProps.some((p) => p in updates)) {
           return { ...s, ...updates };
         }
         // If updating filter and applyFilterToAll is active
-        if (filterApply.applyToAll && 'filter' in updates) {
+        if (filterApply.applyToAll && 'filterSettings' in updates) {
           return { ...s, ...updates };
         }
         // If updating border and applyBorderToAll is active
-        const borderProps = ['borderSize', 'borderColor'];
+        const borderProps = ['borderSettings'];
         if (borderApply.applyToAll && borderProps.some((p) => p in updates)) {
           return { ...s, ...updates };
         }
@@ -298,7 +303,7 @@ export const SlideSyncTool: React.FC = () => {
     if (!slide) return;
 
     const isCustomized =
-      !!slide.text || slide.zoom !== 1 || slide.offsetX !== 0 || slide.offsetY !== 0;
+      !!slide.captionSettings.text || slide.framingSettings.zoom !== 1 || slide.framingSettings.offsetX !== 0 || slide.framingSettings.offsetY !== 0;
 
     if (isCustomized) {
       setSlideToDeleteId(id);
@@ -323,7 +328,7 @@ export const SlideSyncTool: React.FC = () => {
     setIsProcessing(true);
     try {
       const caption = await generateCaptionForImage(slide.file);
-      updateSlide(id, { text: caption });
+      updateSlide(id, { captionSettings: { ...slide.captionSettings, text: caption } });
     } catch (error) {
       console.error('Failed to generate caption', error);
       alert(t.tools.slidesync.captionError);

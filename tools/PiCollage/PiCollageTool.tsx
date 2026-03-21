@@ -45,11 +45,11 @@ export const PiCollageTool: React.FC = () => {
       setPictures((prev) =>
         prev.map((p) => ({
           ...p,
-          filter: selected.filter,
+          filterSettings: selected.filterSettings,
         }))
       );
     },
-    isCustomized: (item, selected) => item.filter !== selected.filter,
+    isCustomized: (item, selected) => item.filterSettings !== selected.filterSettings,
   });
 
   const borderApply = useApplyToAll<PiCollagePicture>({
@@ -59,13 +59,15 @@ export const PiCollageTool: React.FC = () => {
       setPictures((prev) =>
         prev.map((p) => ({
           ...p,
-          borderSize: selected.borderSize,
-          borderColor: selected.borderColor,
+          borderSettings: {
+            size: selected.borderSettings.size,
+            color: selected.borderSettings.color,
+          },
         }))
       );
     },
     isCustomized: (item, selected) =>
-      item.borderSize !== selected.borderSize || item.borderColor !== selected.borderColor,
+      item.borderSettings.size !== selected.borderSettings.size || item.borderSettings.color !== selected.borderSettings.color,
   });
 
   const isLoadedRef = useRef(false);
@@ -157,9 +159,11 @@ export const PiCollageTool: React.FC = () => {
             offsetX: 0,
             offsetY: 0,
           },
-          borderSize: BorderSize.Small,
-          borderColor: TextColor.White,
-          filter: FilterMode.Normal,
+          borderSettings: {
+            size: BorderSize.Small,
+            color: TextColor.White,
+          },
+          filterSettings: FilterMode.Normal,
           captionSettings: {
             text: '',
             color: TextColor.White,
@@ -232,7 +236,7 @@ export const PiCollageTool: React.FC = () => {
     setPictures((prev) =>
       prev.map((p) => {
         if (filterApply.applyToAll || p.id === activePictureId) {
-          return { ...p, filter };
+          return { ...p, filterSettings: filter };
         }
         return p;
       })
@@ -243,7 +247,13 @@ export const PiCollageTool: React.FC = () => {
     setPictures((prev) =>
       prev.map((p) => {
         if (borderApply.applyToAll || p.id === activePictureId) {
-          return { ...p, ...updates };
+          return { 
+            ...p, 
+            borderSettings: { ...p.borderSettings, 
+              size: updates.borderSize !== undefined ? updates.borderSize : p.borderSettings.size,
+              color: updates.borderColor !== undefined ? updates.borderColor : p.borderSettings.color
+            } 
+          };
         }
         return p;
       })
@@ -297,8 +307,8 @@ export const PiCollageTool: React.FC = () => {
 
         // Apply filters
         let filterStr = '';
-        if (pic.filter === FilterMode.Grayscale) filterStr += 'grayscale(100%) ';
-        if (pic.filter === FilterMode.Sepia) filterStr += 'sepia(100%) ';
+        if (pic.filterSettings === FilterMode.Grayscale) filterStr += 'grayscale(100%) ';
+        if (pic.filterSettings === FilterMode.Sepia) filterStr += 'sepia(100%) ';
         if (filterStr) ctx.filter = filterStr.trim();
 
         // Apply framing (zoom and offsets)
@@ -312,14 +322,14 @@ export const PiCollageTool: React.FC = () => {
         const drawY = (pxH - drawHeight) / 2 + offsetY;
 
         // Draw Border
-        if (pic.borderSize > 0) {
-          ctx.fillStyle = pic.borderColor || '#ffffff';
+        if (pic.borderSettings.size > 0) {
+          ctx.fillStyle = pic.borderSettings.color || '#ffffff';
           ctx.fillRect(drawX - pxW / 2, drawY - pxH / 2, drawWidth, drawHeight);
         }
 
         // Clip area for image contents inside border
         // Scale border size for 4K
-        const bSize = pic.borderSize * 2;
+        const bSize = pic.borderSettings.size * 2;
         const clipX = drawX - pxW / 2 + bSize;
         const clipY = drawY - pxH / 2 + bSize;
         const clipW = drawWidth - 2 * bSize;
@@ -332,9 +342,10 @@ export const PiCollageTool: React.FC = () => {
 
         // Load image
         const img = new Image();
-        img.src = pic.previewUrl;
-        await new Promise((resolve) => {
+        await new Promise((resolve, reject) => {
           img.onload = resolve;
+          img.onerror = reject;
+          img.src = pic.previewUrl;
         });
 
         // Draw Image

@@ -245,9 +245,9 @@ export class Mp4ExportService {
     ctx.fillRect(0, 0, width, height);
 
     // Draw Image (same logic as VideoPreview)
-    const zoom = slide.zoom || 1.0;
-    const offsetX = slide.offsetX || 0;
-    const offsetY = slide.offsetY || 0;
+    const zoom = slide.framingSettings.zoom || 1.0;
+    const offsetX = slide.framingSettings.offsetX || 0;
+    const offsetY = slide.framingSettings.offsetY || 0;
 
     const baseScale = Math.min(width / img.width, height / img.height);
     const finalScale = baseScale * zoom;
@@ -273,11 +273,11 @@ export class Mp4ExportService {
 
     // Draw Text using shared logic
     this.renderOverlay(ctx, width, height, {
-      text: slide.text,
-      color: slide.color,
-      position: slide.position,
-      textSize: slide.textSize,
-      isItalic: slide.isItalic,
+      text: slide.captionSettings.text,
+      color: slide.captionSettings.color,
+      position: slide.captionSettings.position,
+      textSize: slide.captionSettings.textSize,
+      isItalic: slide.captionSettings.isItalic,
     });
   }
 

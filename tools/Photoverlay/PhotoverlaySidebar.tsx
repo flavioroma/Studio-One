@@ -209,7 +209,7 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
           {selectedItem && (
             <FramingSettingsPanel
               key={`framing-${selectedItem.id}`}
-              imageUrl={selectedItem.imageUrl}
+              imageUrl={selectedItem.previewUrl}
               settings={selectedItem.framingSettings}
               onUpdate={onFramingUpdate}
               aspectRatio={AspectRatio.Original}
@@ -227,14 +227,14 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
           {selectedItem && (
             <FilterSettingsPanel
               key={`filter-${selectedItem.id}`}
-              currentFilter={selectedItem.filter}
+              currentFilter={selectedItem.filterSettings}
               onChange={onFilterUpdate}
               themeColor="tool-photoverlay"
               collapsible
               applyToAll={applyFilterToAll}
               onApplyToAllChange={onApplyFilterToAllChange}
               defaultExpanded={
-                !!selectedItem.filter && selectedItem.filter !== FilterMode.Normal
+                !!selectedItem.filterSettings && selectedItem.filterSettings !== FilterMode.Normal
               }
             />
           )}
@@ -243,14 +243,14 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
           {selectedItem && (
             <BorderSettingsPanel
               key={`border-${selectedItem.id}`}
-              borderSize={selectedItem.borderSize || BorderSize.None}
-              borderColor={selectedItem.borderColor || TextColor.White}
+              borderSize={selectedItem.borderSettings.size || BorderSize.None}
+              borderColor={selectedItem.borderSettings.color || TextColor.White}
               onSizeChange={(borderSize) => onBorderUpdate({ borderSize })}
               onColorChange={(borderColor) => onBorderUpdate({ borderColor })}
               themeColor="tool-photoverlay"
               applyToAll={applyBorderToAll}
               onApplyToAllChange={onApplyBorderToAllChange}
-              defaultExpanded={!!selectedItem.borderSize}
+              defaultExpanded={!!selectedItem.borderSettings.size}
             />
           )}
 

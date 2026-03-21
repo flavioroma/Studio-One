@@ -101,7 +101,42 @@ export class PersistenceService {
 
   static async loadSlideSyncState(): Promise<SlideSyncState | null> {
     try {
-      return (await get<SlideSyncState>(SLIDESYNC_KEY)) || null;
+      const state = await get<any>(SLIDESYNC_KEY);
+      if (!state) return null;
+
+      // Migration for old slides to new ImageItem format
+      const migratedSlides = state.slides?.map((s: any) => {
+        if (s.framingSettings) return s;
+        return {
+          ...s,
+          previewUrl: s.previewUrl || s.imageUrl || '',
+          framingSettings: {
+            zoom: s.zoom || 1,
+            offsetX: s.offsetX || 0,
+            offsetY: s.offsetY || 0,
+          },
+          filterSettings: s.filter || FilterMode.Normal,
+          borderSettings: {
+            size: s.borderSize || BorderSize.None,
+            color: s.borderColor || TextColor.White,
+          },
+          captionSettings: {
+            text: s.text || '',
+            color: s.color || TextColor.White,
+            position: s.position || TextPosition.BottomLeft,
+            textSize: s.textSize || TextSize.Small,
+            isItalic: s.isItalic || false,
+          },
+          watermarkSettings: {
+            file: s.watermarkFile || null,
+            position: s.watermarkPosition || TextPosition.TopRight,
+            opacity: s.watermarkOpacity || 0.2,
+            scale: s.watermarkScale || 0.2,
+          },
+        };
+      });
+
+      return { ...state, slides: migratedSlides || [] } as SlideSyncState;
     } catch (error) {
       console.error('Failed to load SlideSync state:', error);
       return null;
@@ -137,12 +172,43 @@ export class PersistenceService {
 
   static async loadPhotoverlayState(): Promise<PhotoverlayState | null> {
     try {
-      const state = await get<PhotoverlayState>(PHOTOVERLAY_KEY);
+      const state = await get<any>(PHOTOVERLAY_KEY);
       if (!state) return null;
 
+      const migratedItems = state.items?.map((s: any) => {
+        if (s.framingSettings) return s;
+        return {
+          ...s,
+          previewUrl: s.previewUrl || s.imageUrl || '',
+          framingSettings: {
+            zoom: s.zoom || 1,
+            offsetX: s.offsetX || 0,
+            offsetY: s.offsetY || 0,
+          },
+          filterSettings: s.filter || FilterMode.Normal,
+          borderSettings: {
+            size: s.borderSize || BorderSize.None,
+            color: s.borderColor || TextColor.White,
+          },
+          captionSettings: {
+            text: s.caption || s.text || '',
+            color: s.color || TextColor.White,
+            position: s.position || TextPosition.BottomLeft,
+            textSize: s.textSize || TextSize.Small,
+            isItalic: s.isItalic || false,
+          },
+          watermarkSettings: {
+            file: s.watermarkFile || null,
+            position: s.watermarkPosition || TextPosition.TopRight,
+            opacity: s.watermarkOpacity || 0.2,
+            scale: s.watermarkScale || 0.2,
+          },
+        };
+      });
 
       return {
         ...state,
+        items: migratedItems || [],
         namingSettings: state.namingSettings || {
           keepOriginal: true,
           type: 'prefix',
@@ -188,7 +254,41 @@ export class PersistenceService {
 
   static async loadPiCollageState(): Promise<PiCollageState | null> {
     try {
-      return (await get<PiCollageState>(PICOLLAGE_KEY)) || null;
+      const state = await get<any>(PICOLLAGE_KEY);
+      if (!state) return null;
+
+      const migratedPictures = state.pictures?.map((s: any) => {
+        if (s.framingSettings) return s;
+        return {
+          ...s,
+          previewUrl: s.previewUrl || s.imageUrl || '',
+          framingSettings: {
+            zoom: s.zoom || 1,
+            offsetX: s.offsetX || 0,
+            offsetY: s.offsetY || 0,
+          },
+          filterSettings: s.filter || FilterMode.Normal,
+          borderSettings: {
+            size: s.borderSize || BorderSize.None,
+            color: s.borderColor || TextColor.White,
+          },
+          captionSettings: {
+            text: s.caption || s.text || '',
+            color: s.color || TextColor.White,
+            position: s.position || TextPosition.BottomLeft,
+            textSize: s.textSize || TextSize.Small,
+            isItalic: s.isItalic || false,
+          },
+          watermarkSettings: {
+            file: s.watermarkFile || null,
+            position: s.watermarkPosition || TextPosition.TopRight,
+            opacity: s.watermarkOpacity || 0.2,
+            scale: s.watermarkScale || 0.2,
+          },
+        };
+      });
+
+      return { ...state, pictures: migratedPictures || [] } as unknown as PiCollageState;
     } catch (error) {
       console.error('Failed to load PiCollage state:', error);
       return null;

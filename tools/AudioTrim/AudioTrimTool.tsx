@@ -73,13 +73,6 @@ export const AudioTrimTool: React.FC = () => {
     return `${mins}m${secs.toString().padStart(2, '0')}s${ms.toString().padStart(2, '0')}`;
   };
 
-
-  const syncEndInputs = (time: number) => {
-    setEndMins(Math.floor(time / 60).toString());
-    setEndSecs(Math.floor(time % 60).toString());
-    setEndCents(Math.floor((time % 1) * 100).toString());
-  };
-
   /**
    * Parses the MP3 file to find where the actual audio data starts.
    * This handles ID3v2 tags which often shift the audio timing in byte-slices.

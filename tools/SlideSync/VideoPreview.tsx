@@ -149,9 +149,9 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
     img.src = currentSlide.previewUrl;
 
     try {
-      const zoom = currentSlide.zoom || 1.0;
-      const offsetX = currentSlide.offsetX || 0;
-      const offsetY = currentSlide.offsetY || 0;
+      const zoom = currentSlide.framingSettings.zoom || 1.0;
+      const offsetX = currentSlide.framingSettings.offsetX || 0;
+      const offsetY = currentSlide.framingSettings.offsetY || 0;
 
       // Use 'fit' scaling by default (Math.min instead of Math.max)
       const baseScale = Math.min(CANVAS_WIDTH / img.width, CANVAS_HEIGHT / img.height);
@@ -168,15 +168,15 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
 
       // Apply filter before drawing image
       ctx.filter =
-        currentSlide.filter === FilterMode.Grayscale
+        currentSlide.filterSettings === FilterMode.Grayscale
           ? 'grayscale(100%)'
-          : currentSlide.filter === FilterMode.Sepia
+          : currentSlide.filterSettings === FilterMode.Sepia
             ? 'sepia(100%)'
             : 'none';
 
       // Draw Border
-      if (currentSlide.borderSize && currentSlide.borderSize > 0) {
-        ctx.fillStyle = currentSlide.borderColor || '#ffffff';
+      if (currentSlide.borderSettings.size && currentSlide.borderSettings.size > 0) {
+        ctx.fillStyle = currentSlide.borderSettings.color || '#ffffff';
         ctx.fillRect(baseX + userX, baseY + userY, w, h);
       }
 
@@ -184,7 +184,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
       // For SlideSync, we can just draw over if we adjust the dimensions or just draw the border around the image.
       // PiCollage draws the border filling the whole rect, then clips for the image.
       // Let's follow PiCollage logic for consistency.
-      const bSize = (currentSlide.borderSize || 0) * (CANVAS_HEIGHT / 1080); // Scale border size
+      const bSize = (currentSlide.borderSettings.size || 0) * (CANVAS_HEIGHT / 1080); // Scale border size
       
       if (bSize > 0) {
         ctx.save();
@@ -201,18 +201,18 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
       ctx.filter = 'none';
     } catch (e) {}
 
-    if (currentSlide.text) {
-      ctx.fillStyle = currentSlide.color;
+    if (currentSlide.captionSettings.text) {
+      ctx.fillStyle = currentSlide.captionSettings.color;
 
-      const metrics = calculateCaptionMetrics(CANVAS_WIDTH, CANVAS_HEIGHT, currentSlide);
+      const metrics = calculateCaptionMetrics(CANVAS_WIDTH, CANVAS_HEIGHT, currentSlide.captionSettings);
       const position = calculateCaptionPosition(
         CANVAS_WIDTH,
         CANVAS_HEIGHT,
         metrics,
-        currentSlide.position
+        currentSlide.captionSettings.position
       );
 
-      ctx.font = `${currentSlide.isItalic ? 'italic ' : ''}bold ${metrics.fontSize}px Inter, sans-serif`;
+      ctx.font = `${currentSlide.captionSettings.isItalic ? 'italic ' : ''}bold ${metrics.fontSize}px Inter, sans-serif`;
       ctx.shadowColor = 'rgba(0,0,0,0.8)';
       ctx.shadowBlur = 10;
       ctx.shadowOffsetX = 3;

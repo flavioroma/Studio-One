@@ -372,9 +372,9 @@ export const PiCollageCanvas: React.FC<PiCollageCanvasProps> = ({
                   <div
                     className="w-full h-full overflow-hidden flex items-center justify-center pointer-events-none"
                     style={{
-                      border: getBorderStyle(pic.borderSize),
-                      borderColor: pic.borderColor,
-                      filter: getFilterStyle(pic.filter),
+                      border: getBorderStyle(pic.borderSettings.size),
+                      borderColor: pic.borderSettings.color,
+                      filter: getFilterStyle(pic.filterSettings),
                       backgroundColor: 'transparent',
                     }}
                   >

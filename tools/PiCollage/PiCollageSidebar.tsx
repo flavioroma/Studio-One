@@ -134,26 +134,26 @@ export const PiCollageSidebar: React.FC<PiCollageSidebarProps> = ({
                 {/* Filter Settings */}
                 <FilterSettingsPanel
                   key={`filter-${activePicture.id}`}
-                  currentFilter={activePicture.filter}
+                  currentFilter={activePicture.filterSettings}
                   onChange={onFilterUpdate}
                   themeColor="tool-picollage"
                   collapsible
                   applyToAll={applyFilterToAll}
                   onApplyToAllChange={onApplyFilterToAllChange}
-                  defaultExpanded={activePicture.filter !== FilterMode.Normal}
+                  defaultExpanded={!!activePicture.filterSettings && activePicture.filterSettings !== FilterMode.Normal}
                 />
 
                 {/* Border Settings */}
                 <BorderSettingsPanel
                   key={`border-${activePicture.id}`}
-                  borderSize={activePicture.borderSize}
-                  borderColor={activePicture.borderColor}
+                  borderSize={activePicture.borderSettings.size || BorderSize.None}
+                  borderColor={activePicture.borderSettings.color || TextColor.White}
                   onSizeChange={(borderSize) => onBorderUpdate({ borderSize })}
                   onColorChange={(borderColor) => onBorderUpdate({ borderColor })}
                   themeColor="tool-picollage"
                   applyToAll={applyBorderToAll}
                   onApplyToAllChange={onApplyBorderToAllChange}
-                  defaultExpanded={activePicture.borderSize !== BorderSize.None}
+                  defaultExpanded={activePicture.borderSettings.size !== BorderSize.None}
                 />
 
                 {/* Overlay Settings */}

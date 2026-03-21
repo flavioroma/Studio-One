@@ -122,7 +122,7 @@ export const Timeline: React.FC<TimelineProps> = ({
           <div className="absolute bottom-0 left-0 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-tr font-bold z-10">
             #{index + 1}
           </div>
-          {(slide.text || slide.zoom !== 1 || slide.offsetX !== 0 || slide.offsetY !== 0) && (
+          {(slide.captionSettings.text || slide.framingSettings.zoom !== 1 || slide.framingSettings.offsetX !== 0 || slide.framingSettings.offsetY !== 0) && (
             <div className="absolute top-2 right-2 z-10">
               <div
                 className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"

@@ -2,7 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { Timeline } from './Timeline';
 import { LanguageProvider } from '../../contexts/LanguageContext';
-import { TextColor, TextPosition, TextSize } from '../../types';
+import { TextColor, TextPosition, TextSize, FilterMode, BorderSize } from '../../types';
 
 describe('Timeline', () => {
   const mockSlides = [
@@ -10,25 +10,47 @@ describe('Timeline', () => {
       id: '1',
       file: new File([], 'img1.jpg'),
       previewUrl: 'blob:1',
-      text: 'Slide 1',
-      color: TextColor.White,
-      position: TextPosition.Center,
-      textSize: TextSize.Small,
-      zoom: 1,
-      offsetX: 0,
-      offsetY: 0,
+      captionSettings: {
+        text: 'Slide 1',
+        color: TextColor.White,
+        position: TextPosition.Center,
+        textSize: TextSize.Small,
+        isItalic: false,
+      },
+      framingSettings: {
+        zoom: 1,
+        offsetX: 0,
+        offsetY: 0,
+      },
+      filterSettings: FilterMode.Normal,
+      borderSettings: {
+        size: BorderSize.None,
+        color: TextColor.White,
+      },
+      watermarkSettings: undefined,
     },
     {
       id: '2',
       file: new File([], 'img2.jpg'),
       previewUrl: 'blob:2',
-      text: '',
-      color: TextColor.White,
-      position: TextPosition.Center,
-      textSize: TextSize.Small,
-      zoom: 1,
-      offsetX: 0,
-      offsetY: 0,
+      captionSettings: {
+        text: '',
+        color: TextColor.White,
+        position: TextPosition.Center,
+        textSize: TextSize.Small,
+        isItalic: false,
+      },
+      framingSettings: {
+        zoom: 1,
+        offsetX: 0,
+        offsetY: 0,
+      },
+      filterSettings: FilterMode.Normal,
+      borderSettings: {
+        size: BorderSize.None,
+        color: TextColor.White,
+      },
+      watermarkSettings: undefined,
     },
   ];
 

@@ -116,12 +116,12 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
     // If we don't have dimensions yet, hide or default
     if (containerSize.width === 0 || !slide) return { display: 'none' };
 
-    const metrics = calculateCaptionMetrics(containerSize.width, containerSize.height, slide);
+    const metrics = calculateCaptionMetrics(containerSize.width, containerSize.height, slide.captionSettings);
     const pos = calculateCaptionPosition(
       containerSize.width,
       containerSize.height,
       metrics,
-      slide.position
+      slide.captionSettings.position
     );
 
     const topY = pos.y - metrics.fontSize;
@@ -131,11 +131,11 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
     else if (pos.textAlign === 'right') transformX = '-100%';
 
     const style: React.CSSProperties = {
-      color: slide.color,
+      color: slide.captionSettings.color,
       fontSize: `${metrics.fontSize}px`,
       lineHeight: '1.2',
       fontWeight: 'bold',
-      fontStyle: slide.isItalic ? 'italic' : 'normal',
+      fontStyle: slide.captionSettings.isItalic ? 'italic' : 'normal',
       fontFamily: 'Inter, sans-serif',
       position: 'absolute',
       left: `${pos.x}px`,
@@ -311,49 +311,49 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
             <FramingSettingsPanel
               key={`framing-${slide.id}`}
               imageUrl={slide.previewUrl}
-              settings={slide}
-              onUpdate={onUpdate}
+              settings={slide.framingSettings}
+              onUpdate={(updates) => onUpdate({ framingSettings: { ...slide.framingSettings, ...updates } })}
               aspectRatio={aspectRatio}
               themeColor="tool-slidesync"
               defaultExpanded={
-                slide.zoom !== 1 ||
-                slide.offsetX !== 0 ||
-                slide.offsetY !== 0
+                slide.framingSettings.zoom !== 1 ||
+                slide.framingSettings.offsetX !== 0 ||
+                slide.framingSettings.offsetY !== 0
               }
             />
           </div>
 
           <FilterSettingsPanel
             key={`filter-${slide.id}`}
-            currentFilter={slide.filter}
-            onChange={(filter) => onUpdate({ filter })}
+            currentFilter={slide.filterSettings}
+            onChange={(filterSettings) => onUpdate({ filterSettings })}
             themeColor="tool-slidesync"
             collapsible={true}
             applyToAll={applyFilterToAll}
             onApplyToAllChange={onApplyFilterToAllChange}
             defaultExpanded={
-              !!slide.filter && slide.filter !== FilterMode.Normal
+              !!slide.filterSettings && slide.filterSettings !== FilterMode.Normal
             }
           />
 
           <BorderSettingsPanel
             key={`border-${slide.id}`}
-            borderSize={slide.borderSize || BorderSize.None}
-            borderColor={slide.borderColor || TextColor.White}
-            onSizeChange={(borderSize) => onUpdate({ borderSize })}
-            onColorChange={(borderColor) => onUpdate({ borderColor })}
+            borderSize={slide.borderSettings.size || BorderSize.None}
+            borderColor={slide.borderSettings.color || TextColor.White}
+            onSizeChange={(size) => onUpdate({ borderSettings: { ...slide.borderSettings, size } })}
+            onColorChange={(color) => onUpdate({ borderSettings: { ...slide.borderSettings, color } })}
             themeColor="tool-slidesync"
             applyToAll={applyBorderToAll}
             onApplyToAllChange={onApplyBorderToAllChange}
-            defaultExpanded={!!slide.borderSize}
+            defaultExpanded={!!slide.borderSettings.size}
           />
 
           <OverlaySettingsPanel
             key={`overlay-${slide.id}`}
             applyToAll={applyToAll}
             onApplyToAllChange={onApplyToAllChange}
-            captionSettings={slide}
-            onCaptionUpdate={(updates) => onUpdate(updates)}
+            captionSettings={slide.captionSettings}
+            onCaptionUpdate={(updates) => onUpdate({ captionSettings: { ...slide.captionSettings, ...updates } })}
             watermarkSettings={
               slide.watermarkSettings || {
                 file: null,
@@ -379,7 +379,7 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
             isProcessing={isProcessing}
             themeColor="tool-slidesync"
             defaultExpanded={
-              (slide.text && slide.text !== '') ||
+              (slide.captionSettings.text && slide.captionSettings.text !== '') ||
               !!slide.watermarkSettings?.file
             }
           />

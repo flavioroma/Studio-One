@@ -26,6 +26,9 @@ describe('PhotoverlaySidebar', () => {
     preserveMetadata: true,
     onPreserveMetadataChange: vi.fn(),
     onDeleteAll: vi.fn(),
+    onBorderUpdate: vi.fn(),
+    applyBorderToAll: false,
+    onApplyBorderToAllChange: vi.fn(),
   };
 
   const renderWithContext = (props = defaultProps) => {
@@ -77,7 +80,7 @@ describe('PhotoverlaySidebar', () => {
     const mockItem = {
       id: '1',
       file: new File([], 'test.jpg'),
-      imageUrl: '',
+      previewUrl: '',
       captionSettings: {
         text: 'Hello',
         color: TextColor.White,
@@ -87,7 +90,8 @@ describe('PhotoverlaySidebar', () => {
       },
       watermarkSettings: { file: null, position: TextPosition.TopRight, opacity: 0.2, scale: 0.2 },
       framingSettings: { zoom: 1, offsetX: 0, offsetY: 0 },
-      filter: FilterMode.Normal,
+      filterSettings: FilterMode.Normal,
+      borderSettings: { size: 0, color: TextColor.White },
       metadata: null,
       exifData: null,
     };
@@ -108,7 +112,7 @@ describe('PhotoverlaySidebar', () => {
     const mockItem = {
       id: '1',
       file: new File([], 'test.jpg'),
-      imageUrl: '',
+      previewUrl: '',
       captionSettings: {
         text: '',
         color: TextColor.White,
@@ -118,7 +122,8 @@ describe('PhotoverlaySidebar', () => {
       },
       watermarkSettings: { file: null, position: TextPosition.TopRight, opacity: 0.2, scale: 0.2 },
       framingSettings: { zoom: 1, offsetX: 0, offsetY: 0 },
-      filter: FilterMode.Grayscale,
+      filterSettings: FilterMode.Grayscale,
+      borderSettings: { size: 0, color: TextColor.White },
       metadata: null,
       exifData: null,
     };
@@ -133,7 +138,7 @@ describe('PhotoverlaySidebar', () => {
     const mockItem = {
       id: '1',
       file: new File([], 'test.jpg'),
-      imageUrl: '',
+      previewUrl: '',
       captionSettings: {
         text: '',
         color: TextColor.White,
@@ -143,7 +148,8 @@ describe('PhotoverlaySidebar', () => {
       },
       watermarkSettings: { file: null, position: TextPosition.TopRight, opacity: 0.2, scale: 0.2 },
       framingSettings: { zoom: 1, offsetX: 0, offsetY: 0 },
-      filter: FilterMode.Grayscale,
+      filterSettings: FilterMode.Grayscale,
+      borderSettings: { size: 0, color: TextColor.White },
       metadata: null,
       exifData: null,
     };

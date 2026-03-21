@@ -76,7 +76,7 @@ export const PhotoverlayTool: React.FC = () => {
 
     resizeObserver.observe(containerRef.current);
     return () => resizeObserver.disconnect();
-  }, [selectedItem?.imageUrl]);
+  }, [selectedItem?.previewUrl]);
 
   // Keyboard Navigation
   useEffect(() => {
@@ -143,7 +143,7 @@ export const PhotoverlayTool: React.FC = () => {
       newItems.push({
         id,
         file,
-        imageUrl: url,
+        previewUrl: url,
         captionSettings:
           applyToAll && selectedItem
             ? { ...selectedItem.captionSettings }
@@ -168,9 +168,11 @@ export const PhotoverlayTool: React.FC = () => {
           offsetX: 0,
           offsetY: 0,
         },
-        filter: applyFilterToAll && selectedItem ? selectedItem.filter : FilterMode.Normal,
-        borderSize: applyBorderToAll && selectedItem ? selectedItem.borderSize : BorderSize.None,
-        borderColor: applyBorderToAll && selectedItem ? selectedItem.borderColor : TextColor.White,
+        filterSettings: applyFilterToAll && selectedItem ? selectedItem.filterSettings : FilterMode.Normal,
+        borderSettings: {
+          size: applyBorderToAll && selectedItem ? selectedItem.borderSettings.size : BorderSize.None,
+          color: applyBorderToAll && selectedItem ? selectedItem.borderSettings.color : TextColor.White,
+        },
         metadata: dimensions,
         exifData: exif,
       });
@@ -209,11 +211,11 @@ export const PhotoverlayTool: React.FC = () => {
       setItems((prev) =>
         prev.map((item) => ({
           ...item,
-          filter: selected.filter,
+          filterSettings: selected.filterSettings,
         }))
       );
     },
-    isCustomized: (item, selected) => item.filter !== selected.filter,
+    isCustomized: (item, selected) => item.filterSettings !== selected.filterSettings,
   });
   const borderApply = useApplyToAll<PhotoItem>({
     items,
@@ -222,13 +224,15 @@ export const PhotoverlayTool: React.FC = () => {
       setItems((prev) =>
         prev.map((item) => ({
           ...item,
-          borderSize: selected.borderSize,
-          borderColor: selected.borderColor,
+          borderSettings: {
+            size: selected.borderSettings.size,
+            color: selected.borderSettings.color,
+          },
         }))
       );
     },
     isCustomized: (item, selected) =>
-      item.borderSize !== selected.borderSize || item.borderColor !== selected.borderColor,
+      item.borderSettings.size !== selected.borderSettings.size || item.borderSettings.color !== selected.borderSettings.color,
   });
 
   const applyToAll = overlayApply.applyToAll;
@@ -253,7 +257,7 @@ export const PhotoverlayTool: React.FC = () => {
       if (state && state.items.length > 0) {
         const hydratedItems = state.items.map((item) => ({
           ...item,
-          imageUrl: URL.createObjectURL(item.file),
+          previewUrl: URL.createObjectURL(item.file),
           captionSettings: {
             text: item.caption,
             color: item.color,
@@ -272,9 +276,11 @@ export const PhotoverlayTool: React.FC = () => {
             offsetX: 0,
             offsetY: 0,
           },
-          filter: item.filter || FilterMode.Normal,
-          borderSize: item.borderSize || BorderSize.None,
-          borderColor: item.borderColor || TextColor.White,
+          filterSettings: item.filter || FilterMode.Normal,
+          borderSettings: {
+            size: item.borderSize || BorderSize.None,
+            color: item.borderColor || TextColor.White,
+          },
           metadata: null,
           exifData: null,
         }));
@@ -292,18 +298,19 @@ export const PhotoverlayTool: React.FC = () => {
                 const img = new Image();
                 img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
                 img.onerror = () => resolve(null);
-                img.src = item.imageUrl;
+                img.src = item.previewUrl;
               }
             );
 
             return {
               id: item.id,
               file: item.file,
-              imageUrl: item.imageUrl,
+              previewUrl: item.previewUrl,
               captionSettings: item.captionSettings,
               watermarkSettings: item.watermarkSettings,
               framingSettings: item.framingSettings,
-              filter: item.filter,
+              filterSettings: item.filterSettings,
+              borderSettings: item.borderSettings,
               metadata: dimensions,
               exifData: exif,
             };
@@ -340,9 +347,9 @@ export const PhotoverlayTool: React.FC = () => {
         watermarkFile: item.watermarkSettings.file,
         watermarkPosition: item.watermarkSettings.position,
         framingSettings: item.framingSettings,
-        filter: item.filter,
-        borderSize: item.borderSize,
-        borderColor: item.borderColor,
+        filter: item.filterSettings,
+        borderSize: item.borderSettings.size,
+        borderColor: item.borderSettings.color,
       })),
       selectedId,
       applyToAll,
@@ -425,7 +432,13 @@ export const PhotoverlayTool: React.FC = () => {
     setItems((prev) =>
       prev.map((item) => {
         if (borderApply.applyToAll || item.id === selectedId) {
-          return { ...item, ...updates };
+          return { 
+            ...item, 
+            borderSettings: { ...item.borderSettings, 
+              size: updates.borderSize !== undefined ? updates.borderSize : item.borderSettings.size,
+              color: updates.borderColor !== undefined ? updates.borderColor : item.borderSettings.color
+            } 
+          };
         }
         return item;
       })
@@ -451,7 +464,7 @@ export const PhotoverlayTool: React.FC = () => {
           const img = new Image();
           img.onload = () => resolve(img);
           img.onerror = reject;
-          img.src = item.imageUrl;
+          img.src = item.previewUrl;
         });
 
         // Apply framing (zoom and offsets)
@@ -465,13 +478,13 @@ export const PhotoverlayTool: React.FC = () => {
         const drawY = (canvas.height - drawHeight) / 2 + offsetY;
 
         // Draw Border
-        if (item.borderSize && item.borderSize > 0) {
-          ctx.fillStyle = item.borderColor || '#ffffff';
+        if (item.borderSettings.size && item.borderSettings.size > 0) {
+          ctx.fillStyle = item.borderSettings.color || '#ffffff';
           ctx.fillRect(drawX, drawY, drawWidth, drawHeight);
         }
 
         // Clip area for image content
-        const bSize = item.borderSize || 0;
+        const bSize = item.borderSettings.size || 0;
         if (bSize > 0) {
           ctx.save();
           ctx.beginPath();
@@ -484,7 +497,7 @@ export const PhotoverlayTool: React.FC = () => {
         }
 
         // Apply filter
-        if (item.filter === FilterMode.Grayscale) {
+        if (item.filterSettings === FilterMode.Grayscale) {
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           const data = imageData.data;
           for (let i = 0; i < data.length; i += 4) {
@@ -494,7 +507,7 @@ export const PhotoverlayTool: React.FC = () => {
             data[i + 2] = avg;
           }
           ctx.putImageData(imageData, 0, 0);
-        } else if (item.filter === FilterMode.Sepia) {
+        } else if (item.filterSettings === FilterMode.Sepia) {
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           const data = imageData.data;
           for (let i = 0; i < data.length; i += 4) {
@@ -620,7 +633,7 @@ export const PhotoverlayTool: React.FC = () => {
     });
     // Clear object URL
     const itemToRemove = items.find((item) => item.id === id);
-    if (itemToRemove) URL.revokeObjectURL(itemToRemove.imageUrl);
+    if (itemToRemove) URL.revokeObjectURL(itemToRemove.previewUrl);
   };
 
   const handleDeleteItemRequest = (id: string) => {
@@ -633,7 +646,7 @@ export const PhotoverlayTool: React.FC = () => {
       item.framingSettings.zoom !== 1 ||
       item.framingSettings.offsetX !== 0 ||
       item.framingSettings.offsetY !== 0 ||
-      item.filter !== FilterMode.Normal;
+      item.filterSettings !== FilterMode.Normal;
 
     if (isCustomized) {
       setItemToDeleteId(id);
@@ -643,7 +656,7 @@ export const PhotoverlayTool: React.FC = () => {
   };
 
   const confirmDeleteAll = () => {
-    items.forEach((item) => URL.revokeObjectURL(item.imageUrl));
+    items.forEach((item) => URL.revokeObjectURL(item.previewUrl));
     setItems([]);
     setSelectedId(null);
     setShowDeleteConfirm(false);
@@ -796,19 +809,19 @@ export const PhotoverlayTool: React.FC = () => {
               >
                 <img
                   ref={imageRef}
-                  src={selectedItem?.imageUrl}
+                  src={selectedItem?.previewUrl}
                   className="max-h-[60vh] w-auto pointer-events-none object-contain"
                   alt="Preview"
                   style={{
                     transform: `translate(${selectedItem?.framingSettings?.offsetX || 0}%, ${selectedItem?.framingSettings?.offsetY || 0}%) scale(${selectedItem?.framingSettings?.zoom || 1})`,
                     transition: 'transform 0.2s ease-out',
-                    filter: selectedItem?.filter === FilterMode.Grayscale
-                      ? 'grayscale(100%)'
-                      : selectedItem?.filter === FilterMode.Sepia
-                        ? 'sepia(100%)'
-                        : 'none',
-                    outline: selectedItem?.borderSize && selectedItem.borderSize > 0 ? `${selectedItem.borderSize / 2}px solid ${selectedItem.borderColor}` : 'none',
-                    outlineOffset: `-${(selectedItem?.borderSize || 0) / 2}px`,
+                    filter: `
+                              ${selectedItem?.filterSettings === FilterMode.Grayscale ? 'grayscale(100%)' : ''}
+                              ${selectedItem?.filterSettings === FilterMode.Sepia ? 'sepia(100%)' : ''}
+                    `,
+                    border: selectedItem?.borderSettings.size
+                      ? `${selectedItem.borderSettings.size}px solid ${selectedItem.borderSettings.color}`
+                      : 'none',
                   }}
                 />
 
@@ -858,7 +871,7 @@ export const PhotoverlayTool: React.FC = () => {
                       }`}
                     >
                       <img
-                        src={item.imageUrl}
+                        src={item.previewUrl}
                         className="w-full h-full object-cover pointer-events-none"
                         alt="Thumb"
                       />
@@ -868,7 +881,7 @@ export const PhotoverlayTool: React.FC = () => {
                         item.framingSettings.zoom !== 1 ||
                         item.framingSettings.offsetX !== 0 ||
                         item.framingSettings.offsetY !== 0 ||
-                        item.filter !== FilterMode.Normal) && (
+                        item.filterSettings !== FilterMode.Normal) && (
                         <div className="absolute top-2 right-2 z-10">
                           <div
                             className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"
