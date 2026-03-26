@@ -10,9 +10,6 @@ interface PiCollageFooterProps {
   onToggleVisibility: (id: string) => void;
   onRemovePicture: (id: string) => void;
   onAddMoreClick: () => void;
-  exportFormat: 'png' | 'jpg';
-  onFormatChange: (format: 'png' | 'jpg') => void;
-  onExport: () => void;
 }
 
 export const PiCollageFooter: React.FC<PiCollageFooterProps> = ({
@@ -22,49 +19,11 @@ export const PiCollageFooter: React.FC<PiCollageFooterProps> = ({
   onToggleVisibility,
   onRemovePicture,
   onAddMoreClick,
-  exportFormat,
-  onFormatChange,
-  onExport,
 }) => {
   const { t } = useLanguage();
 
   return (
     <div className="flex h-full items-center gap-6">
-      {/* Export Section (Left) */}
-      <div className="flex flex-col gap-3 min-w-[200px] border-r border-slate-700 pr-6">
-        <div className="flex bg-slate-900 rounded-xl p-1">
-          <button
-            onClick={() => onFormatChange('png')}
-            className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
-              exportFormat === 'png'
-                ? 'bg-tool-picollage text-slate-900'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            PNG
-          </button>
-          <button
-            onClick={() => onFormatChange('jpg')}
-            className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${
-              exportFormat === 'jpg'
-                ? 'bg-tool-picollage text-slate-900'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            JPG
-          </button>
-        </div>
-
-        <button
-          onClick={onExport}
-          className="w-full py-3 bg-tool-picollage hover:bg-tool-picollage/90 text-slate-900 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-transform hover:scale-105 shadow-[0_0_20px_rgba(234,179,8,0.3)] disabled:opacity-50 disabled:hover:scale-100 disabled:shadow-none"
-          disabled={pictures.length === 0}
-        >
-          <Download className="w-4 h-4" /> {t.tools.picollage.exportCollage}
-        </button>
-      </div>
-
-      {/* Thumbnails Area (Right) */}
       <div className="flex-1 flex items-center gap-3 overflow-x-auto pb-4 custom-scrollbar h-full pt-4">
         {pictures.map((pic) => (
           <div

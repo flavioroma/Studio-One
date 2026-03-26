@@ -6,7 +6,7 @@ import { PiCollageFooter } from './PiCollageFooter';
 import { PiCollageSettingsBar } from './PiCollageSettingsBar';
 import { PiCollageCanvas } from './PiCollageCanvas';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
-import { Trash2, Check } from 'lucide-react';
+import { Trash2, Check, Download } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useApplyToAll } from '../../hooks/useApplyToAll';
 import { calculateCaptionMetrics, calculateCaptionPosition, calculateWatermarkPosition } from '../../utils/captionUtils';
@@ -638,6 +638,39 @@ export const PiCollageTool: React.FC = () => {
               onSendBackward={() => reorderZ(-1)}
             />
           )}
+
+          {/* Export Controls Overlay */}
+          <div className="absolute right-6 bottom-6 z-20 flex flex-col items-end gap-2">
+            <div className="flex bg-slate-800/50 backdrop-blur-md rounded-xl p-1 border border-slate-700/50 shadow-lg">
+              <button
+                onClick={() => setExportFormat('png')}
+                className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+                  exportFormat === 'png'
+                    ? 'bg-tool-picollage text-slate-900 shadow-md'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                }`}
+              >
+                PNG
+              </button>
+              <button
+                onClick={() => setExportFormat('jpg')}
+                className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+                  exportFormat === 'jpg'
+                    ? 'bg-tool-picollage text-slate-900 shadow-md'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                }`}
+              >
+                JPG
+              </button>
+            </div>
+            <button
+              onClick={handleExport}
+              disabled={pictures.length === 0}
+              className="flex items-center justify-center gap-3 px-8 py-3 bg-tool-picollage hover:bg-tool-picollage/90 text-slate-900 rounded-full text-xs font-black uppercase tracking-widest transition-transform hover:scale-[1.02] active:scale-95 shadow-[0_0_20px_rgba(234,179,8,0.3)] disabled:opacity-50 disabled:hover:scale-100 disabled:shadow-none min-w-[180px]"
+            >
+              <Download className="w-4 h-4" /> {t.tools.picollage.exportCollage}
+            </button>
+          </div>
         </div>
 
         {/* Footer Area */}
@@ -654,9 +687,6 @@ export const PiCollageTool: React.FC = () => {
             onAddMoreClick={() => {
               document.getElementById('picollage-add-more')?.click();
             }}
-            exportFormat={exportFormat}
-            onFormatChange={setExportFormat}
-            onExport={handleExport}
           />
         </div>
 
