@@ -6,8 +6,8 @@ import {
   calculateWatermarkPosition,
 } from '../../utils/captionUtils';
 import { Mp4ExportService } from '../../services/Mp4ExportService';
-import { Download, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
-import { PlaybackControls } from '../../components/PlaybackControls';
+import { Download, Loader2, AlertCircle, RotateCcw, Play, Pause } from 'lucide-react';
+
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface VideoPreviewProps {
@@ -38,6 +38,14 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
   const [exportFormat, setExportFormat] = useState<ExportFormat>(ExportFormat.MP4);
   const [supportedFormats, setSupportedFormats] = useState<ExportFormat[]>([ExportFormat.MP4, ExportFormat.WebM]);
   const [watermarkImgs, setWatermarkImgs] = useState<Record<string, HTMLImageElement>>({});
+  const [isHoveringPlayer, setIsHoveringPlayer] = useState(false);
+
+  const formatTime = (seconds: number) => {
+    if (!Number.isFinite(seconds) || isNaN(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     const checkSupport = async () => {
@@ -413,15 +421,15 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
   const getContainerAspect = () => {
     switch (aspectRatio) {
       case AspectRatio.Landscape_16_9:
-        return 'aspect-video w-full max-w-5xl';
+        return 'aspect-video w-full max-h-full';
       case AspectRatio.Portrait_9_16:
-        return 'aspect-[9/16] h-full max-h-[80vh]';
+        return 'aspect-[9/16] h-full max-h-full';
       case AspectRatio.Portrait_3_4:
-        return 'aspect-[3/4] h-full max-h-[80vh]';
+        return 'aspect-[3/4] h-full max-h-full';
       case AspectRatio.Square_1_1:
-        return 'aspect-square h-full max-h-[80vh]';
+        return 'aspect-square h-full max-h-full';
       default:
-        return 'aspect-video w-full max-w-5xl';
+        return 'aspect-video w-full max-h-full';
     }
   };
 
@@ -429,6 +437,8 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
     <div className="w-full h-full flex flex-col items-center justify-center relative">
       <div
         className={`relative shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden border-4 border-slate-800 bg-black transition-all duration-500 ${getContainerAspect()}`}
+        onMouseEnter={() => setIsHoveringPlayer(true)}
+        onMouseLeave={() => setIsHoveringPlayer(false)}
       >
         <canvas
           ref={canvasRef}
@@ -437,11 +447,11 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
           className="w-full h-full object-contain"
         />
         {!isPlaying && !isRecording && !isDisabled && (
-          <div
-            className="absolute inset-0 flex items-center justify-center cursor-pointer transition-all duration-300"
-            onClick={handleRestart}
-          >
-            <div className="bg-white/10 backdrop-blur-md p-4 rounded-full border border-white/20 hover:scale-110 hover:bg-white/20 transition-all flex flex-col items-center gap-2 group">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none transition-all duration-300 z-40">
+            <div
+              className="bg-white/10 backdrop-blur-md p-4 rounded-full border border-white/20 hover:scale-110 hover:bg-white/20 transition-all flex flex-col items-center gap-2 group pointer-events-auto cursor-pointer"
+              onClick={handleRestart}
+            >
               <RotateCcw className="w-8 h-8 text-white group-hover:rotate-[-45deg] transition-transform" />
               <span className="text-white text-[10px] font-black uppercase tracking-[0.2em]">
                 {t.common.restartPreview}
@@ -449,64 +459,96 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
             </div>
           </div>
         )}
+
+        {/* Player UI Overlay */}
+        <div
+          className={`absolute inset-0 z-30 flex flex-col transition-opacity duration-300 pointer-events-none ${isHoveringPlayer && !isRecording ? 'opacity-100' : 'opacity-0'}`}
+        >
+          <div className="flex-1 cursor-pointer pointer-events-auto" onClick={togglePlay} />
+
+          {/* Bottom Bar */}
+          <div className="bg-gradient-to-t from-black/90 via-black/50 to-transparent p-4 flex items-center gap-4 pointer-events-auto">
+            <button
+              onClick={togglePlay}
+              className="text-white hover:text-tool-slidesync transition-transform active:scale-95 disabled:opacity-50"
+              disabled={isDisabled || isRecording}
+            >
+              {isPlaying ? (
+                <Pause className="w-6 h-6 fill-current" />
+              ) : (
+                <Play className="w-6 h-6 fill-current" />
+              )}
+            </button>
+
+            <input
+              type="range"
+              min={0}
+              max={audioDuration > 0 ? audioDuration : 100}
+              step="0.033"
+              value={currentTime}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value);
+                setCurrentTime(val);
+                if (audioRef.current) {
+                  audioRef.current.currentTime = val;
+                }
+              }}
+              disabled={isDisabled || isRecording}
+              className="flex-1 h-1.5 bg-slate-600 rounded-full appearance-none cursor-pointer accent-tool-slidesync hover:h-2 transition-all outline-none"
+            />
+
+            <div className="font-mono text-xs text-white tabular-nums drop-shadow-md pr-2 select-none">
+              {formatTime(currentTime)} / {formatTime(audioDuration)}
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="w-full relative flex items-center justify-center">
-        <PlaybackControls
-          isPlaying={isPlaying}
-          onTogglePlay={togglePlay}
-          currentTime={currentTime}
-          duration={audioDuration}
-          isDisabled={isDisabled || isRecording}
-          themeColor="tool-slidesync"
-        />
-
-        <div className="absolute right-0 bottom-0 flex flex-col items-center gap-2 py-2">
-          {/* Format Selector on top */}
-          <div className="flex bg-slate-800/50 backdrop-blur-md rounded-xl p-1 border border-slate-700/50 shadow-lg">
-            {supportedFormats.map((fmt) => (
-              <button
-                key={fmt}
-                onClick={() => setExportFormat(fmt)}
-                className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
-                  exportFormat === fmt
-                    ? 'bg-tool-slidesync text-white shadow-md'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-                }`}
-                title={
-                  fmt === ExportFormat.MP4
-                    ? t.tools.slidesync.exportAsMp4
-                    : t.tools.slidesync.exportAsWebm
-                }
-              >
-                {fmt === ExportFormat.MP4 ? 'MP4' : 'WEBM'}
-              </button>
-            ))}
-          </div>
-
-          {/* Export Button on the bottom */}
-          <button
-            onClick={handleExport}
-            disabled={isDisabled || isRecording}
-            className={`flex items-center gap-3 px-8 py-3 rounded-full font-black text-xs uppercase tracking-widest transition-all ${
-              isRecording
-                ? 'bg-slate-800 text-slate-500'
-                : 'bg-tool-slidesync hover:opacity-90 hover:scale-[1.02] text-white shadow-xl shadow-tool-slidesync/10 active:scale-95'
-            }`}
-          >
-            {isRecording ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>{t.tools.slidesync.creating}</span>
-              </>
-            ) : (
-              <>
-                <Download className="w-4 h-4" />
-                <span>{t.tools.slidesync.exportClip}</span>
-              </>
-            )}
-          </button>
+      <div className="absolute right-6 bottom-0 z-20 flex flex-col items-end gap-2">
+        {/* Format Selector on top */}
+        <div className="flex bg-slate-800/50 backdrop-blur-md rounded-xl p-1 border border-slate-700/50 shadow-lg">
+          {supportedFormats.map((fmt) => (
+            <button
+              key={fmt}
+              onClick={() => setExportFormat(fmt)}
+              className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+                exportFormat === fmt
+                  ? 'bg-tool-slidesync text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+              }`}
+              title={
+                fmt === ExportFormat.MP4
+                  ? t.tools.slidesync.exportAsMp4
+                  : t.tools.slidesync.exportAsWebm
+              }
+            >
+              {fmt === ExportFormat.MP4 ? 'MP4' : 'WEBM'}
+            </button>
+          ))}
         </div>
+
+        {/* Export Button on the bottom */}
+        <button
+          onClick={handleExport}
+          disabled={isDisabled || isRecording}
+          className={`flex items-center justify-center gap-3 px-8 py-3 rounded-full font-black text-xs uppercase tracking-widest transition-all w-full min-w-[180px] ${
+            isRecording
+              ? 'bg-slate-800 text-slate-500'
+              : 'bg-tool-slidesync hover:opacity-90 hover:scale-[1.02] text-white shadow-xl shadow-tool-slidesync/10 active:scale-95'
+          }`}
+        >
+          {isRecording ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>{t.tools.slidesync.creating}</span>
+            </>
+          ) : (
+            <>
+              <Download className="w-4 h-4" />
+              <span>{t.tools.slidesync.exportClip}</span>
+            </>
+          )}
+        </button>
       </div>
       {isRecording && (
         <div className="absolute top-12 bg-red-600/90 backdrop-blur-md text-white px-6 py-3 rounded-full flex items-center gap-3 animate-pulse z-50 shadow-2xl border border-white/20">
