@@ -56,6 +56,7 @@ export const VideoverlayTool: React.FC = () => {
   const [rotation, setRotation] = useState<Rotation>(Rotation.None);
   const [audioMode, setAudioMode] = useState<AudioMode>(AudioMode.Keep);
   const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [preserveVideoMetadata, setPreserveVideoMetadata] = useState<boolean>(true);
 
   const [startTime, setStartTime] = useState(0);
   const [endTime, setEndTime] = useState(0);
@@ -265,6 +266,7 @@ export const VideoverlayTool: React.FC = () => {
         if (state.audioFile) setAudioFile(state.audioFile);
         if (state.startTime !== undefined) setStartTime(state.startTime);
         if (state.endTime !== undefined) setEndTime(state.endTime);
+        if (state.preserveVideoMetadata !== undefined) setPreserveVideoMetadata(state.preserveVideoMetadata);
 
         if (state.file) {
           setVideoUrl(URL.createObjectURL(state.file));
@@ -291,6 +293,7 @@ export const VideoverlayTool: React.FC = () => {
       audioFile,
       startTime,
       endTime,
+      preserveVideoMetadata,
     });
   };
 
@@ -312,6 +315,7 @@ export const VideoverlayTool: React.FC = () => {
     audioFile,
     startTime,
     endTime,
+    preserveVideoMetadata,
   ]);
 
   // Handle browser refresh/close
@@ -333,6 +337,7 @@ export const VideoverlayTool: React.FC = () => {
     audioFile,
     startTime,
     endTime,
+    preserveVideoMetadata,
   ]);
 
   // Effect to handle metadata extraction when file changes
@@ -445,7 +450,14 @@ export const VideoverlayTool: React.FC = () => {
         abortControllerRef.current.signal
       );
 
-      const url = URL.createObjectURL(blob);
+      // Apply metadata to the output blob before downloading
+      let finalBlob = blob;
+      const hasVideoMetadata = !!(metadata?.creationTime || metadata?.latitude !== undefined);
+      if (preserveVideoMetadata && hasVideoMetadata && metadata) {
+        finalBlob = await MetadataService.transferVideoMetadata(blob, metadata);
+      }
+
+      const url = URL.createObjectURL(finalBlob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `${file.name.replace(/\.[^/.]+$/, '')}.mp4`;
@@ -654,6 +666,9 @@ export const VideoverlayTool: React.FC = () => {
         onRemoveAudioFile={() => setAudioFile(null)}
         onCaptionUpdate={(updates) => setCaptionSettings((prev) => ({ ...prev, ...updates }))}
         onWatermarkUpdate={(updates) => setWatermarkSettings((prev) => ({ ...prev, ...updates }))}
+        preserveVideoMetadata={preserveVideoMetadata}
+        onPreserveVideoMetadataChange={setPreserveVideoMetadata}
+        hasVideoMetadata={!!(metadata?.creationTime || metadata?.latitude !== undefined)}
         onDelete={handleDeleteRequest}
       />
 

@@ -31,6 +31,9 @@ describe('VideoverlaySidebar', () => {
     onRemoveAudioFile: vi.fn(),
     onCaptionUpdate: vi.fn(),
     onWatermarkUpdate: vi.fn(),
+    preserveVideoMetadata: true,
+    onPreserveVideoMetadataChange: vi.fn(),
+    hasVideoMetadata: false,
     onDelete: vi.fn(),
   };
 
@@ -89,5 +92,33 @@ describe('VideoverlaySidebar', () => {
     const eraseBtn = screen.getByText(/Erase the project/i);
     fireEvent.click(eraseBtn);
     expect(defaultProps.onDelete).toHaveBeenCalled();
+  });
+
+  it('does not show Metadata section when hasVideoMetadata is false', () => {
+    const file = new File([''], 'video.mp4', { type: 'video/mp4' });
+    renderWithContext({ ...defaultProps, file, hasVideoMetadata: false });
+
+    expect(screen.queryByText(/^Metadata$/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Preserve video metadata/i)).not.toBeInTheDocument();
+  });
+
+  it('shows Metadata section and checkbox when hasVideoMetadata is true', () => {
+    const file = new File([''], 'video.mp4', { type: 'video/mp4' });
+    const onPreserveVideoMetadataChange = vi.fn();
+    renderWithContext({
+      ...defaultProps,
+      file,
+      hasVideoMetadata: true,
+      preserveVideoMetadata: true,
+      onPreserveVideoMetadataChange,
+    });
+
+    expect(screen.getByText(/^Metadata$/i)).toBeInTheDocument();
+    expect(screen.getByText(/Preserve video metadata/i)).toBeInTheDocument();
+
+    // Click the hidden checkbox directly
+    const checkbox = screen.getByRole('checkbox', { hidden: true });
+    fireEvent.click(checkbox);
+    expect(onPreserveVideoMetadataChange).toHaveBeenCalledWith(false);
   });
 });

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trash2, Volume2, VolumeX, Music } from 'lucide-react';
+import { Trash2, Volume2, VolumeX, Music, Check } from 'lucide-react';
 import { Rotation, AudioMode, CaptionSettings, WatermarkSettings } from '../../types';
 import { CaptionSettingsPanel } from '../../components/CaptionSettingsPanel';
 import { WatermarkSettingsPanel } from '../../components/WatermarkSettingsPanel';
@@ -23,6 +23,9 @@ interface VideoverlaySidebarProps {
   onRemoveAudioFile: () => void;
   onCaptionUpdate: (updates: Partial<CaptionSettings>) => void;
   onWatermarkUpdate: (updates: Partial<WatermarkSettings>) => void;
+  preserveVideoMetadata: boolean;
+  onPreserveVideoMetadataChange: (value: boolean) => void;
+  hasVideoMetadata: boolean;
   onDelete: () => void;
 }
 
@@ -41,6 +44,9 @@ export const VideoverlaySidebar: React.FC<VideoverlaySidebarProps> = ({
   onRemoveAudioFile,
   onCaptionUpdate,
   onWatermarkUpdate,
+  preserveVideoMetadata,
+  onPreserveVideoMetadataChange,
+  hasVideoMetadata,
   onDelete,
 }) => {
   const { t } = useLanguage();
@@ -168,6 +174,37 @@ export const VideoverlaySidebar: React.FC<VideoverlaySidebarProps> = ({
               themeColor="tool-videoverlay"
             />
           </div>
+
+          {/* Metadata Settings */}
+          {hasVideoMetadata && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
+                {t.common.metadata}
+              </h3>
+              <div className="p-4 bg-slate-700/50 rounded-2xl border border-slate-600 hover:border-tool-videoverlay/40 shadow-inner transition-all">
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <div
+                    className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
+                      preserveVideoMetadata
+                        ? 'bg-tool-videoverlay border-tool-videoverlay'
+                        : 'border-slate-500 group-hover:border-slate-400'
+                    }`}
+                  >
+                    {preserveVideoMetadata && <Check className="w-3.5 h-3.5 text-white" />}
+                  </div>
+                  <span className="text-xs font-bold text-slate-300 group-hover:text-slate-100 transition-colors">
+                    {t.tools.videoverlay.preserveMetadata}
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={preserveVideoMetadata}
+                    onChange={(e) => onPreserveVideoMetadataChange(e.target.checked)}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

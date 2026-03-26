@@ -36,6 +36,7 @@ export const translations = {
       color: 'Color',
       or: 'OR',
       aspectRatio: 'Aspect Ratio',
+      metadata: 'Metadata',
     },
     captions: {
       captionText: 'Caption Text',
@@ -229,6 +230,7 @@ export const translations = {
         selectAudio: 'Select Audio',
         videoError:
           'This video format or codec is not supported by your browser. Older AVI files (~2008 and earlier) often use legacy codecs. Try converting it to MP4 (H.264).',
+        preserveMetadata: 'Preserve video metadata',
       },
       photoverlay: {
         title: 'PhotOverlay',
@@ -325,6 +327,7 @@ export const translations = {
       color: 'Colore',
       or: 'Oppure',
       aspectRatio: "Rapporto d'Immagine",
+      metadata: 'Metadati',
     },
     captions: {
       captionText: 'Testo Didascalia',
@@ -522,6 +525,7 @@ export const translations = {
         selectAudio: 'Seleziona Audio',
         videoError:
           'Questo formato o codec video non è supportato dal tuo browser. I vecchi file AVI (~2008 e precedenti) spesso utilizzano codec obsoleti. Prova a convertirlo in MP4 (H.264).',
+        preserveMetadata: 'Preserva i metadati del video',
       },
       photoverlay: {
         title: 'PhotOverlay',

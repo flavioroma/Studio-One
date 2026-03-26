@@ -41,6 +41,7 @@ export interface VideoverlayState {
   audioFile?: File | null;
   startTime?: number;
   endTime?: number;
+  preserveVideoMetadata?: boolean;
 }
 
 export interface PhotoItemState {
