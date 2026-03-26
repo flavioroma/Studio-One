@@ -455,24 +455,24 @@ export const SlideSyncTool: React.FC = () => {
           />
         </div>
 
-        <div className="h-48 bg-slate-800/80 backdrop-blur-sm border-t border-slate-700 p-6">
-          <div className="flex justify-between items-center mb-4">
-            <span className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-500">
-              {t.tools.slidesync.timelineSequence}
-            </span>
-            <div className="flex items-center gap-4">
+        <div className="h-56 bg-slate-800/80 backdrop-blur-sm border-t border-slate-700 p-6">
+          <div className="flex justify-between items-start">
+            <div className="flex flex-col">
               <span className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-500">
+                {t.tools.slidesync.timelineSequence}
+              </span>
+              <span className="text-[11px] font-bold text-slate-400 mt-1 uppercase tracking-wider">
                 {slides.length} {t.tools.slidesync.slidesCount}
                 {audioDuration > 0 && slides.length > 0 && (
                   <span className="ml-2 text-tool-slidesync lowercase tracking-normal font-bold">
-                    ({(audioDuration / slides.length).toFixed(2)}s / {t.tools.slidesync.slide})
+                    {(audioDuration).toFixed(2)}s ({(audioDuration / slides.length).toFixed(2)}s / {t.tools.slidesync.slide})
                   </span>
                 )}
               </span>
-              <span className="text-[12px] text-slate-400 italic">
-                {t.tools.slidesync.timelineTip}
-              </span>
             </div>
+            <span className="text-[12px] text-slate-400 italic mt-0.5">
+              {t.tools.slidesync.timelineTip}
+            </span>
           </div>
           <Timeline
             slides={slides}

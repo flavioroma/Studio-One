@@ -33,6 +33,7 @@ import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { MetadataService, PhotoMetadata } from '../../services/MetadataService';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PhotoverlaySidebar } from './PhotoverlaySidebar';
+import { Thumbnail } from '../../components/Thumbnail';
 import JSZip from 'jszip';
 
 export const PhotoverlayTool: React.FC = () => {
@@ -901,49 +902,30 @@ export const PhotoverlayTool: React.FC = () => {
                       scrollbar-width: none;
                     }
                   `}</style>
-                  {items.map((item) => (
-                    <div
-                      key={item.id}
-                      id={`photo-thumb-${item.id}`}
-                      onClick={() => setSelectedId(item.id)}
-                      className={`relative group h-24 aspect-square flex-shrink-0 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
-                        selectedId === item.id
-                          ? 'border-tool-photoverlay shadow-lg shadow-tool-photoverlay/20 scale-105 z-10'
-                          : 'border-slate-600 hover:border-slate-400'
-                      }`}
-                    >
-                      <img
-                        src={item.previewUrl}
-                        className="w-full h-full object-cover pointer-events-none"
-                        alt="Thumb"
+                  {items.map((item) => {
+                    const isCustomized = !!(
+                      item.captionSettings.text ||
+                      item.watermarkSettings.file ||
+                      item.framingSettings.zoom !== 1 ||
+                      item.framingSettings.offsetX !== 0 ||
+                      item.framingSettings.offsetY !== 0 ||
+                      item.filterSettings !== FilterMode.Normal
+                    );
+
+                    return (
+                      <Thumbnail
+                        key={item.id}
+                        containerId={`photo-thumb-${item.id}`}
+                        id={item.id}
+                        imageUrl={item.previewUrl}
+                        isActive={selectedId === item.id}
+                        isCustomized={isCustomized}
+                        themeColorClass="tool-photoverlay"
+                        onClick={() => setSelectedId(item.id)}
+                        onDeleteRequest={() => handleDeleteItemRequest(item.id)}
                       />
-
-                      {(item.captionSettings.text ||
-                        item.watermarkSettings.file ||
-                        item.framingSettings.zoom !== 1 ||
-                        item.framingSettings.offsetX !== 0 ||
-                        item.framingSettings.offsetY !== 0 ||
-                        item.filterSettings !== FilterMode.Normal) && (
-                        <div className="absolute top-2 right-2 z-10">
-                          <div
-                            className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"
-                            title={t.common.isCustomized}
-                          ></div>
-                        </div>
-                      )}
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteItemRequest(item.id);
-                        }}
-                        className="absolute bottom-1 right-1 p-1.5 bg-red-500/90 text-white rounded-md hover:bg-red-600 transition-all opacity-0 group-hover:opacity-100 z-30 shadow-sm hover:scale-110"
-                        title={t.common.removeFile}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                   <label className="flex-shrink-0 h-24 aspect-square rounded-lg border-2 border-slate-700 hover:border-tool-photoverlay/50 hover:bg-slate-800/50 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all">
                     <Plus className="w-5 h-5 text-slate-500" />
                     <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter">

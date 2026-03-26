@@ -1,7 +1,8 @@
 import React, { useRef, useEffect } from 'react';
 import { Slide } from '../../types';
-import { GripVertical, Trash2, Plus } from 'lucide-react';
+import { GripVertical, Plus } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { Thumbnail } from '../../components/Thumbnail';
 
 interface TimelineProps {
   slides: Slide[];
@@ -67,7 +68,7 @@ export const Timeline: React.FC<TimelineProps> = ({
     <div
       ref={scrollRef}
       onWheel={handleWheel}
-      className="h-full flex gap-4 overflow-x-auto items-center pb-4 px-2 custom-scrollbar select-none"
+      className="h-full flex gap-2 overflow-x-auto items-center px-4 custom-scrollbar select-none"
       style={{
         scrollbarWidth: 'thin',
         scrollbarColor: '#475569 #1e293b',
@@ -94,55 +95,33 @@ export const Timeline: React.FC<TimelineProps> = ({
         <span className="text-slate-500 text-sm mx-auto">{t.tools.slidesync.noSlidesAdded}</span>
       )}
 
-      {slides.map((slide, index) => (
-        <div
-          key={slide.id}
-          id={`timeline-slide-${slide.id}`}
-          draggable
-          onDragStart={(e) => handleDragStart(e, index)}
-          onDragOver={handleDragOver}
-          onDrop={(e) => handleDrop(e, index)}
-          onClick={() => onSelectSlide(slide.id)}
-          className={`relative group h-24 aspect-square flex-shrink-0 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
-            activeSlideId === slide.id
-              ? 'border-tool-slidesync shadow-lg shadow-tool-slidesync/20 scale-105 z-10'
-              : 'border-slate-600 hover:border-slate-400'
-          }`}
-        >
-          {/* Drag Handle Overlay */}
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-move z-20">
-            <GripVertical className="text-white w-6 h-6 drop-shadow-md" />
-          </div>
+      {slides.map((slide, index) => {
+        const isCustomized = !!(
+          slide.captionSettings.text ||
+          slide.framingSettings.zoom !== 1 ||
+          slide.framingSettings.offsetX !== 0 ||
+          slide.framingSettings.offsetY !== 0
+        );
 
-          <img
-            src={slide.previewUrl}
-            alt={`Slide ${index + 1}`}
-            className="w-full h-full object-cover pointer-events-none"
-          />
-          <div className="absolute bottom-0 left-0 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-tr font-bold z-10">
-            #{index + 1}
-          </div>
-          {(slide.captionSettings.text || slide.framingSettings.zoom !== 1 || slide.framingSettings.offsetX !== 0 || slide.framingSettings.offsetY !== 0) && (
-            <div className="absolute top-2 right-2 z-10">
-              <div
-                className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"
-                title={t.common.isCustomized}
-              ></div>
-            </div>
-          )}
-
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(slide.id);
-            }}
-            className="absolute bottom-1 right-1 p-1.5 bg-red-500/90 text-white rounded-md hover:bg-red-600 transition-all opacity-0 group-hover:opacity-100 z-30 shadow-sm hover:scale-110"
-            title={t.common.removeFile}
-          >
-            <Trash2 className="w-3 h-3" />
-          </button>
-        </div>
-      ))}
+        return (
+            <Thumbnail
+              key={slide.id}
+              containerId={`timeline-slide-${slide.id}`}
+              id={slide.id}
+              imageUrl={slide.previewUrl}
+              isActive={activeSlideId === slide.id}
+              isCustomized={isCustomized}
+              themeColorClass="tool-slidesync"
+              onClick={() => onSelectSlide(slide.id)}
+              onDeleteRequest={() => onDelete(slide.id)}
+              index={index}
+              draggable
+              onDragStart={(e) => handleDragStart(e, index)}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, index)}
+            />
+        );
+      })}
 
       {slides.length > 0 && (
         <label className="flex-shrink-0 h-24 aspect-square rounded-lg border-2 border-slate-700 hover:border-tool-slidesync/50 hover:bg-slate-800/50 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all">

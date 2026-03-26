@@ -1,7 +1,8 @@
 import React from 'react';
 import { Eye, EyeOff, Trash2, Plus, Download } from 'lucide-react';
-import { PiCollagePicture } from '../../types';
+import { PiCollagePicture, FilterMode } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { Thumbnail } from '../../components/Thumbnail';
 
 interface PiCollageFooterProps {
   pictures: PiCollagePicture[];
@@ -25,48 +26,34 @@ export const PiCollageFooter: React.FC<PiCollageFooterProps> = ({
   return (
     <div className="flex h-full items-center gap-6">
       <div className="flex-1 flex items-center gap-3 overflow-x-auto pb-4 custom-scrollbar h-full pt-4">
-        {pictures.map((pic) => (
-          <div
-            key={pic.id}
-            className={`relative flex-shrink-0 w-24 h-24 rounded-2xl overflow-hidden cursor-pointer group transition-all duration-300 ${
-              activePictureId === pic.id
-                ? 'ring-2 ring-tool-picollage shadow-[0_0_15px_rgba(234,179,8,0.3)] scale-105'
-                : 'ring-1 ring-slate-700 hover:ring-slate-500 hover:scale-105'
-            } ${!pic.isVisible && activePictureId !== pic.id ? 'opacity-50 grayscale' : ''}`}
-            onClick={() => onSelectPicture(pic.id)}
-          >
-            <img src={pic.previewUrl} alt="Thumbnail" className="w-full h-full object-cover" />
+        {pictures.map((pic) => {
+          const isCustomized = !!(
+            pic.captionSettings?.text ||
+            pic.watermarkSettings?.file ||
+            pic.framingSettings?.zoom !== 1 ||
+            pic.framingSettings?.offsetX !== 0 ||
+            pic.framingSettings?.offsetY !== 0 ||
+            pic.filterSettings !== FilterMode.Normal
+          );
 
-            {/* Hover UI */}
-            <div
-              className={`absolute inset-0 bg-black/60 flex items-center justify-between px-3 ${activePictureId === pic.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}
-            >
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggleVisibility(pic.id);
-                }}
-                className="p-1.5 text-white hover:text-tool-picollage rounded-full bg-slate-800/50 hover:bg-slate-800 transition-colors"
-                title={
-                  pic.isVisible ? t.tools.picollage.hidePicture : t.tools.picollage.showPicture
-                }
-              >
-                {pic.isVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-              </button>
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRemovePicture(pic.id);
-                }}
-                className="p-1.5 text-white hover:text-red-400 rounded-full bg-slate-800/50 hover:bg-slate-800 transition-colors"
-                title={t.tools.picollage.removePicture}
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        ))}
+          return (
+            <Thumbnail
+              key={pic.id}
+              id={pic.id}
+              imageUrl={pic.previewUrl}
+              isActive={activePictureId === pic.id}
+              isCustomized={isCustomized}
+              themeColorClass="tool-picollage"
+              isDimmed={!pic.isVisible}
+              onClick={() => onSelectPicture(pic.id)}
+              onDeleteRequest={() => onRemovePicture(pic.id)}
+              visibilityToggle={{
+                isVisible: pic.isVisible,
+                onToggle: () => onToggleVisibility(pic.id)
+              }}
+            />
+          );
+        })}
 
         {/* Add More Button slot */}
         {pictures.length > 0 && (
