@@ -25,6 +25,7 @@ export const SlideSyncTool: React.FC = () => {
   const [showEraseConfirm, setShowEraseConfirm] = useState(false);
   const [slideToDeleteId, setSlideToDeleteId] = useState<string | null>(null);
   const [audioTrimTracks, setAudioTrimTracks] = useState<AudioTrackItem[]>([]);
+  const [hasPhotoverlayItems, setHasPhotoverlayItems] = useState(false);
   const [showApplyAllConfirm, setShowApplyAllConfirm] = useState(false);
   const [showApplyFilterAllConfirm, setShowApplyFilterAllConfirm] = useState(false);
   const [showApplyBorderAllConfirm, setShowApplyBorderAllConfirm] = useState(false);
@@ -105,6 +106,11 @@ export const SlideSyncTool: React.FC = () => {
       const trimState = await PersistenceService.loadAudioTrimState();
       if (trimState) {
         setAudioTrimTracks(trimState.tracks);
+      }
+
+      const photoverlayState = await PersistenceService.loadPhotoverlayState();
+      if (photoverlayState && photoverlayState.items && photoverlayState.items.length > 0) {
+        setHasPhotoverlayItems(true);
       }
 
       isLoadedRef.current = true;
@@ -254,6 +260,44 @@ export const SlideSyncTool: React.FC = () => {
     }
   };
 
+  const handleImportFromPhotoverlay = async () => {
+    const poState = await PersistenceService.loadPhotoverlayState();
+    if (!poState || !poState.items || poState.items.length === 0) return;
+
+    const newSlides: Slide[] = poState.items.map((item) => ({
+      id: Math.random().toString(36).substring(7),
+      file: item.file,
+      previewUrl: URL.createObjectURL(item.file),
+      captionSettings: item.captionSettings || {
+        text: '',
+        color: TextColor.White,
+        position: TextPosition.BottomLeft,
+        textSize: TextSize.Small,
+        isItalic: false,
+      },
+      framingSettings: item.framingSettings || {
+        zoom: 1.0,
+        offsetX: 0,
+        offsetY: 0,
+      },
+      filterSettings: item.filterSettings || FilterMode.Normal,
+      borderSettings: item.borderSettings || {
+        size: BorderSize.None,
+        color: TextColor.White,
+      },
+      watermarkSettings: item.watermarkSettings || {
+        file: null,
+        position: TextPosition.TopRight,
+        opacity: 0.2, 
+        scale: 0.2,
+      },
+    }));
+    setSlides((prev) => [...prev, ...newSlides]);
+    if (!activeSlideId && newSlides.length > 0) {
+      setActiveSlideId(newSlides[0].id);
+    }
+  };
+
   const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setAudioFile(e.target.files[0]);
@@ -392,6 +436,8 @@ export const SlideSyncTool: React.FC = () => {
           onApplyFilterToAllChange={filterApply.handleApplyToAllChange}
           applyBorderToAll={borderApply.applyToAll}
           onApplyBorderToAllChange={borderApply.handleApplyToAllChange}
+          hasPhotoverlayItems={hasPhotoverlayItems}
+          onImportFromPhotoverlay={handleImportFromPhotoverlay}
         />
       </div>
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Trash2 } from 'lucide-react';
+import { Settings2, Download, Trash2, Check, ZoomIn, Square, Filter, Palette, Image as ImageIcon } from 'lucide-react';
 import {
   PhotoItem,
   CaptionSettings,
@@ -38,8 +38,10 @@ interface PhotoverlaySidebarProps {
   namingSettings: NamingSettings;
   onNamingUpdate: (updates: Partial<NamingSettings>) => void;
   preserveMetadata: boolean;
-  onPreserveMetadataChange: (value: boolean) => void;
+  onPreserveMetadataChange: (preserve: boolean) => void;
   onDeleteAll: () => void;
+  hasSlideSyncSlides?: boolean;
+  onImportFromSlideSync?: () => void;
 }
 
 export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
@@ -62,6 +64,8 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
   preserveMetadata,
   onPreserveMetadataChange,
   onDeleteAll,
+  hasSlideSyncSlides = false,
+  onImportFromSlideSync,
 }) => {
   const { t } = useLanguage();
 
@@ -81,6 +85,15 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
             label={t.tools.photoverlay.uploadPhotos}
             themeColor="tool-photoverlay"
           />
+          {hasSlideSyncSlides && onImportFromSlideSync && (
+            <button
+              onClick={onImportFromSlideSync}
+              className="flex items-center justify-center gap-2 w-full p-4 rounded-xl border border-tool-slidesync/40 hover:border-tool-slidesync/60 bg-tool-slidesync/10 hover:bg-tool-slidesync/20 transition-all text-tool-slidesync"
+            >
+              <ImageIcon className="w-5 h-5" />
+              <span className="text-sm font-medium">{t.tools.photoverlay.importFromSlideSync}</span>
+            </button>
+          )}
         </div>
       ) : (
         <>

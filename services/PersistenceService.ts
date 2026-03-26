@@ -12,6 +12,8 @@ import {
   WatermarkSettings,
   FilterMode,
   BorderSize,
+  BorderSettings,
+  CaptionSettings,
 } from '../types';
 
 const SLIDESYNC_KEY = 'slidesync_state_v1';
@@ -47,17 +49,11 @@ export interface VideoverlayState {
 export interface PhotoItemState {
   id: string;
   file: File;
-  caption: string;
-  color: TextColor;
-  position: TextPosition;
-  textSize: TextSize;
-  isItalic?: boolean;
-  watermarkFile?: File | null;
-  watermarkPosition?: TextPosition;
-  framingSettings?: FramingSettings;
-  filter?: FilterMode;
-  borderSize?: BorderSize;
-  borderColor?: TextColor;
+  framingSettings: FramingSettings;
+  filterSettings: FilterMode;
+  borderSettings: BorderSettings;
+  captionSettings: CaptionSettings;
+  watermarkSettings: WatermarkSettings;
 }
 
 export interface PhotoverlayState {
@@ -102,42 +98,9 @@ export class PersistenceService {
 
   static async loadSlideSyncState(): Promise<SlideSyncState | null> {
     try {
-      const state = await get<any>(SLIDESYNC_KEY);
+      const state = await get<SlideSyncState>(SLIDESYNC_KEY);
       if (!state) return null;
-
-      // Migration for old slides to new ImageItem format
-      const migratedSlides = state.slides?.map((s: any) => {
-        if (s.framingSettings) return s;
-        return {
-          ...s,
-          previewUrl: s.previewUrl || s.imageUrl || '',
-          framingSettings: {
-            zoom: s.zoom || 1,
-            offsetX: s.offsetX || 0,
-            offsetY: s.offsetY || 0,
-          },
-          filterSettings: s.filter || FilterMode.Normal,
-          borderSettings: {
-            size: s.borderSize || BorderSize.None,
-            color: s.borderColor || TextColor.White,
-          },
-          captionSettings: {
-            text: s.text || '',
-            color: s.color || TextColor.White,
-            position: s.position || TextPosition.BottomLeft,
-            textSize: s.textSize || TextSize.Small,
-            isItalic: s.isItalic || false,
-          },
-          watermarkSettings: {
-            file: s.watermarkFile || null,
-            position: s.watermarkPosition || TextPosition.TopRight,
-            opacity: s.watermarkOpacity || 0.2,
-            scale: s.watermarkScale || 0.2,
-          },
-        };
-      });
-
-      return { ...state, slides: migratedSlides || [] } as SlideSyncState;
+      return state;
     } catch (error) {
       console.error('Failed to load SlideSync state:', error);
       return null;

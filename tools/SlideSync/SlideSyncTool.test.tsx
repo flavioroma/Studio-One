@@ -9,6 +9,7 @@ vi.mock('../../services/PersistenceService', () => ({
     loadSlideSyncState: vi.fn().mockResolvedValue(null),
     loadAudioTrimState: vi.fn().mockResolvedValue({ tracks: [], selectedId: null }),
     saveSlideSyncState: vi.fn(),
+    loadPhotoverlayState: vi.fn().mockResolvedValue(null),
   },
 }));
 

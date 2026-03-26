@@ -8,6 +8,8 @@ vi.mock('../../services/PersistenceService', () => ({
   PersistenceService: {
     loadPiCollageState: vi.fn().mockResolvedValue(null),
     savePiCollageState: vi.fn(),
+    loadSlideSyncState: vi.fn().mockResolvedValue(null),
+    loadPhotoverlayState: vi.fn().mockResolvedValue(null),
   },
 }));
 

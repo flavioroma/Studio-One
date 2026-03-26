@@ -49,6 +49,7 @@ export const PhotoverlayTool: React.FC = () => {
   });
   const [preserveMetadata, setPreserveMetadata] = useState(true);
   const [showApplyBorderAllConfirm, setShowApplyBorderAllConfirm] = useState(false);
+  const [hasSlideSyncSlides, setHasSlideSyncSlides] = useState(false);
 
   // Preview Sizing
   const [containerSize, setContainerSize] = useState<{ width: number; height: number }>({
@@ -248,6 +249,68 @@ export const PhotoverlayTool: React.FC = () => {
     }
   };
 
+  const handleImportFromSlideSync = async () => {
+    const ssState = await PersistenceService.loadSlideSyncState();
+    if (!ssState || !ssState.slides || ssState.slides.length === 0) return;
+
+    const newItems: PhotoItem[] = [];
+    for (let i = 0; i < ssState.slides.length; i++) {
+      const slide = ssState.slides[i];
+      const url = URL.createObjectURL(slide.file);
+      
+      let exif: PhotoMetadata | null = null;
+      try {
+        exif = await MetadataService.getPhotoMetadata(slide.file);
+      } catch (err) {}
+
+      const dimensions = await new Promise<{ width: number; height: number }>((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+        img.onerror = () => resolve({ width: 0, height: 0 });
+        img.src = url;
+      });
+
+      newItems.push({
+        id: Math.random().toString(36).substr(2, 9),
+        file: slide.file,
+        previewUrl: url,
+        captionSettings: slide.captionSettings || {
+          text: '',
+          color: TextColor.White,
+          position: TextPosition.BottomLeft,
+          textSize: TextSize.Small,
+          isItalic: false,
+        },
+        framingSettings: slide.framingSettings || {
+          zoom: 1.0,
+          offsetX: 0,
+          offsetY: 0,
+        },
+        filterSettings: slide.filterSettings || FilterMode.Normal,
+        borderSettings: slide.borderSettings || {
+          size: BorderSize.None,
+          color: TextColor.White,
+        },
+        watermarkSettings: slide.watermarkSettings || {
+          file: null,
+          position: TextPosition.TopRight,
+          opacity: 0.2,
+          scale: 0.2,
+        },
+        metadata: dimensions,
+        exifData: exif,
+      });
+    }
+
+    setItems((prev) => {
+      const updated = [...prev, ...newItems];
+      if (!selectedId && updated.length > 0) {
+        setSelectedId(updated[0].id);
+      }
+      return updated;
+    });
+  };
+
   // Persistence logic
   const isLoadedRef = useRef(false);
 
@@ -258,29 +321,6 @@ export const PhotoverlayTool: React.FC = () => {
         const hydratedItems = state.items.map((item) => ({
           ...item,
           previewUrl: URL.createObjectURL(item.file),
-          captionSettings: {
-            text: item.caption,
-            color: item.color,
-            position: item.position,
-            textSize: item.textSize,
-            isItalic: item.isItalic || false,
-          },
-          watermarkSettings: {
-            file: item.watermarkFile || null,
-            position: item.watermarkPosition || TextPosition.TopRight,
-            opacity: 0.2,
-            scale: 0.2,
-          },
-          framingSettings: (item as any).framingSettings || {
-            zoom: 1.0,
-            offsetX: 0,
-            offsetY: 0,
-          },
-          filterSettings: item.filter || FilterMode.Normal,
-          borderSettings: {
-            size: item.borderSize || BorderSize.None,
-            color: item.borderColor || TextColor.White,
-          },
           metadata: null,
           exifData: null,
         }));
@@ -328,6 +368,12 @@ export const PhotoverlayTool: React.FC = () => {
           setPreserveMetadata(state.preserveMetadata);
         }
       }
+
+      const ssState = await PersistenceService.loadSlideSyncState();
+      if (ssState && ssState.slides && ssState.slides.length > 0) {
+        setHasSlideSyncSlides(true);
+      }
+
       isLoadedRef.current = true;
     };
     load();
@@ -339,17 +385,11 @@ export const PhotoverlayTool: React.FC = () => {
       items: items.map((item) => ({
         id: item.id,
         file: item.file,
-        caption: item.captionSettings.text,
-        color: item.captionSettings.color,
-        position: item.captionSettings.position,
-        textSize: item.captionSettings.textSize,
-        isItalic: item.captionSettings.isItalic,
-        watermarkFile: item.watermarkSettings.file,
-        watermarkPosition: item.watermarkSettings.position,
+        captionSettings: item.captionSettings,
+        watermarkSettings: item.watermarkSettings,
         framingSettings: item.framingSettings,
-        filter: item.filterSettings,
-        borderSize: item.borderSettings.size,
-        borderColor: item.borderSettings.color,
+        filterSettings: item.filterSettings,
+        borderSettings: item.borderSettings,
       })),
       selectedId,
       applyToAll,
@@ -783,6 +823,8 @@ export const PhotoverlayTool: React.FC = () => {
         preserveMetadata={preserveMetadata}
         onPreserveMetadataChange={setPreserveMetadata}
         onDeleteAll={() => setShowDeleteConfirm(true)}
+        hasSlideSyncSlides={hasSlideSyncSlides}
+        onImportFromSlideSync={handleImportFromSlideSync}
       />
 
       {/* Main Preview / Viewport */}

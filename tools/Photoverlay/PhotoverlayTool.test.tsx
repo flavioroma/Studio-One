@@ -8,6 +8,14 @@ vi.mock('../../services/PersistenceService', () => ({
   PersistenceService: {
     loadPhotoverlayState: vi.fn().mockResolvedValue(null),
     savePhotoverlayState: vi.fn(),
+    loadSlideSyncState: vi.fn().mockResolvedValue(null),
+    saveSlideSyncState: vi.fn(),
+    loadPiCollageState: vi.fn().mockResolvedValue(null),
+    savePiCollageState: vi.fn(),
+    loadAudioTrimState: vi.fn().mockResolvedValue(null),
+    saveAudioTrimState: vi.fn(),
+    loadVideoverlayState: vi.fn().mockResolvedValue(null),
+    saveVideoverlayState: vi.fn(),
   },
 }));
 

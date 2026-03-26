@@ -41,6 +41,8 @@ interface SlideSyncSidebarProps {
   onApplyFilterToAllChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   applyBorderToAll?: boolean;
   onApplyBorderToAllChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  hasPhotoverlayItems?: boolean;
+  onImportFromPhotoverlay?: () => void;
 }
 
 export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
@@ -65,6 +67,8 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
   onApplyFilterToAllChange,
   applyBorderToAll = false,
   onApplyBorderToAllChange,
+  hasPhotoverlayItems = false,
+  onImportFromPhotoverlay,
 }) => {
   const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -273,6 +277,15 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
               <span className="text-sm font-medium">{t.tools.slidesync.addImages}</span>
             </label>
           </div>
+          {hasPhotoverlayItems && onImportFromPhotoverlay && (
+            <button
+              onClick={onImportFromPhotoverlay}
+              className="flex items-center justify-center gap-2 w-full p-3 rounded-xl border border-tool-photoverlay/40 hover:border-tool-photoverlay/60 bg-tool-photoverlay/10 hover:bg-tool-photoverlay/20 transition-all text-tool-photoverlay"
+            >
+              <ImageIcon className="w-5 h-5" />
+              <span className="text-sm font-medium">{t.tools.slidesync.importFromPhotoverlay}</span>
+            </button>
+          )}
         </div>
         <hr className="border-slate-700 my-2 pt-4" />
         <div className="flex flex-col gap-4">

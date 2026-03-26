@@ -18,6 +18,8 @@ export const PiCollageTool: React.FC = () => {
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>(AspectRatio.Landscape_16_9);
   const [exportFormat, setExportFormat] = useState<'png' | 'jpg'>('png');
   const [showEraseConfirm, setShowEraseConfirm] = useState(false);
+  const [hasSlideSyncSlides, setHasSlideSyncSlides] = useState(false);
+  const [hasPhotoverlayItems, setHasPhotoverlayItems] = useState(false);
 
   const activePicture = pictures.find((p) => p.id === activePictureId) || null;
 
@@ -110,6 +112,17 @@ export const PiCollageTool: React.FC = () => {
         setExportFormat(state.exportFormat);
         if (restored.length > 0) setActivePictureId(restored[0].id);
       }
+
+      const ssState = await PersistenceService.loadSlideSyncState();
+      if (ssState && ssState.slides && ssState.slides.length > 0) {
+        setHasSlideSyncSlides(true);
+      }
+
+      const poState = await PersistenceService.loadPhotoverlayState();
+      if (poState && poState.items && poState.items.length > 0) {
+        setHasPhotoverlayItems(true);
+      }
+
       isLoadedRef.current = true;
     };
     load();
@@ -184,6 +197,109 @@ export const PiCollageTool: React.FC = () => {
       setPictures((prev) => [...prev, ...newPics]);
       if (newPics.length > 0) setActivePictureId(newPics[0].id);
     }
+  };
+
+  const handleImportFromSlideSync = async () => {
+    const ssState = await PersistenceService.loadSlideSyncState();
+    if (!ssState || !ssState.slides || ssState.slides.length === 0) return;
+
+    const newPics: PiCollagePicture[] = [];
+    for (let i = 0; i < ssState.slides.length; i++) {
+        const slide = ssState.slides[i];
+        const previewUrl = URL.createObjectURL(slide.file);
+        const img = new Image();
+        img.src = previewUrl;
+        await new Promise((resolve) => { img.onload = resolve; img.onerror = resolve; });
+        const imgWidth = img.width || 800;
+        const imgHeight = img.height || 600;
+        const ar = imgWidth / imgHeight;
+        const maxZ = Math.max(0, ...pictures.map((p) => p.zIndex), ...newPics.map((p) => p.zIndex));
+
+        newPics.push({
+          id: Math.random().toString(36).substring(7),
+          file: slide.file,
+          previewUrl,
+          aspectRatio: ar,
+          x: 20 + (pictures.length + i) * 5,
+          y: 20 + (pictures.length + i) * 5,
+          width: 30,
+          height: 30 / ar,
+          rotation: 0,
+          scaleX: 1,
+          scaleY: 1,
+          framingSettings: slide.framingSettings || { zoom: 1, offsetX: 0, offsetY: 0 },
+          borderSettings: { size: slide.borderSettings?.size || BorderSize.None, color: slide.borderSettings?.color || TextColor.White },
+          filterSettings: slide.filterSettings || FilterMode.Normal,
+          captionSettings: {
+            text: slide.captionSettings?.text || '',
+            color: slide.captionSettings?.color || TextColor.White,
+            position: slide.captionSettings?.position || TextPosition.BottomLeft,
+            textSize: slide.captionSettings?.textSize || TextSize.Small,
+            isItalic: slide.captionSettings?.isItalic || false,
+          },
+          watermarkSettings: {
+            file: slide.watermarkSettings?.file || null,
+            position: slide.watermarkSettings?.position || TextPosition.TopRight,
+            opacity: 0.2, scale: 0.2,
+          },
+          zIndex: maxZ + 1,
+          isVisible: true,
+        });
+    }
+    setPictures((prev) => [...prev, ...newPics]);
+    if (newPics.length > 0) setActivePictureId(newPics[0].id);
+  };
+
+  const handleImportFromPhotoverlay = async () => {
+    const poState = await PersistenceService.loadPhotoverlayState();
+    if (!poState || !poState.items || poState.items.length === 0) return;
+
+    const newPics: PiCollagePicture[] = [];
+    for (let i = 0; i < poState.items.length; i++) {
+        const item = poState.items[i];
+        const previewUrl = URL.createObjectURL(item.file);
+        const img = new Image();
+        img.src = previewUrl;
+        await new Promise((resolve) => { img.onload = resolve; img.onerror = resolve; });
+        const imgWidth = img.width || 800;
+        const imgHeight = img.height || 600;
+        const ar = imgWidth / imgHeight;
+        const maxZ = Math.max(0, ...pictures.map((p) => p.zIndex), ...newPics.map((p) => p.zIndex));
+
+        newPics.push({
+          id: Math.random().toString(36).substring(7),
+          file: item.file,
+          previewUrl,
+          aspectRatio: ar,
+          x: 20 + (pictures.length + i) * 5,
+          y: 20 + (pictures.length + i) * 5,
+          width: 30,
+          height: 30 / ar,
+          rotation: 0,
+          scaleX: 1,
+          scaleY: 1,
+          framingSettings: item.framingSettings || { zoom: 1, offsetX: 0, offsetY: 0 },
+          borderSettings: item.borderSettings || { size: BorderSize.None, color: TextColor.White },
+          filterSettings: item.filterSettings || FilterMode.Normal,
+          captionSettings: item.captionSettings || {
+            text: '',
+            color: TextColor.White,
+            position: TextPosition.BottomLeft,
+            textSize: TextSize.Small,
+            isItalic: false,
+          },
+          watermarkSettings: item.watermarkSettings || {
+            file: null,
+            position: TextPosition.TopRight,
+            opacity: 0.2, 
+            scale: 0.2,
+          },
+          zIndex: maxZ + 1,
+          isVisible: true,
+        });
+    }
+    setPictures((prev) => [...prev, ...newPics]);
+    if (newPics.length > 0) setActivePictureId(newPics[0].id);
   };
 
   const updatePicture = (id: string, updates: Partial<PiCollagePicture>) => {
@@ -488,6 +604,10 @@ export const PiCollageTool: React.FC = () => {
           applyBorderToAll={borderApply.applyToAll}
           onApplyBorderToAllChange={borderApply.handleApplyToAllChange}
           onDeleteProject={() => setShowEraseConfirm(true)}
+          hasSlideSyncSlides={hasSlideSyncSlides}
+          onImportFromSlideSync={handleImportFromSlideSync}
+          hasPhotoverlayItems={hasPhotoverlayItems}
+          onImportFromPhotoverlay={handleImportFromPhotoverlay}
         />
       </div>
 
