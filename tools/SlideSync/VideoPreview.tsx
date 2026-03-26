@@ -35,16 +35,15 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
   const [isRecording, setIsRecording] = useState(false);
-  const [exportFormat, setExportFormat] = useState<ExportFormat>(ExportFormat.WebM);
-  const [supportedFormats, setSupportedFormats] = useState<ExportFormat[]>([ExportFormat.WebM]);
+  const [exportFormat, setExportFormat] = useState<ExportFormat>(ExportFormat.MP4);
+  const [supportedFormats, setSupportedFormats] = useState<ExportFormat[]>([ExportFormat.MP4, ExportFormat.WebM]);
   const [watermarkImgs, setWatermarkImgs] = useState<Record<string, HTMLImageElement>>({});
 
   useEffect(() => {
     const checkSupport = async () => {
-      const formats = [ExportFormat.WebM];
+      let mp4Supported = false;
 
       // Check for MP4 support via WebCodecs (VideoEncoder)
-      // This is what Mp4ExportService uses
       if ('VideoEncoder' in window) {
         try {
           const support = await VideoEncoder.isConfigSupported({
@@ -56,19 +55,21 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
           });
 
           if (support.supported) {
-            formats.push(ExportFormat.MP4);
-            setExportFormat(ExportFormat.MP4); // Default to MP4 if supported
+            mp4Supported = true;
           }
         } catch (e) {
           console.error('Error checking VideoEncoder support:', e);
         }
       } else if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1.4d002a')) {
-        // Fallback to MediaRecorder check if VideoEncoder is not available
-        formats.push(ExportFormat.MP4);
-        setExportFormat(ExportFormat.MP4);
+        mp4Supported = true;
       }
 
+      const formats = mp4Supported
+        ? [ExportFormat.MP4, ExportFormat.WebM]
+        : [ExportFormat.WebM];
+
       setSupportedFormats(formats);
+      setExportFormat(mp4Supported ? ExportFormat.MP4 : ExportFormat.WebM);
     };
 
     checkSupport();
@@ -450,53 +451,63 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
         )}
       </div>
 
-      <PlaybackControls
-        isPlaying={isPlaying}
-        onTogglePlay={togglePlay}
-        currentTime={currentTime}
-        duration={audioDuration}
-        isDisabled={isDisabled || isRecording}
-        themeColor="tool-slidesync"
-      >
-        <button
-          onClick={handleExport}
-          disabled={isDisabled || isRecording}
-          className={`flex items-center gap-3 px-8 py-3 rounded-full font-black text-xs uppercase tracking-widest transition-all ${isRecording ? 'bg-slate-700 text-slate-400' : 'bg-tool-slidesync hover:opacity-90 text-white shadow-xl shadow-tool-slidesync/10 active:scale-95'}`}
-        >
-          {isRecording ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>{t.tools.slidesync.creating}</span>
-            </>
-          ) : (
-            <>
-              <Download className="w-4 h-4" />
-              <span>{t.tools.slidesync.exportClip}</span>
-            </>
-          )}
-        </button>
+      <div className="w-full relative flex items-center justify-center">
+        <PlaybackControls
+          isPlaying={isPlaying}
+          onTogglePlay={togglePlay}
+          currentTime={currentTime}
+          duration={audioDuration}
+          isDisabled={isDisabled || isRecording}
+          themeColor="tool-slidesync"
+        />
 
-        <div className="flex bg-slate-700/50 rounded-lg p-1 border border-slate-600">
-          {supportedFormats.map((fmt) => (
-            <button
-              key={fmt}
-              onClick={() => setExportFormat(fmt)}
-              className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-all ${
-                exportFormat === fmt
-                  ? 'bg-tool-slidesync text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-              title={
-                fmt === ExportFormat.MP4
-                  ? t.tools.slidesync.exportAsMp4
-                  : t.tools.slidesync.exportAsWebm
-              }
-            >
-              {fmt === ExportFormat.MP4 ? 'MP4' : 'WEBM'}
-            </button>
-          ))}
+        <div className="absolute right-0 bottom-0 flex flex-col items-center gap-2 py-2">
+          {/* Format Selector on top */}
+          <div className="flex bg-slate-800/50 backdrop-blur-md rounded-xl p-1 border border-slate-700/50 shadow-lg">
+            {supportedFormats.map((fmt) => (
+              <button
+                key={fmt}
+                onClick={() => setExportFormat(fmt)}
+                className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+                  exportFormat === fmt
+                    ? 'bg-tool-slidesync text-white shadow-md'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                }`}
+                title={
+                  fmt === ExportFormat.MP4
+                    ? t.tools.slidesync.exportAsMp4
+                    : t.tools.slidesync.exportAsWebm
+                }
+              >
+                {fmt === ExportFormat.MP4 ? 'MP4' : 'WEBM'}
+              </button>
+            ))}
+          </div>
+
+          {/* Export Button on the bottom */}
+          <button
+            onClick={handleExport}
+            disabled={isDisabled || isRecording}
+            className={`flex items-center gap-3 px-8 py-3 rounded-full font-black text-xs uppercase tracking-widest transition-all ${
+              isRecording
+                ? 'bg-slate-800 text-slate-500'
+                : 'bg-tool-slidesync hover:opacity-90 hover:scale-[1.02] text-white shadow-xl shadow-tool-slidesync/10 active:scale-95'
+            }`}
+          >
+            {isRecording ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>{t.tools.slidesync.creating}</span>
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4" />
+                <span>{t.tools.slidesync.exportClip}</span>
+              </>
+            )}
+          </button>
         </div>
-      </PlaybackControls>
+      </div>
       {isRecording && (
         <div className="absolute top-12 bg-red-600/90 backdrop-blur-md text-white px-6 py-3 rounded-full flex items-center gap-3 animate-pulse z-50 shadow-2xl border border-white/20">
           <div className="w-3 h-3 bg-white rounded-full"></div>
