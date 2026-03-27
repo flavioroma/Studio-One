@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { PlayCircle, Trash2 } from 'lucide-react';
+import { PlayCircle, Trash2, Layers } from 'lucide-react';
 import { Slide, TextPosition, TextColor, AspectRatio, TextSize, FilterMode, BorderSize } from '../../types';
 import { generateCaptionForImage } from '../../services/geminiService';
 import { PersistenceService, AudioTrackItem } from '../../services/PersistenceService';
@@ -10,6 +10,7 @@ import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { renderTrimmedAudioToFile } from '../../utils/audioUtils';
 import { useApplyToAll } from '../../hooks/useApplyToAll';
+import { ToolLoadingScreen } from '../../components/ToolLoadingScreen';
 
 export const SlideSyncTool: React.FC = () => {
   const { t } = useLanguage();
@@ -29,6 +30,7 @@ export const SlideSyncTool: React.FC = () => {
   const [showApplyAllConfirm, setShowApplyAllConfirm] = useState(false);
   const [showApplyFilterAllConfirm, setShowApplyFilterAllConfirm] = useState(false);
   const [showApplyBorderAllConfirm, setShowApplyBorderAllConfirm] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -86,34 +88,38 @@ export const SlideSyncTool: React.FC = () => {
   // Load State on Mount
   useEffect(() => {
     const load = async () => {
-      const state = await PersistenceService.loadSlideSyncState();
-      if (state) {
-        // Restore slides with new Object URLs
-        const restoredSlides = state.slides.map((s) => ({
-          ...s,
-          previewUrl: URL.createObjectURL(s.file),
-        }));
+      try {
+        const state = await PersistenceService.loadSlideSyncState();
+        if (state) {
+          // Restore slides with new Object URLs
+          const restoredSlides = state.slides.map((s) => ({
+            ...s,
+            previewUrl: URL.createObjectURL(s.file),
+          }));
 
-        setSlides(restoredSlides);
-        if (restoredSlides.length > 0) setActiveSlideId(restoredSlides[0].id);
+          setSlides(restoredSlides);
+          if (restoredSlides.length > 0) setActiveSlideId(restoredSlides[0].id);
 
-        if (state.aspectRatio) {
-          setAspectRatio(state.aspectRatio);
+          if (state.aspectRatio) {
+            setAspectRatio(state.aspectRatio);
+          }
+          setAudioFile(state.audioFile);
         }
-        setAudioFile(state.audioFile);
-      }
 
-      const trimState = await PersistenceService.loadAudioTrimState();
-      if (trimState) {
-        setAudioTrimTracks(trimState.tracks);
-      }
+        const trimState = await PersistenceService.loadAudioTrimState();
+        if (trimState) {
+          setAudioTrimTracks(trimState.tracks);
+        }
 
-      const photoverlayState = await PersistenceService.loadPhotoverlayState();
-      if (photoverlayState && photoverlayState.items && photoverlayState.items.length > 0) {
-        setHasPhotoverlayItems(true);
-      }
+        const photoverlayState = await PersistenceService.loadPhotoverlayState();
+        if (photoverlayState && photoverlayState.items && photoverlayState.items.length > 0) {
+          setHasPhotoverlayItems(true);
+        }
 
-      isLoadedRef.current = true;
+        isLoadedRef.current = true;
+      } finally {
+        setIsInitialLoading(false);
+      }
     };
     load();
   }, []);
@@ -442,7 +448,8 @@ export const SlideSyncTool: React.FC = () => {
         />
       </div>
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 relative">
+        {isInitialLoading && <ToolLoadingScreen Icon={Layers} colorVar="--tool-slidesync" />}
         <div className="flex-1 bg-slate-950 relative flex items-center justify-center p-8 overflow-hidden">
           <VideoPreview
             slides={slides}

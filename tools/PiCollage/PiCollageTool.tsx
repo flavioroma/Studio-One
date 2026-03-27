@@ -6,9 +6,10 @@ import { ToolFooter } from '../../components/ToolFooter';
 import { PiCollageSettingsBar } from './PiCollageSettingsBar';
 import { PiCollageCanvas } from './PiCollageCanvas';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
-import { Trash2, Check, Download } from 'lucide-react';
+import { Trash2, Check, Download, LayoutGrid } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useApplyToAll } from '../../hooks/useApplyToAll';
+import { ToolLoadingScreen } from '../../components/ToolLoadingScreen';
 import { calculateCaptionMetrics, calculateCaptionPosition, calculateWatermarkPosition } from '../../utils/captionUtils';
 
 export const PiCollageTool: React.FC = () => {
@@ -20,6 +21,7 @@ export const PiCollageTool: React.FC = () => {
   const [showEraseConfirm, setShowEraseConfirm] = useState(false);
   const [hasSlideSyncSlides, setHasSlideSyncSlides] = useState(false);
   const [hasPhotoverlayItems, setHasPhotoverlayItems] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   const activePicture = pictures.find((p) => p.id === activePictureId) || null;
 
@@ -76,54 +78,55 @@ export const PiCollageTool: React.FC = () => {
 
   useEffect(() => {
     const load = async () => {
-      const state = await PersistenceService.loadPiCollageState();
-      if (state) {
-        const restored = state.pictures.map((p) => {
-          // Estimate height percentage if possible, or use a safe range
-          // The exact canvas ratio might change, so we use a conservative range
-          return {
-            ...p,
-            previewUrl: URL.createObjectURL(p.file),
-            zIndex: Math.max(1, p.zIndex || 1),
-            x: Math.max(-p.width + 10, Math.min(90, p.x)),
-            y: Math.max(-100, Math.min(90, p.y)), // Safety clamp
-            // Handle structure migration (even if user says they don't care, it's safer)
-            framingSettings: p.framingSettings || {
-              zoom: (p as any).zoom || 1,
-              offsetX: (p as any).offsetX || 0,
-              offsetY: (p as any).offsetY || 0,
-            },
-            captionSettings: p.captionSettings || {
-              text: '',
-              color: TextColor.White,
-              position: TextPosition.BottomLeft,
-              textSize: TextSize.Small,
-            },
-            watermarkSettings: p.watermarkSettings || {
-              file: null,
-              position: TextPosition.TopRight,
-              opacity: 0.2,
-              scale: 0.2,
-            },
-          };
-        });
-        setPictures(restored);
-        setAspectRatio(state.aspectRatio);
-        setExportFormat(state.exportFormat);
-        if (restored.length > 0) setActivePictureId(restored[0].id);
-      }
+      try {
+        const state = await PersistenceService.loadPiCollageState();
+        if (state) {
+          const restored = state.pictures.map((p) => {
+            return {
+              ...p,
+              previewUrl: URL.createObjectURL(p.file),
+              zIndex: Math.max(1, p.zIndex || 1),
+              x: Math.max(-p.width + 10, Math.min(90, p.x)),
+              y: Math.max(-100, Math.min(90, p.y)),
+              framingSettings: p.framingSettings || {
+                zoom: (p as any).zoom || 1,
+                offsetX: (p as any).offsetX || 0,
+                offsetY: (p as any).offsetY || 0,
+              },
+              captionSettings: p.captionSettings || {
+                text: '',
+                color: TextColor.White,
+                position: TextPosition.BottomLeft,
+                textSize: TextSize.Small,
+              },
+              watermarkSettings: p.watermarkSettings || {
+                file: null,
+                position: TextPosition.TopRight,
+                opacity: 0.2,
+                scale: 0.2,
+              },
+            };
+          });
+          setPictures(restored);
+          setAspectRatio(state.aspectRatio);
+          setExportFormat(state.exportFormat);
+          if (restored.length > 0) setActivePictureId(restored[0].id);
+        }
 
-      const ssState = await PersistenceService.loadSlideSyncState();
-      if (ssState && ssState.slides && ssState.slides.length > 0) {
-        setHasSlideSyncSlides(true);
-      }
+        const ssState = await PersistenceService.loadSlideSyncState();
+        if (ssState && ssState.slides && ssState.slides.length > 0) {
+          setHasSlideSyncSlides(true);
+        }
 
-      const poState = await PersistenceService.loadPhotoverlayState();
-      if (poState && poState.items && poState.items.length > 0) {
-        setHasPhotoverlayItems(true);
-      }
+        const poState = await PersistenceService.loadPhotoverlayState();
+        if (poState && poState.items && poState.items.length > 0) {
+          setHasPhotoverlayItems(true);
+        }
 
-      isLoadedRef.current = true;
+        isLoadedRef.current = true;
+      } finally {
+        setIsInitialLoading(false);
+      }
     };
     load();
   }, []);
@@ -622,6 +625,7 @@ export const PiCollageTool: React.FC = () => {
 
       {/* Main Column */}
       <div className="flex-1 flex flex-col min-w-0 relative">
+        {isInitialLoading && <ToolLoadingScreen Icon={LayoutGrid} colorVar="--tool-picollage" />}
         {/* Canvas Area */}
         <div className="flex-1 bg-slate-950 relative overflow-hidden">
           {pictures.length > 0 && (

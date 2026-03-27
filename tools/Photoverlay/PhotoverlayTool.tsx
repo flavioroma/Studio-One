@@ -10,6 +10,7 @@ import {
   Plus,
   Image as ImageIcon,
 } from 'lucide-react';
+import { ToolLoadingScreen } from '../../components/ToolLoadingScreen';
 import { useApplyToAll } from '../../hooks/useApplyToAll';
 import {
   TextPosition,
@@ -51,6 +52,7 @@ export const PhotoverlayTool: React.FC = () => {
   const [preserveMetadata, setPreserveMetadata] = useState(true);
   const [showApplyBorderAllConfirm, setShowApplyBorderAllConfirm] = useState(false);
   const [hasSlideSyncSlides, setHasSlideSyncSlides] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   // Preview Sizing
   const [containerSize, setContainerSize] = useState<{ width: number; height: number }>({
@@ -317,65 +319,69 @@ export const PhotoverlayTool: React.FC = () => {
 
   useEffect(() => {
     const load = async () => {
-      const state = await PersistenceService.loadPhotoverlayState();
-      if (state && state.items.length > 0) {
-        const hydratedItems = state.items.map((item) => ({
-          ...item,
-          previewUrl: URL.createObjectURL(item.file),
-          metadata: null,
-          exifData: null,
-        }));
+      try {
+        const state = await PersistenceService.loadPhotoverlayState();
+        if (state && state.items.length > 0) {
+          const hydratedItems = state.items.map((item) => ({
+            ...item,
+            previewUrl: URL.createObjectURL(item.file),
+            metadata: null,
+            exifData: null,
+          }));
 
-        // Fetch metadata/dimensions for all
-        const finalItems = await Promise.all(
-          hydratedItems.map(async (item) => {
-            let exif = null;
-            try {
-              exif = await MetadataService.getPhotoMetadata(item.file);
-            } catch (e) {}
+          // Fetch metadata/dimensions for all
+          const finalItems = await Promise.all(
+            hydratedItems.map(async (item) => {
+              let exif = null;
+              try {
+                exif = await MetadataService.getPhotoMetadata(item.file);
+              } catch (e) {}
 
-            const dimensions = await new Promise<{ width: number; height: number } | null>(
-              (resolve) => {
-                const img = new Image();
-                img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
-                img.onerror = () => resolve(null);
-                img.src = item.previewUrl;
-              }
-            );
+              const dimensions = await new Promise<{ width: number; height: number } | null>(
+                (resolve) => {
+                  const img = new Image();
+                  img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+                  img.onerror = () => resolve(null);
+                  img.src = item.previewUrl;
+                }
+              );
 
-            return {
-              id: item.id,
-              file: item.file,
-              previewUrl: item.previewUrl,
-              captionSettings: item.captionSettings,
-              watermarkSettings: item.watermarkSettings,
-              framingSettings: item.framingSettings,
-              filterSettings: item.filterSettings,
-              borderSettings: item.borderSettings,
-              metadata: dimensions,
-              exifData: exif,
-            };
-          })
-        );
+              return {
+                id: item.id,
+                file: item.file,
+                previewUrl: item.previewUrl,
+                captionSettings: item.captionSettings,
+                watermarkSettings: item.watermarkSettings,
+                framingSettings: item.framingSettings,
+                filterSettings: item.filterSettings,
+                borderSettings: item.borderSettings,
+                metadata: dimensions,
+                exifData: exif,
+              };
+            })
+          );
 
-        setItems(finalItems);
-        setSelectedId(state.selectedId || finalItems[0].id);
-        setApplyToAll(state.applyToAll || false);
-        setApplyFilterToAll(state.applyFilterToAll || false);
-        if (state.namingSettings) {
-          setNamingSettings(state.namingSettings);
+          setItems(finalItems);
+          setSelectedId(state.selectedId || finalItems[0].id);
+          setApplyToAll(state.applyToAll || false);
+          setApplyFilterToAll(state.applyFilterToAll || false);
+          if (state.namingSettings) {
+            setNamingSettings(state.namingSettings);
+          }
+          if (state.preserveMetadata !== undefined) {
+            setPreserveMetadata(state.preserveMetadata);
+          }
         }
-        if (state.preserveMetadata !== undefined) {
-          setPreserveMetadata(state.preserveMetadata);
+
+        const ssState = await PersistenceService.loadSlideSyncState();
+        if (ssState && ssState.slides && ssState.slides.length > 0) {
+          setHasSlideSyncSlides(true);
         }
-      }
 
-      const ssState = await PersistenceService.loadSlideSyncState();
-      if (ssState && ssState.slides && ssState.slides.length > 0) {
-        setHasSlideSyncSlides(true);
+        isLoadedRef.current = true;
+      } finally {
+        setIsInitialLoading(false);
       }
-
-      isLoadedRef.current = true;
     };
     load();
   }, []);
@@ -826,7 +832,8 @@ export const PhotoverlayTool: React.FC = () => {
 
       {/* Main Preview / Viewport */}
 
-      <div className="flex-1 flex flex-col min-w-0 bg-slate-950">
+      <div className="flex-1 flex flex-col min-w-0 bg-slate-950 relative">
+        {isInitialLoading && <ToolLoadingScreen Icon={ImageIcon} colorVar="--tool-photoverlay" />}
         <div className="flex-1 relative flex flex-col items-center justify-center pt-8 px-4 pb-0 overflow-hidden">
           {items.length === 0 ? (
             <div className="flex flex-col items-center gap-4 text-slate-600 animate-pulse">

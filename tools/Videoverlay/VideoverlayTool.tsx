@@ -30,6 +30,7 @@ import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { VideoverlaySidebar } from './VideoverlaySidebar';
 import { TimeRangeSelector } from '../../components/TimeRangeSelector';
+import { ToolLoadingScreen } from '../../components/ToolLoadingScreen';
 
 export const VideoverlayTool: React.FC = () => {
   const { t } = useLanguage();
@@ -75,6 +76,7 @@ export const VideoverlayTool: React.FC = () => {
 
   // Delete Confirmation
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   // Hover state for player controls
   const [isHoveringPlayer, setIsHoveringPlayer] = useState(false);
@@ -241,38 +243,41 @@ export const VideoverlayTool: React.FC = () => {
   // Load State
   useEffect(() => {
     const load = async () => {
-      const state = await PersistenceService.loadVideoverlayState();
-      if (state) {
-        setFile(state.file);
-        setCaptionSettings({
-          text: state.caption,
-          color: state.color,
-          position: state.position,
-          textSize: (state as any).textSize || TextSize.Small, // Backwards compat
-          isItalic: (state as any).isItalic || false,
-        });
+      try {
+        const state = await PersistenceService.loadVideoverlayState();
+        if (state) {
+          setFile(state.file);
+          setCaptionSettings({
+            text: state.caption,
+            color: state.color,
+            position: state.position,
+            textSize: (state as any).textSize || TextSize.Small,
+            isItalic: (state as any).isItalic || false,
+          });
 
-        // Load Watermark State
-        if (state.watermarkFile) {
-          setWatermarkSettings((prev) => ({
-            ...prev,
-            file: state.watermarkFile || null,
-            position: state.watermarkPosition || TextPosition.TopRight,
-          }));
+          if (state.watermarkFile) {
+            setWatermarkSettings((prev) => ({
+              ...prev,
+              file: state.watermarkFile || null,
+              position: state.watermarkPosition || TextPosition.TopRight,
+            }));
+          }
+
+          if (state.rotation !== undefined) setRotation(state.rotation);
+          if (state.audioMode) setAudioMode(state.audioMode);
+          if (state.audioFile) setAudioFile(state.audioFile);
+          if (state.startTime !== undefined) setStartTime(state.startTime);
+          if (state.endTime !== undefined) setEndTime(state.endTime);
+          if (state.preserveVideoMetadata !== undefined) setPreserveVideoMetadata(state.preserveVideoMetadata);
+
+          if (state.file) {
+            setVideoUrl(URL.createObjectURL(state.file));
+          }
         }
-
-        if (state.rotation !== undefined) setRotation(state.rotation);
-        if (state.audioMode) setAudioMode(state.audioMode);
-        if (state.audioFile) setAudioFile(state.audioFile);
-        if (state.startTime !== undefined) setStartTime(state.startTime);
-        if (state.endTime !== undefined) setEndTime(state.endTime);
-        if (state.preserveVideoMetadata !== undefined) setPreserveVideoMetadata(state.preserveVideoMetadata);
-
-        if (state.file) {
-          setVideoUrl(URL.createObjectURL(state.file));
-        }
+        isLoadedRef.current = true;
+      } finally {
+        setIsInitialLoading(false);
       }
-      isLoadedRef.current = true;
     };
     load();
   }, []);
@@ -674,7 +679,8 @@ export const VideoverlayTool: React.FC = () => {
 
       {/* Main Preview / Viewport */}
 
-      <div className="flex-1 flex flex-col min-w-0 bg-slate-950">
+      <div className="flex-1 flex flex-col min-w-0 bg-slate-950 relative">
+        {isInitialLoading && <ToolLoadingScreen Icon={VideoIcon} colorVar="--tool-videoverlay" />}
         <div className="flex-1 relative flex flex-col items-center justify-center p-2 md:p-4 lg:p-6 xl:p-12 overflow-hidden gap-2 sm:gap-4 xl:gap-8">
           {!videoUrl ? (
             <div className="flex flex-col items-center gap-4 text-slate-600 animate-pulse">
