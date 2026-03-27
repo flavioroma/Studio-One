@@ -181,13 +181,13 @@ export const VideoverlaySidebar: React.FC<VideoverlaySidebarProps> = ({
               <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
                 {t.common.metadata}
               </h3>
-              <div className="p-4 bg-slate-700/50 rounded-2xl border border-slate-600 hover:border-tool-videoverlay/40 shadow-inner transition-all">
+              <div className="p-4 bg-slate-700/50 rounded-2xl border border-slate-600 hover:bg-slate-700/50 hover:border-tool-videoverlay/40 transition-all">
                 <label className="flex items-center gap-3 cursor-pointer group">
                   <div
                     className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
                       preserveVideoMetadata
                         ? 'bg-tool-videoverlay border-tool-videoverlay'
-                        : 'border-slate-500 group-hover:border-slate-400'
+                        : 'border-slate-500 group-hover:border-tool-videoverlay/80'
                     }`}
                   >
                     {preserveVideoMetadata && <Check className="w-3.5 h-3.5 text-white" />}

@@ -88,10 +88,10 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
           {hasSlideSyncSlides && onImportFromSlideSync && (
             <button
               onClick={onImportFromSlideSync}
-              className="flex items-center justify-center gap-2 w-full p-4 rounded-xl border border-tool-slidesync/40 hover:border-tool-slidesync/60 bg-tool-slidesync/10 hover:bg-tool-slidesync/20 transition-all text-tool-slidesync"
+              className="flex items-center justify-center gap-2 w-full p-4 rounded-xl border border-tool-slidesync/40 hover:border-tool-slidesync/60 bg-tool-slidesync/10 hover:bg-tool-slidesync/20 transition-all text-slate-300 hover:text-tool-slidesync"
             >
               <ImageIcon className="w-5 h-5" />
-              <span className="text-sm font-medium">{t.tools.photoverlay.importFromSlideSync}</span>
+              <span className="text-sm font-medium">{t.common.importFromSlideSync}</span>
             </button>
           )}
         </div>
@@ -102,13 +102,13 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
           </h2>
           <div className="space-y-4 animate-fadeIn">
             <div className="flex flex-col gap-4">
-              <div className="p-4 bg-slate-700/50 rounded-2xl border border-slate-600 space-y-4 hover:border-tool-photoverlay/40 shadow-inner">
+              <div className="p-4 bg-slate-700/50 rounded-2xl border border-slate-600 space-y-4 hover:bg-slate-700/50 hover:border-tool-photoverlay/40 transition-all">
                 <label className="flex items-center gap-3 cursor-pointer group">
                   <div
                     className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
                       namingSettings.keepOriginal
                         ? 'bg-tool-photoverlay border-tool-photoverlay'
-                        : 'border-slate-500 group-hover:border-slate-400'
+                        : 'border-slate-500 group-hover:border-tool-photoverlay/80'
                     }`}
                   >
                     {namingSettings.keepOriginal && <Check className="w-3.5 h-3.5 text-white" />}
@@ -172,13 +172,13 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
                 )}
               </div>
 
-              <div className="p-4 bg-slate-700/50 rounded-2xl border border-slate-600 hover:border-tool-photoverlay/40 shadow-inner transition-all">
+              <div className="p-4 bg-slate-700/50 rounded-2xl border border-slate-600 hover:bg-slate-700/50 hover:border-tool-photoverlay/40 transition-all">
                 <label className="flex items-center gap-3 cursor-pointer group">
                   <div
                     className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
                       preserveMetadata
                         ? 'bg-tool-photoverlay border-tool-photoverlay'
-                        : 'border-slate-500 group-hover:border-slate-400'
+                        : 'border-slate-500 group-hover:border-tool-photoverlay/80'
                     }`}
                   >
                     {preserveMetadata && <Check className="w-3.5 h-3.5 text-white" />}

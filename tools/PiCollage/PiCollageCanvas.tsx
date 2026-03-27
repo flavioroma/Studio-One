@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { PiCollagePicture, AspectRatio, BorderSize, FilterMode, TextPosition } from '../../types';
+import { PiCollagePicture, AspectRatio, BorderSize, FilterMode, TextPosition, TextSize } from '../../types';
 import { RotateCw } from 'lucide-react';
 import { calculateCaptionMetrics } from '../../utils/captionUtils';
 
@@ -366,7 +366,7 @@ export const PiCollageCanvas: React.FC<PiCollageCanvasProps> = ({
                   data-testid="image-move-handle"
                   className={`w-full h-full relative group ${activePictureId === pic.id ? 'ring-2 ring-tool-picollage ring-offset-2' : ''}`}
                   onPointerDown={(e) => handlePointerDown(e, pic.id, 'move')}
-                  style={{ cursor: interaction && interaction.id === pic.id ? 'grabbing' : 'grab' }}
+                  style={{ cursor: interaction && interaction.id === pic.id ? 'grabbing' : 'grab', containerType: 'inline-size' }}
                 >
                   {/* Content Box with border/filter */}
                   <div
@@ -428,7 +428,7 @@ export const PiCollageCanvas: React.FC<PiCollageCanvasProps> = ({
                         justifyContent: pic.captionSettings.position.includes('Left') ? 'flex-start' : pic.captionSettings.position.includes('Right') ? 'flex-end' : 'center',
                         alignItems: pic.captionSettings.position.includes('Top') ? 'flex-start' : pic.captionSettings.position.includes('Bottom') ? 'flex-end' : 'center',
                         textAlign: pic.captionSettings.position.includes('Left') ? 'left' : pic.captionSettings.position.includes('Right') ? 'right' : 'center',
-                        fontSize: 'clamp(10px, 4cqi, 40px)', // Dynamic font size based on container width
+                        fontSize: pic.captionSettings.textSize === TextSize.Large ? '8cqi' : '4cqi', // Dynamic font size based on container width
                       }}
                     >
                       {pic.captionSettings.text}

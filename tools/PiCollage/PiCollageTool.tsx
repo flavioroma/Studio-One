@@ -173,7 +173,7 @@ export const PiCollageTool: React.FC = () => {
             offsetY: 0,
           },
           borderSettings: {
-            size: BorderSize.Small,
+            size: BorderSize.None,
             color: TextColor.White,
           },
           filterSettings: FilterMode.Normal,

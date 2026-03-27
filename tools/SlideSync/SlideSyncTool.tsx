@@ -438,6 +438,7 @@ export const SlideSyncTool: React.FC = () => {
           onApplyBorderToAllChange={borderApply.handleApplyToAllChange}
           hasPhotoverlayItems={hasPhotoverlayItems}
           onImportFromPhotoverlay={handleImportFromPhotoverlay}
+          hasSlides={slides.length > 0}
         />
       </div>
 

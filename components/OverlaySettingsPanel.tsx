@@ -40,15 +40,23 @@ export const OverlaySettingsPanel: React.FC<OverlaySettingsPanelProps> = ({
       defaultExpanded={defaultExpanded}
     >
       <div className="space-y-6">
-        <div className={`p-4 bg-slate-700/50 rounded-2xl border border-slate-600 hover:bg-slate-700/50 transition-all ${themeColor === 'tool-slidesync' ? 'hover:border-tool-slidesync/40' : 'hover:border-tool-photoverlay/40'}`}>
+        <div className={`p-4 bg-slate-700/50 rounded-2xl border border-slate-600 hover:bg-slate-700/50 transition-all ${
+          themeColor === 'tool-slidesync' ? 'hover:border-tool-slidesync/40' :
+          themeColor === 'tool-picollage' ? 'hover:border-tool-picollage/40' :
+          'hover:border-tool-photoverlay/40'
+        }`}>
           <label className="flex items-center gap-3 cursor-pointer group">
             <div
-              className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${applyToAll ? (themeColor === 'tool-slidesync' ? 'bg-tool-slidesync border-tool-slidesync' : 'bg-tool-photoverlay border-tool-photoverlay') : (themeColor === 'tool-slidesync' ? 'border-slate-500 group-hover:border-tool-slidesync/80' : 'border-slate-500 group-hover:border-tool-photoverlay/80')}`}
+              className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
+                applyToAll 
+                  ? (themeColor === 'tool-slidesync' ? 'bg-tool-slidesync border-tool-slidesync' : themeColor === 'tool-picollage' ? 'bg-tool-picollage border-tool-picollage' : 'bg-tool-photoverlay border-tool-photoverlay') 
+                  : (themeColor === 'tool-slidesync' ? 'border-slate-500 group-hover:border-tool-slidesync/80' : themeColor === 'tool-picollage' ? 'border-slate-500 group-hover:border-tool-picollage/80' : 'border-slate-500 group-hover:border-tool-photoverlay/80')
+              }`}
             >
               {applyToAll && <Check className="w-3.5 h-3.5 text-white stroke-[3px]" />}
             </div>
             <span className="text-xs font-bold text-slate-300 group-hover:text-slate-100 transition-colors">
-              {themeColor === 'tool-slidesync' ? t.tools.slidesync.applyToAll : t.tools.photoverlay.applyToAll}
+              {themeColor === 'tool-slidesync' ? t.tools.slidesync.applyToAll : themeColor === 'tool-picollage' ? t.tools.picollage.applyToAll : t.tools.photoverlay.applyToAll}
             </span>
             <input
               type="checkbox"

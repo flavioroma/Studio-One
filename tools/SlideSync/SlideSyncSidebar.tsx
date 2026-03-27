@@ -43,6 +43,7 @@ interface SlideSyncSidebarProps {
   onApplyBorderToAllChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   hasPhotoverlayItems?: boolean;
   onImportFromPhotoverlay?: () => void;
+  hasSlides: boolean;
 }
 
 export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
@@ -69,6 +70,7 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
   onApplyBorderToAllChange,
   hasPhotoverlayItems = false,
   onImportFromPhotoverlay,
+  hasSlides,
 }) => {
   const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -277,13 +279,13 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
               <span className="text-sm font-medium">{t.tools.slidesync.addImages}</span>
             </label>
           </div>
-          {hasPhotoverlayItems && onImportFromPhotoverlay && (
+          {!hasSlides && hasPhotoverlayItems && onImportFromPhotoverlay && (
             <button
               onClick={onImportFromPhotoverlay}
-              className="flex items-center justify-center gap-2 w-full p-3 rounded-xl border border-tool-photoverlay/40 hover:border-tool-photoverlay/60 bg-tool-photoverlay/10 hover:bg-tool-photoverlay/20 transition-all text-tool-photoverlay"
+              className="flex items-center justify-center gap-2 w-full p-3 rounded-xl border border-tool-photoverlay/20 hover:border-tool-photoverlay/60 bg-tool-photoverlay/10 hover:bg-tool-photoverlay/20 transition-all text-slate-300 hover:text-tool-photoverlay"
             >
               <ImageIcon className="w-5 h-5" />
-              <span className="text-sm font-medium">{t.tools.slidesync.importFromPhotoverlay}</span>
+              <span className="text-sm font-medium">{t.common.importFromPhotoverlay}</span>
             </button>
           )}
         </div>

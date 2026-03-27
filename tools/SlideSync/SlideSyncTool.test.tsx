@@ -2,6 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SlideSyncTool } from './SlideSyncTool';
 import { LanguageProvider } from '../../contexts/LanguageContext';
+import { PersistenceService } from '../../services/PersistenceService';
 
 // Mock services
 vi.mock('../../services/PersistenceService', () => ({
@@ -158,5 +159,27 @@ describe('SlideSyncTool', () => {
     fireEvent.click(screen.getByTitle(/Remove file/i));
 
     expect(screen.getByText(/Remove Slide\?/i)).toBeInTheDocument();
+  });
+
+  it('hides "Import from Photoverlay" button when slides are present', async () => {
+    vi.mocked(PersistenceService.loadPhotoverlayState).mockResolvedValue({
+      items: [{ file: new File([''], 'test.jpg'), id: '1' }],
+    } as any);
+
+    renderWithContext();
+
+    // Button should be visible initially
+    expect(await screen.findByText(/Import from Photoverlay/i)).toBeInTheDocument();
+
+    // Upload an image
+    const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
+    const input = screen.getByLabelText(/Add Images/i) as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [file] } });
+
+    // Timeline should show the slide
+    await screen.findByAltText('Slide 1');
+
+    // Button should be hidden now
+    expect(screen.queryByText(/Import from Photoverlay/i)).not.toBeInTheDocument();
   });
 });
