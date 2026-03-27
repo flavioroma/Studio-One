@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { PiCollagePicture, AspectRatio, BorderSize, FilterMode, TextColor, FramingSettings, CaptionSettings, WatermarkSettings, TextPosition, TextSize } from '../../types';
 import { PersistenceService } from '../../services/PersistenceService';
 import { PiCollageSidebar } from './PiCollageSidebar';
-import { PiCollageFooter } from './PiCollageFooter';
+import { ToolFooter } from '../../components/ToolFooter';
 import { PiCollageSettingsBar } from './PiCollageSettingsBar';
 import { PiCollageCanvas } from './PiCollageCanvas';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
@@ -625,20 +625,6 @@ export const PiCollageTool: React.FC = () => {
             />
           )}
 
-          {/* Settings Bar */}
-          {activePictureId && pictures.some((p) => p.id === activePictureId && p.isVisible) && (
-            <PiCollageSettingsBar
-              onMoveUp={() => moveActive(0, -5)}
-              onMoveDown={() => moveActive(0, 5)}
-              onMoveLeft={() => moveActive(-5, 0)}
-              onMoveRight={() => moveActive(5, 0)}
-              onRotateCw={() => rotateActive(15)}
-              onRotateCcw={() => rotateActive(-15)}
-              onBringForward={() => reorderZ(1)}
-              onSendBackward={() => reorderZ(-1)}
-            />
-          )}
-
           {/* Export Controls Overlay */}
           <div className="absolute right-6 bottom-6 z-20 flex flex-col items-end gap-2">
             <div className="flex bg-slate-800/50 backdrop-blur-md rounded-xl p-1 border border-slate-700/50 shadow-lg">
@@ -673,31 +659,46 @@ export const PiCollageTool: React.FC = () => {
           </div>
         </div>
 
-        {/* Footer Area */}
-        <div className="h-36 shrink-0 bg-slate-800/80 backdrop-blur-sm border-t border-slate-700 p-4">
-          <PiCollageFooter
-            pictures={pictures}
-            activePictureId={activePictureId}
-            onSelectPicture={setActivePictureId}
-            onToggleVisibility={(id) => {
-              const p = pictures.find((x) => x.id === id);
-              if (p) updatePicture(id, { isVisible: !p.isVisible });
-            }}
-            onRemovePicture={deletePicture}
-            onAddMoreClick={() => {
-              document.getElementById('picollage-add-more')?.click();
-            }}
-          />
-        </div>
-
-        {/* Hidden Add More Input connected to the footer */}
-        <input
-          id="picollage-add-more"
-          type="file"
-          multiple
-          accept="image/*"
-          className="hidden"
-          onChange={handleImageUpload}
+        <ToolFooter
+          headerContent={
+            <div className="flex justify-between items-end">
+              <div>
+                {activePictureId && pictures.some((p) => p.id === activePictureId && p.isVisible) ? (
+                  <PiCollageSettingsBar
+                    onMoveUp={() => moveActive(0, -5)}
+                    onMoveDown={() => moveActive(0, 5)}
+                    onMoveLeft={() => moveActive(-5, 0)}
+                    onMoveRight={() => moveActive(5, 0)}
+                    onRotateCw={() => rotateActive(15)}
+                    onRotateCcw={() => rotateActive(-15)}
+                    onBringForward={() => reorderZ(1)}
+                    onSendBackward={() => reorderZ(-1)}
+                  />
+                ) : (
+                  <div className="h-10"></div>
+                )}
+              </div>
+              
+              <span className="text-[12px] text-slate-400 italic mb-1">
+                {t.tools.slidesync.timelineTip}
+              </span>
+            </div>
+          }
+          items={pictures}
+          getItemId={(p) => p.id}
+          getItemUrl={(p) => p.previewUrl}
+          isItemCustomized={(p) => !!(p.captionSettings?.text || p.watermarkSettings?.file || p.framingSettings?.zoom !== 1 || p.framingSettings?.offsetX !== 0 || p.framingSettings?.offsetY !== 0 || p.filterSettings !== FilterMode.Normal)}
+          isItemVisible={(p) => p.isVisible !== false}
+          activeItemId={activePictureId}
+          emptyMessage={t.common.addMore}
+          themeColorClass="tool-picollage"
+          onSelectItem={setActivePictureId}
+          onDeleteRequest={deletePicture}
+          onAddMore={(e) => handleImageUpload(e as any)}
+          onToggleVisibility={(id) => {
+            const p = pictures.find((x) => x.id === id);
+            if (p) updatePicture(id, { isVisible: !p.isVisible });
+          }}
         />
       </div>
 

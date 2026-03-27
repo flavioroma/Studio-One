@@ -247,7 +247,7 @@ describe('PhotoverlayTool', () => {
     fireEvent.click(applyToAllCheckbox);
 
     // 4. Switch to second photo
-    const thumbs = screen.getAllByAltText('Thumbnail');
+    const thumbs = screen.getAllByTestId('thumbnail');
     fireEvent.click(thumbs[1]);
 
     // 5. Check if zoom is still 1.0 for the second photo

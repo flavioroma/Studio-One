@@ -33,7 +33,7 @@ import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { MetadataService, PhotoMetadata } from '../../services/MetadataService';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PhotoverlaySidebar } from './PhotoverlaySidebar';
-import { Thumbnail } from '../../components/Thumbnail';
+import { ToolFooter } from '../../components/ToolFooter';
 import JSZip from 'jszip';
 
 export const PhotoverlayTool: React.FC = () => {
@@ -843,7 +843,7 @@ export const PhotoverlayTool: React.FC = () => {
             <>
               <div
                 ref={containerRef}
-                className="relative group shadow-2xl rounded-2xl overflow-hidden border-4 border-slate-800 max-h-[60vh] mb-14"
+                className="relative group shadow-2xl rounded-2xl overflow-hidden border-4 border-slate-800 max-h-[70vh]"
                 style={{
                   aspectRatio: selectedItem?.metadata
                     ? `${selectedItem.metadata.width} / ${selectedItem.metadata.height}`
@@ -853,7 +853,7 @@ export const PhotoverlayTool: React.FC = () => {
                 <img
                   ref={imageRef}
                   src={selectedItem?.previewUrl}
-                  className="max-h-[60vh] w-auto pointer-events-none object-contain"
+                  className="max-h-[70vh] w-auto pointer-events-none object-contain"
                   alt="Preview"
                   style={{
                     transform: `translate(${selectedItem?.framingSettings?.offsetX || 0}%, ${selectedItem?.framingSettings?.offsetY || 0}%) scale(${selectedItem?.framingSettings?.zoom || 1})`,
@@ -886,132 +886,98 @@ export const PhotoverlayTool: React.FC = () => {
                 </div>
               </div>
 
-              {/* Thumbnails Bar */}
-              <div className="w-full px-6 pb-4">
-                <div
-                  ref={scrollRef}
-                  onWheel={handleWheel}
-                  className="flex items-center gap-6 overflow-x-auto py-4 px-4 hide-scrollbar select-none"
+              {/* Export Controls Overlay */}
+              <div className="absolute right-6 bottom-6 z-20 flex flex-col items-end gap-2">
+                <button
+                  onClick={handleExport}
+                  disabled={isExporting}
+                  className="flex items-center justify-center gap-3 px-8 py-3 bg-tool-photoverlay hover:opacity-90 text-white font-black rounded-full text-xs uppercase tracking-widest transition-transform hover:scale-[1.02] active:scale-95 shadow-[0_0_20px_rgba(59,130,246,0.3)] disabled:opacity-50 disabled:hover:scale-100 disabled:shadow-none min-w-[180px]"
                 >
-                  <style>{`
-                    .hide-scrollbar::-webkit-scrollbar {
-                      display: none;
-                    }
-                    .hide-scrollbar {
-                      -ms-overflow-style: none;
-                      scrollbar-width: none;
-                    }
-                  `}</style>
-                  {items.map((item) => {
-                    const isCustomized = !!(
-                      item.captionSettings.text ||
-                      item.watermarkSettings.file ||
-                      item.framingSettings.zoom !== 1 ||
-                      item.framingSettings.offsetX !== 0 ||
-                      item.framingSettings.offsetY !== 0 ||
-                      item.filterSettings !== FilterMode.Normal
-                    );
-
-                    return (
-                      <Thumbnail
-                        key={item.id}
-                        containerId={`photo-thumb-${item.id}`}
-                        id={item.id}
-                        imageUrl={item.previewUrl}
-                        isActive={selectedId === item.id}
-                        isCustomized={isCustomized}
-                        themeColorClass="tool-photoverlay"
-                        onClick={() => setSelectedId(item.id)}
-                        onDeleteRequest={() => handleDeleteItemRequest(item.id)}
-                      />
-                    );
-                  })}
-                  <label className="flex-shrink-0 h-24 aspect-square rounded-lg border-2 border-slate-700 hover:border-tool-photoverlay/50 hover:bg-slate-800/50 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all">
-                    <Plus className="w-5 h-5 text-slate-500" />
-                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter">
-                      {t.common.addMore}
-                    </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleFileChange}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
+                  {isExporting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>{t.tools.photoverlay.exporting}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      <span>
+                        {items.length > 1
+                          ? t.tools.photoverlay.exportAllPhotos
+                          : t.tools.photoverlay.exportPhoto}
+                      </span>
+                    </>
+                  )}
+                </button>
               </div>
             </>
           )}
         </div>
 
-        {/* Controls Bar */}
-        {selectedItem && (
-          <div className="bg-slate-800/80 backdrop-blur-md border-t border-slate-700 p-6 flex items-center justify-between">
-            <div className="flex items-center gap-8">
-              <div className="flex flex-col">
-                <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
-                  <Monitor className="w-3 h-3" /> {t.common.resolution}
-                </p>
-                <p className="text-sm font-bold text-white">
-                  {selectedItem.metadata
-                    ? `${selectedItem.metadata.width} x ${selectedItem.metadata.height}`
-                    : '...'}
-                </p>
-              </div>
-
-              {selectedItem.exifData?.creationTime && (
-                <div className="flex flex-col">
-                  <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
-                    <Calendar className="w-3 h-3" /> {t.common.mediaCreated}
-                  </p>
-                  <p className="text-sm font-bold text-white">
-                    {selectedItem.exifData.creationTime.toLocaleString(undefined, {
-                      dateStyle: 'medium',
-                      timeStyle: 'short',
-                    })}
-                  </p>
-                </div>
-              )}
-
-              {selectedItem.exifData?.latitude && selectedItem.exifData?.longitude && (
-                <div className="flex flex-col">
-                  <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
-                    <MapPin className="w-3 h-3" /> {t.common.location}
-                  </p>
-                  <p className="text-sm font-bold text-white">
-                    {selectedItem.exifData.latitude.toFixed(4)},{' '}
-                    {selectedItem.exifData.longitude.toFixed(4)}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center gap-4">
-              <button
-                onClick={handleExport}
-                disabled={isExporting}
-                className="flex items-center gap-3 px-8 py-3.5 bg-tool-photoverlay hover:opacity-90 text-white font-black rounded-2xl transition-all shadow-xl shadow-tool-photoverlay/10 active:scale-95 disabled:opacity-50"
-              >
-                {isExporting ? (
+        <ToolFooter
+          headerContent={
+            <div className="flex justify-between items-end">
+              <div className="flex items-center gap-8">
+                {selectedItem ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>{t.tools.photoverlay.exporting}</span>
+                    <div className="flex flex-col">
+                      <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
+                        <Monitor className="w-3 h-3" /> {t.common.resolution}
+                      </p>
+                      <p className="text-sm font-bold text-white">
+                        {selectedItem.metadata
+                          ? `${selectedItem.metadata.width} x ${selectedItem.metadata.height}`
+                          : '...'}
+                      </p>
+                    </div>
+
+                    {selectedItem.exifData?.creationTime && (
+                      <div className="flex flex-col">
+                        <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
+                          <Calendar className="w-3 h-3" /> {t.common.mediaCreated}
+                        </p>
+                        <p className="text-sm font-bold text-white">
+                          {selectedItem.exifData.creationTime.toLocaleString(undefined, {
+                            dateStyle: 'medium',
+                            timeStyle: 'short',
+                          })}
+                        </p>
+                      </div>
+                    )}
+
+                    {selectedItem.exifData?.latitude && selectedItem.exifData?.longitude && (
+                      <div className="flex flex-col">
+                        <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
+                          <MapPin className="w-3 h-3" /> {t.common.location}
+                        </p>
+                        <p className="text-sm font-bold text-white">
+                          {selectedItem.exifData.latitude.toFixed(4)},{' '}
+                          {selectedItem.exifData.longitude.toFixed(4)}
+                        </p>
+                      </div>
+                    )}
                   </>
                 ) : (
-                  <>
-                    <Download className="w-5 h-5" />
-                    <span>
-                      {items.length > 1
-                        ? t.tools.photoverlay.exportAllPhotos
-                        : t.tools.photoverlay.exportPhoto}
-                    </span>
-                  </>
+                  <div className="h-9"></div>
                 )}
-              </button>
+              </div>
+              
+              <span className="text-[12px] text-slate-400 italic mb-1">
+                {t.tools.slidesync.timelineTip}
+              </span>
             </div>
-          </div>
-        )}
+          }
+          items={items}
+          getItemId={(i) => i.id}
+          getItemUrl={(i) => i.previewUrl}
+          isItemCustomized={(i) => !!(i.captionSettings.text || i.watermarkSettings.file || i.framingSettings.zoom !== 1 || i.framingSettings.offsetX !== 0 || i.framingSettings.offsetY !== 0 || i.filterSettings !== FilterMode.Normal)}
+          activeItemId={selectedId}
+          emptyMessage={t.tools.photoverlay.awaitingSource}
+          themeColorClass="tool-photoverlay"
+          onSelectItem={setSelectedId}
+          onDeleteRequest={handleDeleteItemRequest}
+          onAddMore={handleFileChange}
+        />
       </div>
 
       {/* Global Modals */}

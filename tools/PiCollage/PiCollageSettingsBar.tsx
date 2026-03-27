@@ -38,7 +38,7 @@ export const PiCollageSettingsBar: React.FC<PiCollageSettingsBarProps> = ({
     'p-2 rounded-xl bg-slate-700 hover:bg-tool-picollage/20 text-slate-300 hover:text-tool-picollage transition-all border border-transparent hover:border-tool-picollage/50';
 
   return (
-    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-slate-800/90 backdrop-blur-md px-6 py-3 rounded-2xl border border-slate-700 shadow-2xl z-20">
+    <div className="flex items-center gap-4 bg-slate-800/90 backdrop-blur-md px-4 py-1.5 rounded-2xl border border-slate-700 shadow-md">
       {/* Move group */}
       <div className="flex items-center gap-1 border-r border-slate-700 pr-4">
         <button onClick={onMoveUp} className={buttonClass} title={t.tools.picollage.moveUp}>

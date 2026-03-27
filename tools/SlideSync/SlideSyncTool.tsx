@@ -4,7 +4,7 @@ import { Slide, TextPosition, TextColor, AspectRatio, TextSize, FilterMode, Bord
 import { generateCaptionForImage } from '../../services/geminiService';
 import { PersistenceService, AudioTrackItem } from '../../services/PersistenceService';
 import { SlideSyncSidebar } from './SlideSyncSidebar';
-import { Timeline } from './Timeline';
+import { ToolFooter } from '../../components/ToolFooter';
 import { VideoPreview } from './VideoPreview';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -455,34 +455,39 @@ export const SlideSyncTool: React.FC = () => {
           />
         </div>
 
-        <div className="h-56 bg-slate-800/80 backdrop-blur-sm border-t border-slate-700 p-6">
-          <div className="flex justify-between items-start">
-            <div className="flex flex-col">
-              <span className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-500">
-                {t.tools.slidesync.timelineSequence}
-              </span>
-              <span className="text-[11px] font-bold text-slate-400 mt-1 uppercase tracking-wider">
-                {slides.length} {t.tools.slidesync.slidesCount}
-                {audioDuration > 0 && slides.length > 0 && (
-                  <span className="ml-2 text-tool-slidesync lowercase tracking-normal font-bold">
-                    {(audioDuration).toFixed(2)}s ({(audioDuration / slides.length).toFixed(2)}s / {t.tools.slidesync.slide})
-                  </span>
-                )}
+        <ToolFooter
+          headerContent={
+            <div className="flex justify-between items-start">
+              <div className="flex flex-col">
+                <span className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-500">
+                  {t.tools.slidesync.timelineSequence}
+                </span>
+                <span className="text-[11px] font-bold text-slate-400 mt-1 uppercase tracking-wider">
+                  {slides.length} {t.tools.slidesync.slidesCount}
+                  {audioDuration > 0 && slides.length > 0 && (
+                    <span className="ml-2 text-tool-slidesync lowercase tracking-normal font-bold">
+                      {(audioDuration).toFixed(2)}s ({(audioDuration / slides.length).toFixed(2)}s / {t.tools.slidesync.slide})
+                    </span>
+                  )}
+                </span>
+              </div>
+              <span className="text-[12px] text-slate-400 italic mt-0.5">
+                {t.tools.slidesync.timelineTip}
               </span>
             </div>
-            <span className="text-[12px] text-slate-400 italic mt-0.5">
-              {t.tools.slidesync.timelineTip}
-            </span>
-          </div>
-          <Timeline
-            slides={slides}
-            activeSlideId={activeSlideId}
-            onSelectSlide={setActiveSlideId}
-            onReorder={reorderSlides}
-            onDelete={handleDeleteSlideRequest}
-            onImageUpload={handleImageUpload}
-          />
-        </div>
+          }
+          items={slides}
+          getItemId={(s) => s.id}
+          getItemUrl={(s) => s.previewUrl}
+          isItemCustomized={(s) => !!(s.captionSettings.text || s.framingSettings.zoom !== 1 || s.framingSettings.offsetX !== 0 || s.framingSettings.offsetY !== 0)}
+          activeItemId={activeSlideId}
+          emptyMessage={t.tools.slidesync.noSlidesAdded}
+          themeColorClass="tool-slidesync"
+          onSelectItem={setActiveSlideId}
+          onDeleteRequest={handleDeleteSlideRequest}
+          onAddMore={handleImageUpload}
+          onReorder={reorderSlides}
+        />
       </div>
 
       <ConfirmationModal
