@@ -368,29 +368,33 @@ export const PiCollageCanvas: React.FC<PiCollageCanvasProps> = ({
                   onPointerDown={(e) => handlePointerDown(e, pic.id, 'move')}
                   style={{ cursor: interaction && interaction.id === pic.id ? 'grabbing' : 'grab', containerType: 'inline-size' }}
                 >
-                  {/* Content Box with border/filter */}
+                  {/* Border wrapper: fixed at tile edges, not affected by zoom/pan */}
                   <div
-                    className="w-full h-full overflow-hidden flex items-center justify-center pointer-events-none"
+                    className="w-full h-full overflow-hidden pointer-events-none"
                     style={{
                       border: getBorderStyle(pic.borderSettings.size),
                       borderColor: pic.borderSettings.color,
-                      filter: getFilterStyle(pic.filterSettings),
-                      backgroundColor: 'transparent',
+                      boxSizing: 'border-box',
                     }}
                   >
-                    {/* Image with scaling and offset */}
-                    <img
-                      src={pic.previewUrl}
-                      alt="Collage Piece"
-                      className="max-w-none pointer-events-none"
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        transform: `translate(${pic.framingSettings.offsetX}%, ${pic.framingSettings.offsetY}%) scale(${pic.framingSettings.zoom})`,
-                      }}
-                      draggable={false}
-                    />
+                    {/* Filter + image: filter applies only inside the border */}
+                    <div
+                      className="w-full h-full flex items-center justify-center"
+                      style={{ filter: getFilterStyle(pic.filterSettings) }}
+                    >
+                      <img
+                        src={pic.previewUrl}
+                        alt="Collage Piece"
+                        className="max-w-none pointer-events-none"
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          transform: `translate(${pic.framingSettings.offsetX}%, ${pic.framingSettings.offsetY}%) scale(${pic.framingSettings.zoom})`,
+                        }}
+                        draggable={false}
+                      />
+                    </div>
                   </div>
 
                   {/* Watermark Preview */}

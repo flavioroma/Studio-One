@@ -183,31 +183,34 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
             ? 'sepia(100%)'
             : 'none';
 
-      // Draw Border
-      if (currentSlide.borderSettings.size && currentSlide.borderSettings.size > 0) {
-        ctx.fillStyle = currentSlide.borderSettings.color || '#ffffff';
-        ctx.fillRect(baseX + userX, baseY + userY, w, h);
-      }
+      // Actual framing dimensions (with zoom+pan)
+      const renderX = baseX + userX;
+      const renderY = baseY + userY;
 
-      // Draw image inside border (clip or just draw over)
-      // For SlideSync, we can just draw over if we adjust the dimensions or just draw the border around the image.
-      // PiCollage draws the border filling the whole rect, then clips for the image.
-      // Let's follow PiCollage logic for consistency.
-      const bSize = (currentSlide.borderSettings.size || 0) * (CANVAS_HEIGHT / 1080); // Scale border size
-      
-      if (bSize > 0) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(baseX + userX + bSize, baseY + userY + bSize, w - 2 * bSize, h - 2 * bSize);
-        ctx.clip();
-        ctx.drawImage(img, baseX + userX, baseY + userY, w, h);
-        ctx.restore();
-      } else {
-        ctx.drawImage(img, baseX + userX, baseY + userY, w, h);
-      }
+      // Draw image freely with zoom+pan
+      ctx.drawImage(img, renderX, renderY, w, h);
 
-      // Reset filter so caption/watermark are unaffected
+      // Reset filter before drawing border so color is not grayed/tinted
       ctx.filter = 'none';
+
+      // Border rect follows the image boundaries, but remains visible at canvas edges (output aspect ratio) when zoomed in
+      const borderLeft = Math.max(renderX, 0);
+      const borderTop = Math.max(renderY, 0);
+      const borderRight = Math.min(renderX + w, CANVAS_WIDTH);
+      const borderBottom = Math.min(renderY + h, CANVAS_HEIGHT);
+
+      const borderWidth = borderRight - borderLeft;
+      const borderHeight = borderBottom - borderTop;
+
+      // Draw border as 4 opaque edge stripes ON TOP of the visible portion of the image
+      const bSize = (currentSlide.borderSettings?.size || 0) * (CANVAS_HEIGHT / 1080);
+      if (bSize > 0 && borderWidth > 0 && borderHeight > 0) {
+        ctx.fillStyle = currentSlide.borderSettings.color || '#ffffff';
+        ctx.fillRect(borderLeft, borderTop, borderWidth, bSize);                              // top
+        ctx.fillRect(borderLeft, borderTop + borderHeight - bSize, borderWidth, bSize);       // bottom
+        ctx.fillRect(borderLeft, borderTop + bSize, bSize, borderHeight - 2 * bSize);         // left
+        ctx.fillRect(borderLeft + borderWidth - bSize, borderTop + bSize, bSize, borderHeight - 2 * bSize); // right
+      }
     } catch (e) {}
 
     if (currentSlide.captionSettings.text) {

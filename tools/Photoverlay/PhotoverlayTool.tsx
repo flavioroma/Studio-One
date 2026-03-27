@@ -518,18 +518,14 @@ export const PhotoverlayTool: React.FC = () => {
         const drawX = (canvas.width - drawWidth) / 2 + offsetX;
         const drawY = (canvas.height - drawHeight) / 2 + offsetY;
 
-        // Draw Border
-        if (item.borderSettings.size && item.borderSettings.size > 0) {
-          ctx.fillStyle = item.borderSettings.color || '#ffffff';
-          ctx.fillRect(drawX, drawY, drawWidth, drawHeight);
-        }
-
-        // Clip area for image content
+        // Draw Border at output canvas dimensions (not at zoomed image position)
         const bSize = item.borderSettings.size || 0;
         if (bSize > 0) {
+          ctx.fillStyle = item.borderSettings.color || '#ffffff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.save();
           ctx.beginPath();
-          ctx.rect(drawX + bSize, drawY + bSize, drawWidth - 2 * bSize, drawHeight - 2 * bSize);
+          ctx.rect(bSize, bSize, canvas.width - 2 * bSize, canvas.height - 2 * bSize);
           ctx.clip();
           ctx.drawImage(imgElement, drawX, drawY, drawWidth, drawHeight);
           ctx.restore();
@@ -862,11 +858,19 @@ export const PhotoverlayTool: React.FC = () => {
                               ${selectedItem?.filterSettings === FilterMode.Grayscale ? 'grayscale(100%)' : ''}
                               ${selectedItem?.filterSettings === FilterMode.Sepia ? 'sepia(100%)' : ''}
                     `,
-                    border: selectedItem?.borderSettings.size
-                      ? `${selectedItem.borderSettings.size}px solid ${selectedItem.borderSettings.color}`
-                      : 'none',
                   }}
                 />
+
+                {/* Border overlay — fixed at container edges, unaffected by zoom/pan */}
+                {selectedItem?.borderSettings.size && selectedItem.borderSettings.size > 0 && (
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      border: `${selectedItem.borderSettings.size}px solid ${selectedItem.borderSettings.color}`,
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                )}
 
                 {selectedItem?.watermarkSettings.file && (
                   <img

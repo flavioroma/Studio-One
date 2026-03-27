@@ -421,39 +421,31 @@ export const PiCollageTool: React.FC = () => {
         ctx.translate(pxX + pxW / 2, pxY + pxH / 2);
         ctx.rotate((pic.rotation * Math.PI) / 180);
 
-        // Apply filters
+        // Apply filters (to image only — reset before watermark/caption)
         let filterStr = '';
         if (pic.filterSettings === FilterMode.Grayscale) filterStr += 'grayscale(100%) ';
         if (pic.filterSettings === FilterMode.Sepia) filterStr += 'sepia(100%) ';
         if (filterStr) ctx.filter = filterStr.trim();
 
-        // Apply framing (zoom and offsets)
-        const zoom = pic.framingSettings.zoom || 1.0;
-        const offsetX = (pic.framingSettings.offsetX || 0) * (pxW / 100);
-        const offsetY = (pic.framingSettings.offsetY || 0) * (pxH / 100);
+        // Border size scaled for 4K output
+        const bSize = pic.borderSettings.size * 2;
 
-        const drawWidth = pxW * zoom;
-        const drawHeight = pxH * zoom;
-        const drawX = (pxW - drawWidth) / 2 + offsetX;
-        const drawY = (pxH - drawHeight) / 2 + offsetY;
-
-        // Draw Border
-        if (pic.borderSettings.size > 0) {
+        // Draw border at tile bounds (not at zoomed image position)
+        if (bSize > 0) {
           ctx.fillStyle = pic.borderSettings.color || '#ffffff';
-          ctx.fillRect(drawX - pxW / 2, drawY - pxH / 2, drawWidth, drawHeight);
+          ctx.fillRect(-pxW / 2, -pxH / 2, pxW, pxH);
         }
 
-        // Clip area for image contents inside border
-        // Scale border size for 4K
-        const bSize = pic.borderSettings.size * 2;
-        const clipX = drawX - pxW / 2 + bSize;
-        const clipY = drawY - pxH / 2 + bSize;
-        const clipW = drawWidth - 2 * bSize;
-        const clipH = drawHeight - 2 * bSize;
+        // Inner area (inside border) — matches CSS preview where border takes internal space
+        const innerW = pxW - 2 * bSize;
+        const innerH = pxH - 2 * bSize;
+        const innerX = -pxW / 2 + bSize;
+        const innerY = -pxH / 2 + bSize;
 
+        // Clip to inner area
         ctx.save();
         ctx.beginPath();
-        ctx.rect(clipX, clipY, clipW, clipH);
+        ctx.rect(innerX, innerY, innerW, innerH);
         ctx.clip();
 
         // Load image
@@ -464,9 +456,26 @@ export const PiCollageTool: React.FC = () => {
           img.src = pic.previewUrl;
         });
 
-        // Draw Image
-        ctx.drawImage(img, drawX - pxW / 2, drawY - pxH / 2, drawWidth, drawHeight);
-        ctx.restore();
+        // objectFit:cover scale for inner area + zoom (matches CSS preview exactly)
+        const coverScale = Math.max(innerW / img.width, innerH / img.height);
+        const zoom = pic.framingSettings.zoom || 1.0;
+        const totalScale = coverScale * zoom;
+        const imgW = img.width * totalScale;
+        const imgH = img.height * totalScale;
+
+        // Inner area center (relative to tile center at 0,0 after ctx.translate)
+        const innerCenterX = innerX + innerW / 2;
+        const innerCenterY = innerY + innerH / 2;
+
+        // Offset as % of inner area (matches CSS translate(offsetX%, offsetY%))
+        const offsetX = (pic.framingSettings.offsetX || 0) * (innerW / 100);
+        const offsetY = (pic.framingSettings.offsetY || 0) * (innerH / 100);
+
+        ctx.drawImage(img, innerCenterX - imgW / 2 + offsetX, innerCenterY - imgH / 2 + offsetY, imgW, imgH);
+        ctx.restore(); // end clip
+
+        // Reset filter before watermark/caption so they are not filtered
+        ctx.filter = 'none';
 
         // Watermark
         if (pic.watermarkSettings?.file) {
@@ -477,14 +486,14 @@ export const PiCollageTool: React.FC = () => {
             tempImg.src = URL.createObjectURL(pic.watermarkSettings.file!);
           });
 
-          const w = pxW * pic.watermarkSettings.scale;
+          const wW = pxW * pic.watermarkSettings.scale;
           const imgAR = wImg.width / wImg.height;
-          const h = w / imgAR;
-          const pos = calculateWatermarkPosition(pxW, pxH, w, h, pic.watermarkSettings.position);
+          const wH = wW / imgAR;
+          const pos = calculateWatermarkPosition(pxW, pxH, wW, wH, pic.watermarkSettings.position);
 
           ctx.save();
           ctx.globalAlpha = pic.watermarkSettings.opacity;
-          ctx.drawImage(wImg, pos.x - pxW / 2, pos.y - pxH / 2, w, h);
+          ctx.drawImage(wImg, pos.x - pxW / 2, pos.y - pxH / 2, wW, wH);
           ctx.restore();
           URL.revokeObjectURL(wImg.src);
         }

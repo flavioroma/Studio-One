@@ -7,6 +7,7 @@ import {
   AspectRatio,
   Rotation,
   AudioMode,
+  FilterMode,
 } from '../types';
 import {
   calculateCaptionMetrics,
@@ -260,7 +261,45 @@ export class Mp4ExportService {
     const userX = (offsetX / 100) * width;
     const userY = (offsetY / 100) * height;
 
-    ctx.drawImage(img, baseX + userX, baseY + userY, w, h);
+    // Apply filter to image only
+    ctx.filter =
+      slide.filterSettings === FilterMode.Grayscale
+        ? 'grayscale(100%)'
+        : slide.filterSettings === FilterMode.Sepia
+          ? 'sepia(100%)'
+          : 'none';
+
+    // Actual framing dimensions (with zoom+pan)
+    const renderX = baseX + userX;
+    const renderY = baseY + userY;
+
+    // Draw image freely with zoom+pan
+    ctx.drawImage(img, renderX, renderY, w, h);
+
+    // Reset filter before drawing border so color is not grayed/tinted
+    ctx.filter = 'none';
+
+    // Border rect follows the image boundaries, but remains visible at canvas edges (output aspect ratio) when zoomed in
+    const borderLeft = Math.max(renderX, 0);
+    const borderTop = Math.max(renderY, 0);
+    const borderRight = Math.min(renderX + w, width);
+    const borderBottom = Math.min(renderY + h, height);
+
+    const borderWidth = borderRight - borderLeft;
+    const borderHeight = borderBottom - borderTop;
+
+    // Draw border as 4 opaque edge stripes ON TOP of the visible portion of the image
+    const bSize = (slide.borderSettings?.size || 0) * (height / 1080);
+    if (bSize > 0 && borderWidth > 0 && borderHeight > 0) {
+      ctx.fillStyle = slide.borderSettings.color || '#ffffff';
+      ctx.fillRect(borderLeft, borderTop, borderWidth, bSize);                              // top
+      ctx.fillRect(borderLeft, borderTop + borderHeight - bSize, borderWidth, bSize);       // bottom
+      ctx.fillRect(borderLeft, borderTop + bSize, bSize, borderHeight - 2 * bSize);         // left
+      ctx.fillRect(borderLeft + borderWidth - bSize, borderTop + bSize, bSize, borderHeight - 2 * bSize); // right
+    }
+
+    // Reset filter so watermark/caption are unaffected
+    ctx.filter = 'none';
 
     // Draw Watermark
     if (watermarkImg && slide.watermarkSettings) {
