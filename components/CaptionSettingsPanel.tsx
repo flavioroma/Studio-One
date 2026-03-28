@@ -1,6 +1,7 @@
 import React from 'react';
-import { Wand2, Type, Italic, Palette } from 'lucide-react';
+import { Wand2, Type, Italic } from 'lucide-react';
 import { TextPosition, TextColor, TextSize, CaptionSettings } from '../types';
+import { ColorPalette } from './ColorPalette';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface CaptionSettingsPanelProps {
@@ -143,26 +144,11 @@ export const CaptionSettingsPanel: React.FC<CaptionSettingsPanelProps> = ({
           </div>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-            <Palette className="w-3 h-3" /> {t.captions.colorPalette}
-          </label>
-          <div className="grid grid-cols-10 gap-1.5 pt-1">
-            {Object.entries(TextColor).map(([name, hex]) => (
-              <button
-                key={name}
-                onClick={() => onUpdate({ color: hex as TextColor })}
-                className={`w-5 h-5 rounded-full border-2 transition-transform hover:scale-125 ${
-                  settings.color === hex
-                    ? `border-white ring-2 ${themeClasses.ringHalf}`
-                    : 'border-transparent'
-                }`}
-                style={{ backgroundColor: hex }}
-                title={name}
-              />
-            ))}
-          </div>
-        </div>
+        <ColorPalette
+          selectedColor={settings.color}
+          onColorChange={(color) => onUpdate({ color })}
+          themeColor={themeColor}
+        />
       </div>
     </div>
   );

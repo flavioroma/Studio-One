@@ -3,6 +3,7 @@ import { BorderSize, TextColor } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Check } from 'lucide-react';
 import { CollapsiblePanel } from './CollapsiblePanel';
+import { ColorPalette } from './ColorPalette';
 
 interface BorderSettingsPanelProps {
   borderSize: BorderSize;
@@ -34,7 +35,6 @@ export const BorderSettingsPanel: React.FC<BorderSettingsPanelProps> = ({
     { id: BorderSize.Large, label: t.tools.picollage.borderLarge },
   ];
 
-  const colorOptions = Object.values(TextColor);
 
   const themeClasses = {
     'tool-slidesync': {
@@ -112,29 +112,12 @@ export const BorderSettingsPanel: React.FC<BorderSettingsPanelProps> = ({
           </div>
 
           {borderSize !== BorderSize.None && (
-            <div className="space-y-3 animate-fadeIn pt-2 border-t border-slate-700/50">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">
-                {t.common.color}
-              </label>
-              <div className="grid grid-cols-5 gap-2">
-                {colorOptions.map((color) => (
-                  <button
-                    key={color}
-                    onClick={() => onColorChange(color)}
-                    className={`group relative w-full aspect-square rounded-full border-2 transition-all hover:scale-110 active:scale-90 ${
-                      borderColor === color ? 'border-white shadow-lg' : 'border-transparent'
-                    }`}
-                    style={{ backgroundColor: color }}
-                    title={color}
-                  >
-                    {borderColor === color && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Check className={`w-3 h-3 ${color === TextColor.White ? 'text-slate-900' : 'text-white'}`} strokeWidth={4} />
-                      </div>
-                    )}
-                  </button>
-                ))}
-              </div>
+            <div className="animate-fadeIn pt-2">
+              <ColorPalette
+                selectedColor={borderColor}
+                onColorChange={onColorChange}
+                themeColor={themeColor}
+              />
             </div>
           )}
         </div>
