@@ -144,6 +144,10 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
 
   const renderFrame = (ctx: CanvasRenderingContext2D, time: number) => {
     ctx.fillStyle = '#000000';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0)';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     if (slides.length === 0 || audioDuration === 0) {
@@ -231,9 +235,10 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
     } catch (e) {}
 
     if (currentSlide.captionSettings.text) {
-      ctx.fillStyle = currentSlide.captionSettings.color;
-
-      const metrics = calculateCaptionMetrics(CANVAS_WIDTH, CANVAS_HEIGHT, currentSlide.captionSettings);
+      const metrics = calculateCaptionMetrics(CANVAS_WIDTH, CANVAS_HEIGHT, {
+        text: currentSlide.captionSettings.text,
+        textSize: currentSlide.captionSettings.textSize,
+      });
       const position = calculateCaptionPosition(
         CANVAS_WIDTH,
         CANVAS_HEIGHT,
@@ -241,17 +246,21 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
         currentSlide.captionSettings.position
       );
 
-      ctx.font = `${currentSlide.captionSettings.isItalic ? 'italic ' : ''}bold ${metrics.fontSize}px Inter, sans-serif`;
-      ctx.shadowColor = 'rgba(0,0,0,0.8)';
-      ctx.shadowBlur = 10;
-      ctx.shadowOffsetX = 3;
-      ctx.shadowOffsetY = 3;
-
+      ctx.save();
+      const fontStyle = currentSlide.captionSettings.isItalic ? 'italic' : 'normal';
+      ctx.font = `${fontStyle} bold ${metrics.fontSize}px Inter, sans-serif`;
+      ctx.fillStyle = currentSlide.captionSettings.color;
       ctx.textAlign = position.textAlign as CanvasTextAlign;
+      ctx.textBaseline = 'alphabetic';
+      ctx.shadowColor = 'rgba(0,0,0,0.8)';
+      ctx.shadowBlur = metrics.fontSize * 0.15;
+      ctx.shadowOffsetX = metrics.fontSize * 0.04;
+      ctx.shadowOffsetY = metrics.fontSize * 0.04;
 
       metrics.lines.forEach((line, i) => {
         ctx.fillText(line, position.x, position.y + i * metrics.lineHeight);
       });
+      ctx.restore();
     }
 
     // Render Watermark

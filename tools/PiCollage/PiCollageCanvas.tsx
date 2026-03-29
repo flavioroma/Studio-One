@@ -106,18 +106,28 @@ export const PiCollageCanvas: React.FC<PiCollageCanvasProps> = ({
     }
   };
 
-  const getBorderStyle = (size: BorderSize) => {
-    switch (size) {
-      case BorderSize.Small:
-        return '8px solid';
-      case BorderSize.Medium:
-        return '16px solid';
-      case BorderSize.Large:
-        return '32px solid';
-      default:
-        return 'none';
+  const canvasDimPreview = (() => {
+    let ratio = 16 / 9;
+    switch (aspectRatio) {
+      case AspectRatio.Landscape_16_9: ratio = 16 / 9; break;
+      case AspectRatio.Portrait_9_16: ratio = 9 / 16; break;
+      case AspectRatio.Portrait_3_4: ratio = 3 / 4; break;
+      case AspectRatio.Square_1_1: ratio = 1 / 1; break;
     }
-  };
+    const availableW = containerSize.width;
+    const availableH = containerSize.height;
+    if (availableW === 0 || availableH === 0) return { width: 0, height: 0 };
+    const containerRatio = availableW / availableH;
+    let finalW, finalH;
+    if (containerRatio > ratio) {
+      finalH = availableH;
+      finalW = finalH * ratio;
+    } else {
+      finalW = availableW;
+      finalH = finalW / ratio;
+    }
+    return { width: finalW, height: finalH };
+  })();
 
   const getFilterStyle = (filter: FilterMode) => {
     switch (filter) {
@@ -369,14 +379,41 @@ export const PiCollageCanvas: React.FC<PiCollageCanvasProps> = ({
                   style={{ cursor: interaction && interaction.id === pic.id ? 'grabbing' : 'grab', containerType: 'inline-size' }}
                 >
                   {/* Border wrapper: fixed at tile edges, not affected by zoom/pan */}
-                  <div
-                    className="w-full h-full overflow-hidden pointer-events-none"
-                    style={{
-                      border: getBorderStyle(pic.borderSettings.size),
-                      borderColor: pic.borderSettings.color,
-                      boxSizing: 'border-box',
-                    }}
-                  >
+                  <div className="w-full h-full overflow-hidden pointer-events-none relative">
+                    {pic.borderSettings.size > 0 && (() => {
+                      const tileW = (pic.width / 100) * canvasDimPreview.width;
+                      const tileH = tileW / pic.aspectRatio;
+                      const bSize = (pic.borderSettings.size * tileH) / 1000;
+                      
+                      const zoom = pic.framingSettings.zoom || 1;
+                      const offX = pic.framingSettings.offsetX || 0;
+                      const offY = pic.framingSettings.offsetY || 0;
+
+                      const renderW = tileW * zoom;
+                      const renderH = tileH * zoom;
+                      const renderX = (tileW - renderW) / 2 + (offX / 100) * tileW;
+                      const renderY = (tileH - renderH) / 2 + (offY / 100) * tileH;
+
+                      const bLeft = Math.max(renderX, 0);
+                      const bTop = Math.max(renderY, 0);
+                      const bRight = Math.min(renderX + renderW, tileW);
+                      const bBottom = Math.min(renderY + renderH, tileH);
+
+                      const bW = bRight - bLeft;
+                      const bH = bBottom - bTop;
+
+                      if (bW <= 0 || bH <= 0) return null;
+
+                      return (
+                        <div className="absolute inset-0 pointer-events-none z-10">
+                          <div className="absolute" style={{ top: bTop, left: bLeft, width: bW, height: bSize, backgroundColor: pic.borderSettings.color }} />
+                          <div className="absolute" style={{ top: bBottom - bSize, left: bLeft, width: bW, height: bSize, backgroundColor: pic.borderSettings.color }} />
+                          <div className="absolute" style={{ top: bTop + bSize, left: bLeft, width: bSize, height: bH - 2 * bSize, backgroundColor: pic.borderSettings.color }} />
+                          <div className="absolute" style={{ top: bTop + bSize, left: bRight - bSize, width: bSize, height: bH - 2 * bSize, backgroundColor: pic.borderSettings.color }} />
+                        </div>
+                      );
+                    })()}
+
                     {/* Filter + image: filter applies only inside the border */}
                     <div
                       className="w-full h-full flex items-center justify-center"

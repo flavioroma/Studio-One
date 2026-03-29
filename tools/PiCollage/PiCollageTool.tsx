@@ -405,6 +405,10 @@ export const PiCollageTool: React.FC = () => {
 
       // white background
       ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
       ctx.fillRect(0, 0, w, h);
 
       // Draw sorted visible pictures
@@ -430,22 +434,16 @@ export const PiCollageTool: React.FC = () => {
         if (pic.filterSettings === FilterMode.Sepia) filterStr += 'sepia(100%) ';
         if (filterStr) ctx.filter = filterStr.trim();
 
-        // Border size scaled for 4K output
-        const bSize = pic.borderSettings.size * 2;
+        // Draw Border at output dimensions (overlay on top of image, follows framing)
+        const bSize = (pic.borderSettings.size || 0) * (pxH / 1000);
+        
+        // Inner area (for image drawing) — the image fills the FULL TILE
+        const innerW = pxW;
+        const innerH = pxH;
+        const innerX = -pxW / 2;
+        const innerY = -pxH / 2;
 
-        // Draw border at tile bounds (not at zoomed image position)
-        if (bSize > 0) {
-          ctx.fillStyle = pic.borderSettings.color || '#ffffff';
-          ctx.fillRect(-pxW / 2, -pxH / 2, pxW, pxH);
-        }
-
-        // Inner area (inside border) — matches CSS preview where border takes internal space
-        const innerW = pxW - 2 * bSize;
-        const innerH = pxH - 2 * bSize;
-        const innerX = -pxW / 2 + bSize;
-        const innerY = -pxH / 2 + bSize;
-
-        // Clip to inner area
+        // Clip to tile area
         ctx.save();
         ctx.beginPath();
         ctx.rect(innerX, innerY, innerW, innerH);
@@ -459,22 +457,45 @@ export const PiCollageTool: React.FC = () => {
           img.src = pic.previewUrl;
         });
 
-        // objectFit:cover scale for inner area + zoom (matches CSS preview exactly)
+        // objectFit:cover scale for tile area + zoom
         const coverScale = Math.max(innerW / img.width, innerH / img.height);
         const zoom = pic.framingSettings.zoom || 1.0;
         const totalScale = coverScale * zoom;
         const imgW = img.width * totalScale;
         const imgH = img.height * totalScale;
 
-        // Inner area center (relative to tile center at 0,0 after ctx.translate)
-        const innerCenterX = innerX + innerW / 2;
-        const innerCenterY = innerY + innerH / 2;
-
-        // Offset as % of inner area (matches CSS translate(offsetX%, offsetY%))
+        // Tile center is at 0,0 after translate
         const offsetX = (pic.framingSettings.offsetX || 0) * (innerW / 100);
         const offsetY = (pic.framingSettings.offsetY || 0) * (innerH / 100);
 
-        ctx.drawImage(img, innerCenterX - imgW / 2 + offsetX, innerCenterY - imgH / 2 + offsetY, imgW, imgH);
+        const drawX = -imgW / 2 + offsetX;
+        const drawY = -imgH / 2 + offsetY;
+
+        ctx.drawImage(img, drawX, drawY, imgW, imgH);
+
+        // Draw Border Overlay if needed
+        if (bSize > 0) {
+          ctx.save();
+          ctx.filter = 'none';
+          ctx.fillStyle = pic.borderSettings.color || '#ffffff';
+
+          const bLeft = Math.max(drawX, innerX);
+          const bTop = Math.max(drawY, innerY);
+          const bRight = Math.min(drawX + imgW, innerX + innerW);
+          const bBottom = Math.min(drawY + imgH, innerY + innerH);
+
+          const bW = bRight - bLeft;
+          const bH = bBottom - bTop;
+
+          if (bW > 0 && bH > 0) {
+            ctx.fillRect(bLeft, bTop, bW, bSize);
+            ctx.fillRect(bLeft, bTop + bH - bSize, bW, bSize);
+            ctx.fillRect(bLeft, bTop + bSize, bSize, bH - 2 * bSize);
+            ctx.fillRect(bLeft + bW - bSize, bTop + bSize, bSize, bH - 2 * bSize);
+          }
+          ctx.restore();
+        }
+
         ctx.restore(); // end clip
 
         // Reset filter before watermark/caption so they are not filtered

@@ -243,6 +243,10 @@ export class Mp4ExportService {
   ) {
     const ctx = this.ctx;
     ctx.fillStyle = '#000000';
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
     ctx.fillRect(0, 0, width, height);
 
     // Draw Image (same logic as VideoPreview)
@@ -479,6 +483,10 @@ export class Mp4ExportService {
 
         // Draw Video Header
         ctx.fillStyle = '#000000';
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
         ctx.fillRect(0, 0, width, height);
 
         // Handle Rotation & Aspect Ratio scaling
@@ -607,23 +615,24 @@ export class Mp4ExportService {
   ) {
     if (!overlay.text) return;
 
+    // Caption rendering
+    ctx.save();
     const metrics = calculateCaptionMetrics(width, height, overlay);
     const position = calculateCaptionPosition(width, height, metrics, overlay.position);
 
     const fontStyle = overlay.isItalic ? 'italic' : 'normal';
     ctx.font = `${fontStyle} bold ${metrics.fontSize}px Inter, sans-serif`;
     ctx.fillStyle = overlay.color;
-
-    ctx.shadowColor = 'rgba(0,0,0,0.8)';
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetX = 2;
-    ctx.shadowOffsetY = 2;
-
     ctx.textAlign = position.textAlign as CanvasTextAlign;
     ctx.textBaseline = 'alphabetic';
+    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+    ctx.shadowBlur = metrics.fontSize * 0.15;
+    ctx.shadowOffsetX = metrics.fontSize * 0.04;
+    ctx.shadowOffsetY = metrics.fontSize * 0.04;
 
     metrics.lines.forEach((line, i) => {
       ctx.fillText(line, position.x, position.y + i * metrics.lineHeight);
     });
+    ctx.restore();
   }
 }

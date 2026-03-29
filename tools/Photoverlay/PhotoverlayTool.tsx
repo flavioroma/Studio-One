@@ -506,7 +506,12 @@ export const PhotoverlayTool: React.FC = () => {
         canvas.width = item.metadata.width;
         canvas.height = item.metadata.height;
 
-        // Load image correctly for canvas
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+
+        // Draw Image FIRST
         const imgElement = await new Promise<HTMLImageElement>((resolve, reject) => {
           const img = new Image();
           img.onload = () => resolve(img);
@@ -524,19 +529,32 @@ export const PhotoverlayTool: React.FC = () => {
         const drawX = (canvas.width - drawWidth) / 2 + offsetX;
         const drawY = (canvas.height - drawHeight) / 2 + offsetY;
 
+        ctx.drawImage(imgElement, drawX, drawY, drawWidth, drawHeight);
+
         // Draw Border at output canvas dimensions (not at zoomed image position)
-        const bSize = item.borderSettings.size || 0;
+        const bSize = (item.borderSettings.size || 0) * (canvas.height / 1000);
         if (bSize > 0) {
-          ctx.fillStyle = item.borderSettings.color || '#ffffff';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.save();
-          ctx.beginPath();
-          ctx.rect(bSize, bSize, canvas.width - 2 * bSize, canvas.height - 2 * bSize);
-          ctx.clip();
-          ctx.drawImage(imgElement, drawX, drawY, drawWidth, drawHeight);
+          ctx.filter = 'none'; // Ensure border color is not affected by image filters
+          ctx.fillStyle = item.borderSettings.color || '#ffffff';
+
+          // Border rect follows the image boundaries, but remains visible at canvas edges (output aspect ratio) when zoomed in
+          const bLeft = Math.max(drawX, 0);
+          const bTop = Math.max(drawY, 0);
+          const bRight = Math.min(drawX + drawWidth, canvas.width);
+          const bBottom = Math.min(drawY + drawHeight, canvas.height);
+
+          const bW = bRight - bLeft;
+          const bH = bBottom - bTop;
+
+          if (bW > 0 && bH > 0) {
+            // Top, Bottom, Left, Right segments
+            ctx.fillRect(bLeft, bTop, bW, bSize);
+            ctx.fillRect(bLeft, bTop + bH - bSize, bW, bSize);
+            ctx.fillRect(bLeft, bTop + bSize, bSize, bH - 2 * bSize);
+            ctx.fillRect(bLeft + bW - bSize, bTop + bSize, bSize, bH - 2 * bSize);
+          }
           ctx.restore();
-        } else {
-          ctx.drawImage(imgElement, drawX, drawY, drawWidth, drawHeight);
         }
 
         // Apply filter
@@ -868,16 +886,41 @@ export const PhotoverlayTool: React.FC = () => {
                   }}
                 />
 
-                {/* Border overlay — fixed at container edges, unaffected by zoom/pan */}
-                {selectedItem?.borderSettings.size && selectedItem.borderSettings.size > 0 && (
-                  <div
-                    className="absolute inset-0 pointer-events-none"
-                    style={{
-                      border: `${selectedItem.borderSettings.size}px solid ${selectedItem.borderSettings.color}`,
-                      boxSizing: 'border-box',
-                    }}
-                  />
-                )}
+                {/* Border overlay — follows framing and scales with window */}
+                {selectedItem?.borderSettings.size && selectedItem.borderSettings.size > 0 && (() => {
+                  const bSize = (selectedItem.borderSettings.size * containerSize.height) / 1000;
+                  const zoom = selectedItem.framingSettings.zoom || 1;
+                  const offX = selectedItem.framingSettings.offsetX || 0;
+                  const offY = selectedItem.framingSettings.offsetY || 0;
+
+                  const renderX = (containerSize.width * (1 - zoom)) / 2 + (offX / 100) * containerSize.width;
+                  const renderY = (containerSize.height * (1 - zoom)) / 2 + (offY / 100) * containerSize.height;
+                  const renderW = containerSize.width * zoom;
+                  const renderH = containerSize.height * zoom;
+
+                  const bLeft = Math.max(renderX, 0);
+                  const bTop = Math.max(renderY, 0);
+                  const bRight = Math.min(renderX + renderW, containerSize.width);
+                  const bBottom = Math.min(renderY + renderH, containerSize.height);
+
+                  const bW = bRight - bLeft;
+                  const bH = bBottom - bTop;
+
+                  if (bW <= 0 || bH <= 0) return null;
+
+                  return (
+                    <div className="absolute inset-0 pointer-events-none z-10" style={{ transform: 'none' }}>
+                      {/* Top */}
+                      <div className="absolute" style={{ top: bTop, left: bLeft, width: bW, height: bSize, backgroundColor: selectedItem.borderSettings.color }} />
+                      {/* Bottom */}
+                      <div className="absolute" style={{ top: bBottom - bSize, left: bLeft, width: bW, height: bSize, backgroundColor: selectedItem.borderSettings.color }} />
+                      {/* Left */}
+                      <div className="absolute" style={{ top: bTop + bSize, left: bLeft, width: bSize, height: bH - 2 * bSize, backgroundColor: selectedItem.borderSettings.color }} />
+                      {/* Right */}
+                      <div className="absolute" style={{ top: bTop + bSize, left: bRight - bSize, width: bSize, height: bH - 2 * bSize, backgroundColor: selectedItem.borderSettings.color }} />
+                    </div>
+                  );
+                })()}
 
                 {selectedItem?.watermarkSettings.file && (
                   <img
