@@ -56,6 +56,12 @@ export const WatermarkSettingsPanel: React.FC<WatermarkSettingsPanelProps> = ({
       accent: 'accent-tool-videoverlay',
       ring: 'focus:ring-tool-videoverlay',
     },
+    'tool-picollage': {
+      borderHover: 'hover:border-tool-picollage',
+      text: 'text-tool-picollage',
+      accent: 'accent-tool-picollage',
+      ring: 'focus:ring-tool-picollage',
+    },
   }[themeColor] || {
     borderHover: 'hover:border-blue-500',
     text: 'text-blue-500',

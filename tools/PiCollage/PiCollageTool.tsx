@@ -596,7 +596,7 @@ export const PiCollageTool: React.FC = () => {
   return (
     <div className="flex h-full bg-slate-900 overflow-hidden">
       {/* Sidebar Setting */}
-      <div className="w-[340px] border-r border-slate-700 bg-slate-800 flex flex-col p-4 z-30 shadow-2xl shrink-0 overflow-y-auto">
+      <div className="w-[340px] border-r border-slate-700 bg-slate-800 flex flex-col z-30 shadow-2xl shrink-0">
         <PiCollageSidebar
           pictures={pictures}
           activePictureId={activePictureId}

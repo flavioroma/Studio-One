@@ -42,6 +42,11 @@ export const CaptionSettingsPanel: React.FC<CaptionSettingsPanelProps> = ({
       ring: 'focus:ring-tool-videoverlay',
       ringHalf: 'ring-tool-videoverlay/50',
     },
+    'tool-picollage': {
+      bg: 'bg-tool-picollage',
+      ring: 'focus:ring-tool-picollage',
+      ringHalf: 'ring-tool-picollage/50',
+    },
   }[themeColor] || {
     bg: 'bg-blue-600',
     ring: 'focus:ring-blue-600',

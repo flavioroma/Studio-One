@@ -87,6 +87,13 @@ export const MagnificationSettingsPanel: React.FC<MagnificationSettingsPanelProp
       bg: 'bg-tool-photoverlay',
       borderHover: 'hover:border-tool-photoverlay/40',
     },
+    'tool-picollage': {
+      text: 'text-tool-picollage',
+      accent: 'accent-tool-picollage',
+      border: 'border-tool-picollage/20',
+      bg: 'bg-tool-picollage',
+      borderHover: 'hover:border-tool-picollage/40',
+    },
   }[themeColor] || {
     text: 'text-blue-500',
     accent: 'accent-blue-500',

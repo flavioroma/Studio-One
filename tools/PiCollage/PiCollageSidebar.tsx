@@ -69,7 +69,7 @@ export const PiCollageSidebar: React.FC<PiCollageSidebarProps> = ({
   const activePicture = pictures.find((p) => p.id === activePictureId);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-y-auto custom-scrollbar p-4">
       {pictures.length === 0 ? (
         <div className="flex-1 space-y-6">
           <FileDropZone
@@ -104,7 +104,7 @@ export const PiCollageSidebar: React.FC<PiCollageSidebarProps> = ({
           )}
         </div>
       ) : (
-        <div className="flex-1 space-y-6 animate-fadeIn overflow-y-auto pb-8 pr-2 custom-scrollbar">
+        <div className="flex-1 space-y-6 animate-fadeIn pb-8">
           {/* Output Resolution Settings */}
           <div className="space-y-4">
             <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
@@ -118,7 +118,7 @@ export const PiCollageSidebar: React.FC<PiCollageSidebarProps> = ({
                   className={`flex items-center justify-center gap-2 p-3 rounded-xl border transition-all ${
                     aspectRatio === opt.id
                       ? 'bg-tool-picollage/20 border-tool-picollage text-tool-picollage shadow-[0_0_15px_rgba(234,179,8,0.2)]'
-                      : 'bg-slate-700/50 border-slate-600 hover:border-tool-picollage/40 hover:bg-slate-700/50'
+                      : 'bg-slate-700/50 border-slate-600 hover:border-tool-picollage/40 hover:text-tool-picollage'
                   }`}
                 >
                   <opt.icon className="w-4 h-4" />
