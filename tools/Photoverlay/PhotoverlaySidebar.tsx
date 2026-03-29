@@ -136,7 +136,7 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
                           className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${
                             namingSettings.type === 'prefix'
                               ? 'bg-tool-photoverlay text-white shadow-lg'
-                              : 'text-slate-500 hover:text-slate-300'
+                              : 'text-slate-500 hover:text-tool-photoverlay'
                           }`}
                         >
                           {t.common.prefix}
@@ -146,7 +146,7 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
                           className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${
                             namingSettings.type === 'suffix'
                               ? 'bg-tool-photoverlay text-white shadow-lg'
-                              : 'text-slate-500 hover:text-slate-300'
+                              : 'text-slate-500 hover:text-tool-photoverlay'
                           }`}
                         >
                           {t.common.suffix}

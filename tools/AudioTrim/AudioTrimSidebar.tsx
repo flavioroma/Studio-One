@@ -48,7 +48,7 @@ export const AudioTrimSidebar: React.FC<AudioTrimSidebarProps> = ({
                 className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
                   selectedId === track.id
                     ? 'bg-tool-audiotrim/20 border-tool-audiotrim text-tool-audiotrim shadow-[0_0_15px_rgba(16,185,129,0.15)]'
-                    : 'bg-slate-700/50 border-slate-600 hover:border-tool-audiotrim/40 hover:bg-slate-700/50 text-slate-300'
+                    : 'bg-slate-700/50 border-slate-600 hover:border-tool-audiotrim/40 hover:bg-slate-700/50 text-slate-300 hover:text-tool-audiotrim'
                 }`}
               >
                 <div

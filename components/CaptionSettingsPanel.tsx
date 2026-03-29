@@ -26,31 +26,37 @@ export const CaptionSettingsPanel: React.FC<CaptionSettingsPanelProps> = ({
       bg: 'bg-tool-audiotrim',
       ring: 'focus:ring-tool-audiotrim',
       ringHalf: 'ring-tool-audiotrim/50',
+      hoverText: 'hover:text-tool-audiotrim',
     },
     'tool-slidesync': {
       bg: 'bg-tool-slidesync',
       ring: 'focus:ring-tool-slidesync',
       ringHalf: 'ring-tool-slidesync/50',
+      hoverText: 'hover:text-tool-slidesync',
     },
     'tool-photoverlay': {
       bg: 'bg-tool-photoverlay',
       ring: 'focus:ring-tool-photoverlay',
       ringHalf: 'ring-tool-photoverlay/50',
+      hoverText: 'hover:text-tool-photoverlay',
     },
     'tool-videoverlay': {
       bg: 'bg-tool-videoverlay',
       ring: 'focus:ring-tool-videoverlay',
       ringHalf: 'ring-tool-videoverlay/50',
+      hoverText: 'hover:text-tool-videoverlay',
     },
     'tool-picollage': {
       bg: 'bg-tool-picollage',
       ring: 'focus:ring-tool-picollage',
       ringHalf: 'ring-tool-picollage/50',
+      hoverText: 'hover:text-tool-picollage',
     },
   }[themeColor] || {
     bg: 'bg-blue-600',
     ring: 'focus:ring-blue-600',
     ringHalf: 'ring-blue-600/50',
+    hoverText: 'hover:text-blue-600',
   };
 
   return (
@@ -97,13 +103,13 @@ export const CaptionSettingsPanel: React.FC<CaptionSettingsPanelProps> = ({
             <div className="flex bg-slate-700 p-1 rounded-xl border border-slate-600">
               <button
                 onClick={() => onUpdate({ isItalic: false })}
-                className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${!settings.isItalic ? `${themeClasses.bg} text-white shadow-lg` : 'text-slate-400 hover:text-slate-200'}`}
+                className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${!settings.isItalic ? `${themeClasses.bg} text-white shadow-lg` : `text-slate-400 ${themeClasses.hoverText}`}`}
               >
                 {t.captions.normal}
               </button>
               <button
                 onClick={() => onUpdate({ isItalic: true })}
-                className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${settings.isItalic ? `${themeClasses.bg} text-white shadow-lg` : 'text-slate-400 hover:text-slate-200'}`}
+                className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${settings.isItalic ? `${themeClasses.bg} text-white shadow-lg` : `text-slate-400 ${themeClasses.hoverText}`}`}
               >
                 {t.captions.italic}
               </button>
@@ -122,7 +128,7 @@ export const CaptionSettingsPanel: React.FC<CaptionSettingsPanelProps> = ({
                   className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${
                     settings.textSize === size
                       ? `${themeClasses.bg} text-white shadow-lg`
-                      : 'text-slate-400 hover:text-slate-200'
+                      : `text-slate-400 ${themeClasses.hoverText}`
                   }`}
                 >
                   {t.captions.textSizes[size]}

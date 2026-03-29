@@ -40,24 +40,28 @@ export const BorderSettingsPanel: React.FC<BorderSettingsPanelProps> = ({
     'tool-slidesync': {
       active: 'bg-tool-slidesync/20 border-tool-slidesync text-tool-slidesync',
       hover: 'hover:border-tool-slidesync/40',
+      hoverText: 'hover:text-tool-slidesync',
       check: 'bg-tool-slidesync border-tool-slidesync',
       checkHover: 'group-hover:border-tool-slidesync/80',
     },
     'tool-photoverlay': {
       active: 'bg-tool-photoverlay/20 border-tool-photoverlay text-tool-photoverlay',
       hover: 'hover:border-tool-photoverlay/40',
+      hoverText: 'hover:text-tool-photoverlay',
       check: 'bg-tool-photoverlay border-tool-photoverlay',
       checkHover: 'group-hover:border-tool-photoverlay/80',
     },
     'tool-picollage': {
       active: 'bg-tool-picollage/20 border-tool-picollage text-tool-picollage',
       hover: 'hover:border-tool-picollage/40',
+      hoverText: 'hover:text-tool-picollage',
       check: 'bg-tool-picollage border-tool-picollage',
       checkHover: 'group-hover:border-tool-picollage/80',
     },
   }[themeColor] || {
     active: 'bg-blue-500/20 border-blue-500 text-blue-500',
     hover: 'hover:border-blue-500/40',
+    hoverText: 'hover:text-blue-500',
     check: 'bg-blue-500 border-blue-500',
     checkHover: 'group-hover:border-blue-500/80',
   };
@@ -103,7 +107,7 @@ export const BorderSettingsPanel: React.FC<BorderSettingsPanelProps> = ({
                 className={`p-2 rounded-lg text-[10px] font-bold uppercase transition-all border ${
                   borderSize === opt.id
                     ? themeClasses.active
-                    : `bg-slate-700/50 border-slate-600 ${themeClasses.hover}`
+                    : `bg-slate-700/50 border-slate-600 text-slate-300 ${themeClasses.hover} ${themeClasses.hoverText}`
                 }`}
               >
                 {opt.label}

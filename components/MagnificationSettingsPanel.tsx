@@ -79,6 +79,8 @@ export const MagnificationSettingsPanel: React.FC<MagnificationSettingsPanelProp
       border: 'border-tool-slidesync/20',
       bg: 'bg-tool-slidesync',
       borderHover: 'hover:border-tool-slidesync/40',
+      hoverText: 'hover:text-tool-slidesync',
+      hoverBorder: 'hover:border-tool-slidesync/50',
     },
     'tool-photoverlay': {
       text: 'text-tool-photoverlay',
@@ -86,6 +88,8 @@ export const MagnificationSettingsPanel: React.FC<MagnificationSettingsPanelProp
       border: 'border-tool-photoverlay/20',
       bg: 'bg-tool-photoverlay',
       borderHover: 'hover:border-tool-photoverlay/40',
+      hoverText: 'hover:text-tool-photoverlay',
+      hoverBorder: 'hover:border-tool-photoverlay/50',
     },
     'tool-picollage': {
       text: 'text-tool-picollage',
@@ -93,6 +97,8 @@ export const MagnificationSettingsPanel: React.FC<MagnificationSettingsPanelProp
       border: 'border-tool-picollage/20',
       bg: 'bg-tool-picollage',
       borderHover: 'hover:border-tool-picollage/40',
+      hoverText: 'hover:text-tool-picollage',
+      hoverBorder: 'hover:border-tool-picollage/50',
     },
   }[themeColor] || {
     text: 'text-blue-500',
@@ -100,6 +106,8 @@ export const MagnificationSettingsPanel: React.FC<MagnificationSettingsPanelProp
     border: 'border-blue-500/20',
     bg: 'bg-blue-500',
     borderHover: 'hover:border-blue-500/40',
+    hoverText: 'hover:text-blue-500',
+    hoverBorder: 'hover:border-blue-500/50',
   };
 
   return (
@@ -165,7 +173,7 @@ export const MagnificationSettingsPanel: React.FC<MagnificationSettingsPanelProp
             step="0.01"
             value={settings.zoom}
             onChange={(e) => onUpdate({ zoom: parseFloat(e.target.value) })}
-            className={`w-full h-1 bg-slate-700 rounded-lg cursor-pointer range-sm ${themeClasses.accent} transition-all`}
+            className={`w-full h-1 bg-slate-700 rounded-lg cursor-pointer range-sm ${themeClasses.accent} ${themeClasses.text} transition-all`}
             aria-label={t.tools.slidesync.magnification}
           />
         </div>
@@ -173,14 +181,14 @@ export const MagnificationSettingsPanel: React.FC<MagnificationSettingsPanelProp
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={() => onUpdate({ offsetX: 0 })}
-            className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-[9px] font-black uppercase flex items-center justify-center gap-1.5 transition-colors"
+            className={`px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 ${themeClasses.hoverText} border border-transparent ${themeClasses.hoverBorder} rounded-lg text-[9px] font-black uppercase flex items-center justify-center gap-1.5 transition-colors`}
             title={t.tools.slidesync.centerX}
           >
             <AlignHorizontalSpaceAround className="w-3 h-3" /> {t.tools.slidesync.centerX}
           </button>
           <button
             onClick={() => onUpdate({ offsetY: 0 })}
-            className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-[9px] font-black uppercase flex items-center justify-center gap-1.5 transition-colors"
+            className={`px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 ${themeClasses.hoverText} border border-transparent ${themeClasses.hoverBorder} rounded-lg text-[9px] font-black uppercase flex items-center justify-center gap-1.5 transition-colors`}
             title={t.tools.slidesync.centerY}
           >
             <AlignVerticalSpaceAround className="w-3 h-3" /> {t.tools.slidesync.centerY}
@@ -189,7 +197,7 @@ export const MagnificationSettingsPanel: React.FC<MagnificationSettingsPanelProp
 
         <button
           onClick={() => onUpdate({ offsetX: 0, offsetY: 0, zoom: 1.0 })}
-          className="w-full px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-[9px] font-black uppercase flex items-center justify-center gap-1.5 transition-colors"
+          className={`w-full px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 ${themeClasses.hoverText} border border-transparent ${themeClasses.hoverBorder} rounded-lg text-[9px] font-black uppercase flex items-center justify-center gap-1.5 transition-colors`}
         >
           <Move className="w-3 h-3" /> {t.tools.slidesync.resetFraming}
         </button>

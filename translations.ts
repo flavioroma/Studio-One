@@ -87,18 +87,18 @@ export const translations = {
       },
       slidesync: {
         description:
-          'Create music videos from audio and images. Images can be adjusted, captions and watermarks can be added.',
+          'Create music videos from audio and images. Images can be adjusted and filters, borders, captions and watermarks can be added.',
       },
       videoverlay: {
         description:
           'Trim, rotate, replace audio, add overlay text captions and watermarks onto a video.',
       },
       photoverlay: {
-        description: 'Overlay text captions and watermarks onto multiple photos.',
+        description: 'Overlay text captions and watermarks onto multiple photos. Photos can be adjusted and filters, borders, captions and watermarks can be added.',
       },
       picollage: {
         description:
-          'Create interactive photo collages from multiple images with custom borders, filters, and framing.',
+          'Create an interactive collage from multiple pictures. Pictures can be adjusted and filters, borders, captions and watermarks can be added.',
       },
       credits: 'Created by Flavio Biundo - Powered by Google Antigravity',
       clientSideTitle: '100% Client-Side',
@@ -386,18 +386,18 @@ export const translations = {
       },
       slidesync: {
         description:
-          'Crea video musicali da audio e immagini. Le immagini possono essere regolate e si possono aggiungere didascalie e filigrane.',
+          'Crea video musicali da audio e immagini. Si possono centrare le immagini, aggiungere filtri, bordi, didascalie e filigrane.',
       },
       videoverlay: {
         description:
           'Taglia, ruota, sostituisci audio, aggiungi didascalie di testo e filigrane su un video.',
       },
       photoverlay: {
-        description: 'Sovrapponi didascalie di testo e filigrane su molteplici foto.',
+        description: 'Sovrapponi didascalie di testo e filigrane su molteplici foto. Si possono centrare le foto, aggiungere filtri, bordi, didascalie e filigrane.',
       },
       picollage: {
         description:
-          'Crea collage interattivi da più immagini con bordi, filtri e inquadrature personalizzate.',
+          'Crea un collage interattivo da più immagini. Si possono centrare le immagini, aggiungere filtri, bordi, didascalie e filigrane.',
       },
       credits: 'Creato da Flavio Biundo - Potenziato da Google Antigravity',
       clientSideTitle: '100% Lato Client',
