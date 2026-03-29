@@ -39,6 +39,23 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
   const [supportedFormats, setSupportedFormats] = useState<ExportFormat[]>([ExportFormat.MP4, ExportFormat.WebM]);
   const [watermarkImgs, setWatermarkImgs] = useState<Record<string, HTMLImageElement>>({});
   const [isHoveringPlayer, setIsHoveringPlayer] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerSize({
+          width: entry.contentRect.width,
+          height: entry.contentRect.height,
+        });
+      }
+    });
+
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   const formatTime = (seconds: number) => {
     if (!Number.isFinite(seconds) || isNaN(seconds)) return '0:00';
@@ -420,26 +437,45 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
 
   const isDisabled = slides.length === 0 || !audioRef.current;
 
-  // CSS for dynamic aspect ratio display
-  const getContainerAspect = () => {
+  // Pixel-perfect aspect ratio calculation for the player container
+  const getDynamicPlayerStyle = () => {
+    let ratio = 16 / 9;
     switch (aspectRatio) {
-      case AspectRatio.Landscape_16_9:
-        return 'aspect-video w-full max-h-full';
-      case AspectRatio.Portrait_9_16:
-        return 'aspect-[9/16] h-full max-h-full';
-      case AspectRatio.Portrait_3_4:
-        return 'aspect-[3/4] h-full max-h-full';
-      case AspectRatio.Square_1_1:
-        return 'aspect-square h-full max-h-full';
-      default:
-        return 'aspect-video w-full max-h-full';
+      case AspectRatio.Landscape_16_9: ratio = 16 / 9; break;
+      case AspectRatio.Portrait_9_16: ratio = 9 / 16; break;
+      case AspectRatio.Portrait_3_4: ratio = 3 / 4; break;
+      case AspectRatio.Square_1_1: ratio = 1 / 1; break;
     }
+
+    const availableW = containerSize.width;
+    const availableH = containerSize.height;
+
+    if (availableW === 0 || availableH === 0) return {};
+
+    const containerRatio = availableW / availableH;
+
+    let finalW, finalH;
+    if (containerRatio > ratio) {
+      // Container is wider than target ratio -> fit to height
+      finalH = availableH;
+      finalW = finalH * ratio;
+    } else {
+      // Container is taller than target ratio -> fit to width
+      finalW = availableW;
+      finalH = finalW / ratio;
+    }
+
+    return {
+      width: `${finalW}px`,
+      height: `${finalH}px`,
+    };
   };
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center relative">
+    <div ref={containerRef} className="w-full h-full flex flex-col items-center justify-center relative">
       <div
-        className={`relative shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden border-4 border-slate-800 bg-black transition-all duration-500 ${getContainerAspect()}`}
+        className="relative shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden border-4 border-slate-800 bg-black transition-all duration-500 flex-shrink-0"
+        style={getDynamicPlayerStyle()}
         onMouseEnter={() => setIsHoveringPlayer(true)}
         onMouseLeave={() => setIsHoveringPlayer(false)}
       >
@@ -507,7 +543,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
         </div>
       </div>
 
-      <div className="absolute right-6 bottom-0 z-20 flex flex-col items-end gap-2">
+      <div className="absolute right-6 bottom-6 z-50 flex flex-col items-end gap-2">
         {/* Format Selector on top */}
         <div className="flex bg-slate-800/50 backdrop-blur-md rounded-xl p-1 border border-slate-700/50 shadow-lg">
           {supportedFormats.map((fmt) => (
@@ -554,7 +590,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
         </button>
       </div>
       {isRecording && (
-        <div className="absolute top-12 bg-red-600/90 backdrop-blur-md text-white px-6 py-3 rounded-full flex items-center gap-3 animate-pulse z-50 shadow-2xl border border-white/20">
+        <div className="absolute top-12 bg-red-600/90 backdrop-blur-md text-white px-6 py-3 rounded-full flex items-center gap-3 animate-pulse z-[60] shadow-2xl border border-white/20">
           <div className="w-3 h-3 bg-white rounded-full"></div>
           <span className="font-bold uppercase tracking-wider text-xs">
             {t.tools.slidesync.recordingNote}

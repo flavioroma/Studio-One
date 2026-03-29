@@ -294,6 +294,7 @@ export const translations = {
         applyBorderToAll: 'Apply this border to all pictures',
         applyFilterToAll: 'Apply this filter to all pictures',
         exportFailed: 'Export failed. Check console for details.',
+        addPictures: 'Add Pictures',
         noPictureSelected: 'Select a picture from the thumbnails or canvas to edit its properties',
       },
     },
@@ -597,6 +598,7 @@ export const translations = {
         applyBorderToAll: 'Applica questo bordo a tutte le immagini',
         applyFilterToAll: 'Applica questo filtro a tutte le immagini',
         exportFailed: 'Esportazione fallita. Controlla la console per i dettagli.',
+        addPictures: 'Aggiungi Immagini',
         noPictureSelected:
           'Seleziona una immagine dalle miniature o dal collage per modificarne le proprietà',
       },

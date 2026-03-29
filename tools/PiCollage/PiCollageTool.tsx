@@ -703,7 +703,7 @@ export const PiCollageTool: React.FC = () => {
           isItemCustomized={(p) => !!(p.captionSettings?.text || p.watermarkSettings?.file || p.framingSettings?.zoom !== 1 || p.framingSettings?.offsetX !== 0 || p.framingSettings?.offsetY !== 0 || p.filterSettings !== FilterMode.Normal)}
           isItemVisible={(p) => p.isVisible !== false}
           activeItemId={activePictureId}
-          emptyMessage={t.common.addMore}
+          emptyMessage={t.tools.picollage.addPictures}
           themeColorClass="tool-picollage"
           onSelectItem={setActivePictureId}
           onDeleteRequest={deletePicture}

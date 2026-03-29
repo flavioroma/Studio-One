@@ -450,7 +450,7 @@ export const SlideSyncTool: React.FC = () => {
 
       <div className="flex-1 flex flex-col min-w-0 relative">
         {isInitialLoading && <ToolLoadingScreen Icon={Layers} colorVar="--tool-slidesync" />}
-        <div className="flex-1 bg-slate-950 relative flex items-center justify-center p-8 overflow-hidden">
+        <div className="flex-1 bg-slate-950 relative flex items-center justify-center pt-8 px-6 pb-8 overflow-hidden">
           <VideoPreview
             slides={slides}
             audioRef={audioRef}
