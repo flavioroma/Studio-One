@@ -71,17 +71,7 @@ export interface FramingSettings {
   offsetY: number; // -400 to 400 (percentage of offset from center)
 }
 
-export interface Slide extends FramingSettings {
-  id: string;
-  file: File;
-  previewUrl: string;
-  text: string;
-  color: TextColor;
-  position: TextPosition;
-  textSize: TextSize;
-  isItalic?: boolean;
-  watermarkSettings?: WatermarkSettings;
-}
+export interface Slide extends ImageItem {}
 
 export interface VideoConfig {
   width: number;
@@ -110,13 +100,53 @@ export interface NamingSettings {
   value: string;
 }
 
-export interface PhotoItem {
+export interface BorderSettings {
+  size: BorderSize;
+  color: TextColor;
+}
+
+export interface ImageItem {
   id: string;
   file: File;
-  imageUrl: string;
+  previewUrl: string;
+  framingSettings: FramingSettings;
+  filterSettings: FilterMode;
+  borderSettings: BorderSettings;
   captionSettings: CaptionSettings;
   watermarkSettings: WatermarkSettings;
-  framingSettings: FramingSettings;
+}
+
+export interface PhotoItem extends ImageItem {
   metadata: { width: number; height: number } | null;
   exifData: any | null;
+}
+
+export enum BorderSize {
+  None = 0,
+  Small = 8,
+  Medium = 16,
+  Large = 32,
+}
+
+export enum FilterMode {
+  Normal = 'normal',
+  Grayscale = 'grayscale',
+  Sepia = 'sepia',
+}
+
+export interface PiCollagePicture extends ImageItem {
+  aspectRatio: number; // width / height
+
+  // Transform and Framing
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  scaleX: number;
+  scaleY: number;
+
+  // State
+  zIndex: number;
+  isVisible: boolean;
 }

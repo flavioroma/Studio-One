@@ -7,6 +7,7 @@ import {
   AspectRatio,
   Rotation,
   AudioMode,
+  FilterMode,
 } from '../types';
 import {
   calculateCaptionMetrics,
@@ -242,12 +243,16 @@ export class Mp4ExportService {
   ) {
     const ctx = this.ctx;
     ctx.fillStyle = '#000000';
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
     ctx.fillRect(0, 0, width, height);
 
     // Draw Image (same logic as VideoPreview)
-    const zoom = slide.zoom || 1.0;
-    const offsetX = slide.offsetX || 0;
-    const offsetY = slide.offsetY || 0;
+    const zoom = slide.framingSettings.zoom || 1.0;
+    const offsetX = slide.framingSettings.offsetX || 0;
+    const offsetY = slide.framingSettings.offsetY || 0;
 
     const baseScale = Math.min(width / img.width, height / img.height);
     const finalScale = baseScale * zoom;
@@ -260,7 +265,45 @@ export class Mp4ExportService {
     const userX = (offsetX / 100) * width;
     const userY = (offsetY / 100) * height;
 
-    ctx.drawImage(img, baseX + userX, baseY + userY, w, h);
+    // Apply filter to image only
+    ctx.filter =
+      slide.filterSettings === FilterMode.Grayscale
+        ? 'grayscale(100%)'
+        : slide.filterSettings === FilterMode.Sepia
+          ? 'sepia(100%)'
+          : 'none';
+
+    // Actual framing dimensions (with zoom+pan)
+    const renderX = baseX + userX;
+    const renderY = baseY + userY;
+
+    // Draw image freely with zoom+pan
+    ctx.drawImage(img, renderX, renderY, w, h);
+
+    // Reset filter before drawing border so color is not grayed/tinted
+    ctx.filter = 'none';
+
+    // Border rect follows the image boundaries, but remains visible at canvas edges (output aspect ratio) when zoomed in
+    const borderLeft = Math.max(renderX, 0);
+    const borderTop = Math.max(renderY, 0);
+    const borderRight = Math.min(renderX + w, width);
+    const borderBottom = Math.min(renderY + h, height);
+
+    const borderWidth = borderRight - borderLeft;
+    const borderHeight = borderBottom - borderTop;
+
+    // Draw border as 4 opaque edge stripes ON TOP of the visible portion of the image
+    const bSize = (slide.borderSettings?.size || 0) * (height / 1080);
+    if (bSize > 0 && borderWidth > 0 && borderHeight > 0) {
+      ctx.fillStyle = slide.borderSettings.color || '#ffffff';
+      ctx.fillRect(borderLeft, borderTop, borderWidth, bSize);                              // top
+      ctx.fillRect(borderLeft, borderTop + borderHeight - bSize, borderWidth, bSize);       // bottom
+      ctx.fillRect(borderLeft, borderTop + bSize, bSize, borderHeight - 2 * bSize);         // left
+      ctx.fillRect(borderLeft + borderWidth - bSize, borderTop + bSize, bSize, borderHeight - 2 * bSize); // right
+    }
+
+    // Reset filter so watermark/caption are unaffected
+    ctx.filter = 'none';
 
     // Draw Watermark
     if (watermarkImg && slide.watermarkSettings) {
@@ -273,11 +316,11 @@ export class Mp4ExportService {
 
     // Draw Text using shared logic
     this.renderOverlay(ctx, width, height, {
-      text: slide.text,
-      color: slide.color,
-      position: slide.position,
-      textSize: slide.textSize,
-      isItalic: slide.isItalic,
+      text: slide.captionSettings.text,
+      color: slide.captionSettings.color,
+      position: slide.captionSettings.position,
+      textSize: slide.captionSettings.textSize,
+      isItalic: slide.captionSettings.isItalic,
     });
   }
 
@@ -440,6 +483,10 @@ export class Mp4ExportService {
 
         // Draw Video Header
         ctx.fillStyle = '#000000';
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
         ctx.fillRect(0, 0, width, height);
 
         // Handle Rotation & Aspect Ratio scaling
@@ -568,23 +615,24 @@ export class Mp4ExportService {
   ) {
     if (!overlay.text) return;
 
+    // Caption rendering
+    ctx.save();
     const metrics = calculateCaptionMetrics(width, height, overlay);
     const position = calculateCaptionPosition(width, height, metrics, overlay.position);
 
     const fontStyle = overlay.isItalic ? 'italic' : 'normal';
     ctx.font = `${fontStyle} bold ${metrics.fontSize}px Inter, sans-serif`;
     ctx.fillStyle = overlay.color;
-
-    ctx.shadowColor = 'rgba(0,0,0,0.8)';
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetX = 2;
-    ctx.shadowOffsetY = 2;
-
     ctx.textAlign = position.textAlign as CanvasTextAlign;
     ctx.textBaseline = 'alphabetic';
+    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+    ctx.shadowBlur = metrics.fontSize * 0.15;
+    ctx.shadowOffsetX = metrics.fontSize * 0.04;
+    ctx.shadowOffsetY = metrics.fontSize * 0.04;
 
     metrics.lines.forEach((line, i) => {
       ctx.fillText(line, position.x, position.y + i * metrics.lineHeight);
     });
+    ctx.restore();
   }
 }

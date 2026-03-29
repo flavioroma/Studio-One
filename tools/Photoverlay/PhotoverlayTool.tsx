@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  Image as ImageIcon,
+  Check,
   Download,
   Trash2,
   Loader2,
@@ -8,8 +8,10 @@ import {
   MapPin,
   Monitor,
   Plus,
-  Check,
+  Image as ImageIcon,
 } from 'lucide-react';
+import { ToolLoadingScreen } from '../../components/ToolLoadingScreen';
+import { useApplyToAll } from '../../hooks/useApplyToAll';
 import {
   TextPosition,
   TextColor,
@@ -19,6 +21,8 @@ import {
   WatermarkSettings,
   NamingSettings,
   FramingSettings,
+  FilterMode,
+  BorderSize,
 } from '../../types';
 import { PersistenceService } from '../../services/PersistenceService';
 import {
@@ -30,17 +34,15 @@ import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { MetadataService, PhotoMetadata } from '../../services/MetadataService';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PhotoverlaySidebar } from './PhotoverlaySidebar';
+import { ToolFooter } from '../../components/ToolFooter';
 import JSZip from 'jszip';
 
 export const PhotoverlayTool: React.FC = () => {
   const { t } = useLanguage();
   const [items, setItems] = useState<PhotoItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [applyToAll, setApplyToAll] = useState(false);
-
   const [isExporting, setIsExporting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showApplyAllConfirm, setShowApplyAllConfirm] = useState(false);
   const [itemToDeleteId, setItemToDeleteId] = useState<string | null>(null);
   const [namingSettings, setNamingSettings] = useState<NamingSettings>({
     keepOriginal: true,
@@ -48,6 +50,9 @@ export const PhotoverlayTool: React.FC = () => {
     value: '',
   });
   const [preserveMetadata, setPreserveMetadata] = useState(true);
+  const [showApplyBorderAllConfirm, setShowApplyBorderAllConfirm] = useState(false);
+  const [hasSlideSyncSlides, setHasSlideSyncSlides] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   // Preview Sizing
   const [containerSize, setContainerSize] = useState<{ width: number; height: number }>({
@@ -75,7 +80,7 @@ export const PhotoverlayTool: React.FC = () => {
 
     resizeObserver.observe(containerRef.current);
     return () => resizeObserver.disconnect();
-  }, [selectedItem?.imageUrl]);
+  }, [selectedItem?.previewUrl]);
 
   // Keyboard Navigation
   useEffect(() => {
@@ -142,7 +147,7 @@ export const PhotoverlayTool: React.FC = () => {
       newItems.push({
         id,
         file,
-        imageUrl: url,
+        previewUrl: url,
         captionSettings:
           applyToAll && selectedItem
             ? { ...selectedItem.captionSettings }
@@ -167,6 +172,11 @@ export const PhotoverlayTool: React.FC = () => {
           offsetX: 0,
           offsetY: 0,
         },
+        filterSettings: applyFilterToAll && selectedItem ? selectedItem.filterSettings : FilterMode.Normal,
+        borderSettings: {
+          size: applyBorderToAll && selectedItem ? selectedItem.borderSettings.size : BorderSize.None,
+          color: applyBorderToAll && selectedItem ? selectedItem.borderSettings.color : TextColor.White,
+        },
         metadata: dimensions,
         exifData: exif,
       });
@@ -181,10 +191,127 @@ export const PhotoverlayTool: React.FC = () => {
     });
   };
 
+  const overlayApply = useApplyToAll<PhotoItem>({
+    items,
+    selectedItem,
+    onApply: (selected) => {
+      setItems((prev) =>
+        prev.map((item) => ({
+          ...item,
+          captionSettings: { ...selected.captionSettings },
+          watermarkSettings: { ...selected.watermarkSettings },
+        }))
+      );
+    },
+    isCustomized: (item, selected) =>
+      (item.captionSettings.text && item.captionSettings.text !== selected.captionSettings.text) ||
+      (item.watermarkSettings.file && item.watermarkSettings.file !== selected.watermarkSettings.file),
+  });
+
+  const filterApply = useApplyToAll<PhotoItem>({
+    items,
+    selectedItem,
+    onApply: (selected) => {
+      setItems((prev) =>
+        prev.map((item) => ({
+          ...item,
+          filterSettings: selected.filterSettings,
+        }))
+      );
+    },
+    isCustomized: (item, selected) => item.filterSettings !== selected.filterSettings,
+  });
+  const borderApply = useApplyToAll<PhotoItem>({
+    items,
+    selectedItem,
+    onApply: (selected) => {
+      setItems((prev) =>
+        prev.map((item) => ({
+          ...item,
+          borderSettings: {
+            size: selected.borderSettings.size,
+            color: selected.borderSettings.color,
+          },
+        }))
+      );
+    },
+    isCustomized: (item, selected) =>
+      item.borderSettings.size !== selected.borderSettings.size || item.borderSettings.color !== selected.borderSettings.color,
+  });
+
+  const applyToAll = overlayApply.applyToAll;
+  const setApplyToAll = overlayApply.setApplyToAll;
+  const applyFilterToAll = filterApply.applyToAll;
+  const setApplyFilterToAll = filterApply.setApplyToAll;
+  const applyBorderToAll = borderApply.applyToAll;
+  const setApplyBorderToAll = borderApply.setApplyToAll;
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       processFiles(e.target.files);
     }
+  };
+
+  const handleImportFromSlideSync = async () => {
+    const ssState = await PersistenceService.loadSlideSyncState();
+    if (!ssState || !ssState.slides || ssState.slides.length === 0) return;
+
+    const newItems: PhotoItem[] = [];
+    for (let i = 0; i < ssState.slides.length; i++) {
+      const slide = ssState.slides[i];
+      const url = URL.createObjectURL(slide.file);
+      
+      let exif: PhotoMetadata | null = null;
+      try {
+        exif = await MetadataService.getPhotoMetadata(slide.file);
+      } catch (err) {}
+
+      const dimensions = await new Promise<{ width: number; height: number }>((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+        img.onerror = () => resolve({ width: 0, height: 0 });
+        img.src = url;
+      });
+
+      newItems.push({
+        id: Math.random().toString(36).substr(2, 9),
+        file: slide.file,
+        previewUrl: url,
+        captionSettings: slide.captionSettings || {
+          text: '',
+          color: TextColor.White,
+          position: TextPosition.BottomLeft,
+          textSize: TextSize.Small,
+          isItalic: false,
+        },
+        framingSettings: slide.framingSettings || {
+          zoom: 1.0,
+          offsetX: 0,
+          offsetY: 0,
+        },
+        filterSettings: slide.filterSettings || FilterMode.Normal,
+        borderSettings: slide.borderSettings || {
+          size: BorderSize.None,
+          color: TextColor.White,
+        },
+        watermarkSettings: slide.watermarkSettings || {
+          file: null,
+          position: TextPosition.TopRight,
+          opacity: 0.2,
+          scale: 0.2,
+        },
+        metadata: dimensions,
+        exifData: exif,
+      });
+    }
+
+    setItems((prev) => {
+      const updated = [...prev, ...newItems];
+      if (!selectedId && updated.length > 0) {
+        setSelectedId(updated[0].id);
+      }
+      return updated;
+    });
   };
 
   // Persistence logic
@@ -192,74 +319,69 @@ export const PhotoverlayTool: React.FC = () => {
 
   useEffect(() => {
     const load = async () => {
-      const state = await PersistenceService.loadPhotoverlayState();
-      if (state && state.items.length > 0) {
-        const hydratedItems = state.items.map((item) => ({
-          ...item,
-          imageUrl: URL.createObjectURL(item.file),
-          captionSettings: {
-            text: item.caption,
-            color: item.color,
-            position: item.position,
-            textSize: item.textSize,
-            isItalic: item.isItalic || false,
-          },
-          watermarkSettings: {
-            file: item.watermarkFile || null,
-            position: item.watermarkPosition || TextPosition.TopRight,
-            opacity: 0.2,
-            scale: 0.2,
-          },
-          framingSettings: (item as any).framingSettings || {
-            zoom: 1.0,
-            offsetX: 0,
-            offsetY: 0,
-          },
-          metadata: null,
-          exifData: null,
-        }));
+      try {
+        const state = await PersistenceService.loadPhotoverlayState();
+        if (state && state.items.length > 0) {
+          const hydratedItems = state.items.map((item) => ({
+            ...item,
+            previewUrl: URL.createObjectURL(item.file),
+            metadata: null,
+            exifData: null,
+          }));
 
-        // Fetch metadata/dimensions for all
-        const finalItems = await Promise.all(
-          hydratedItems.map(async (item) => {
-            let exif = null;
-            try {
-              exif = await MetadataService.getPhotoMetadata(item.file);
-            } catch (e) {}
+          // Fetch metadata/dimensions for all
+          const finalItems = await Promise.all(
+            hydratedItems.map(async (item) => {
+              let exif = null;
+              try {
+                exif = await MetadataService.getPhotoMetadata(item.file);
+              } catch (e) {}
 
-            const dimensions = await new Promise<{ width: number; height: number } | null>(
-              (resolve) => {
-                const img = new Image();
-                img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
-                img.onerror = () => resolve(null);
-                img.src = item.imageUrl;
-              }
-            );
+              const dimensions = await new Promise<{ width: number; height: number } | null>(
+                (resolve) => {
+                  const img = new Image();
+                  img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+                  img.onerror = () => resolve(null);
+                  img.src = item.previewUrl;
+                }
+              );
 
-            return {
-              id: item.id,
-              file: item.file,
-              imageUrl: item.imageUrl,
-              captionSettings: item.captionSettings,
-              watermarkSettings: item.watermarkSettings,
-              framingSettings: item.framingSettings,
-              metadata: dimensions,
-              exifData: exif,
-            };
-          })
-        );
+              return {
+                id: item.id,
+                file: item.file,
+                previewUrl: item.previewUrl,
+                captionSettings: item.captionSettings,
+                watermarkSettings: item.watermarkSettings,
+                framingSettings: item.framingSettings,
+                filterSettings: item.filterSettings,
+                borderSettings: item.borderSettings,
+                metadata: dimensions,
+                exifData: exif,
+              };
+            })
+          );
 
-        setItems(finalItems);
-        setSelectedId(state.selectedId || finalItems[0].id);
-        setApplyToAll(state.applyToAll || false);
-        if (state.namingSettings) {
-          setNamingSettings(state.namingSettings);
+          setItems(finalItems);
+          setSelectedId(state.selectedId || finalItems[0].id);
+          setApplyToAll(state.applyToAll || false);
+          setApplyFilterToAll(state.applyFilterToAll || false);
+          if (state.namingSettings) {
+            setNamingSettings(state.namingSettings);
+          }
+          if (state.preserveMetadata !== undefined) {
+            setPreserveMetadata(state.preserveMetadata);
+          }
         }
-        if (state.preserveMetadata !== undefined) {
-          setPreserveMetadata(state.preserveMetadata);
+
+        const ssState = await PersistenceService.loadSlideSyncState();
+        if (ssState && ssState.slides && ssState.slides.length > 0) {
+          setHasSlideSyncSlides(true);
         }
+
+        isLoadedRef.current = true;
+      } finally {
+        setIsInitialLoading(false);
       }
-      isLoadedRef.current = true;
     };
     load();
   }, []);
@@ -270,17 +392,16 @@ export const PhotoverlayTool: React.FC = () => {
       items: items.map((item) => ({
         id: item.id,
         file: item.file,
-        caption: item.captionSettings.text,
-        color: item.captionSettings.color,
-        position: item.captionSettings.position,
-        textSize: item.captionSettings.textSize,
-        isItalic: item.captionSettings.isItalic,
-        watermarkFile: item.watermarkSettings.file,
-        watermarkPosition: item.watermarkSettings.position,
+        captionSettings: item.captionSettings,
+        watermarkSettings: item.watermarkSettings,
         framingSettings: item.framingSettings,
+        filterSettings: item.filterSettings,
+        borderSettings: item.borderSettings,
       })),
       selectedId,
       applyToAll,
+      applyFilterToAll,
+      applyBorderToAll,
       namingSettings,
       preserveMetadata,
     });
@@ -293,7 +414,7 @@ export const PhotoverlayTool: React.FC = () => {
       clearTimeout(timeoutId);
       saveState();
     };
-  }, [items, selectedId, applyToAll, namingSettings, preserveMetadata]);
+  }, [items, selectedId, applyToAll, applyFilterToAll, namingSettings, preserveMetadata]);
 
   // Handle browser refresh/close
   useEffect(() => {
@@ -305,12 +426,12 @@ export const PhotoverlayTool: React.FC = () => {
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [items, selectedId, applyToAll, namingSettings, preserveMetadata]);
+  }, [items, selectedId, applyToAll, applyFilterToAll, namingSettings, preserveMetadata]);
 
   const handleCaptionUpdate = (updates: Partial<CaptionSettings>) => {
     setItems((prev) =>
       prev.map((item) => {
-        if (applyToAll || item.id === selectedId) {
+        if (overlayApply.applyToAll || item.id === selectedId) {
           return { ...item, captionSettings: { ...item.captionSettings, ...updates } };
         }
         return item;
@@ -321,7 +442,7 @@ export const PhotoverlayTool: React.FC = () => {
   const handleWatermarkUpdate = (updates: Partial<WatermarkSettings>) => {
     setItems((prev) =>
       prev.map((item) => {
-        if (applyToAll || item.id === selectedId) {
+        if (overlayApply.applyToAll || item.id === selectedId) {
           return { ...item, watermarkSettings: { ...item.watermarkSettings, ...updates } };
         }
         return item;
@@ -339,43 +460,36 @@ export const PhotoverlayTool: React.FC = () => {
     );
   };
 
-  const handleApplyToAllChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.checked;
-    if (newValue) {
-      // Check if there are other photos with different settings
-      const hasCaptionOrWatermark = items.some(
-        (item) =>
-          item.id !== selectedId &&
-          ((item.captionSettings.text &&
-            item.captionSettings.text !== selectedItem?.captionSettings.text) ||
-            (item.watermarkSettings.file &&
-              item.watermarkSettings.file !== selectedItem?.watermarkSettings.file))
-      );
-      if (hasCaptionOrWatermark && items.length > 1) {
-        setShowApplyAllConfirm(true);
-      } else {
-        confirmApplyToAll(true);
-      }
-    } else {
-      setApplyToAll(false);
-    }
+  const handleFilterUpdate = (filter: FilterMode) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (filterApply.applyToAll || item.id === selectedId) {
+          return { ...item, filter };
+        }
+        return item;
+      })
+    );
   };
 
-  const confirmApplyToAll = (value: boolean) => {
-    if (value && selectedItem) {
-      setItems((prev) =>
-        prev.map((item) => ({
-          ...item,
-          captionSettings: { ...selectedItem.captionSettings },
-          watermarkSettings: { ...selectedItem.watermarkSettings },
-        }))
-      );
-      setApplyToAll(true);
-    } else {
-      // If rejected, don't set applyToAll to true
-      setApplyToAll(false);
-    }
-    setShowApplyAllConfirm(false);
+  const handleApplyToAllChange = overlayApply.handleApplyToAllChange;
+  const handleApplyFilterToAllChange = filterApply.handleApplyToAllChange;
+  const handleApplyBorderToAllChange = borderApply.handleApplyToAllChange;
+
+  const handleBorderUpdate = (updates: Partial<{ borderSize: BorderSize; borderColor: TextColor }>) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (borderApply.applyToAll || item.id === selectedId) {
+          return { 
+            ...item, 
+            borderSettings: { ...item.borderSettings, 
+              size: updates.borderSize !== undefined ? updates.borderSize : item.borderSettings.size,
+              color: updates.borderColor !== undefined ? updates.borderColor : item.borderSettings.color
+            } 
+          };
+        }
+        return item;
+      })
+    );
   };
 
   const handleExport = async () => {
@@ -392,12 +506,17 @@ export const PhotoverlayTool: React.FC = () => {
         canvas.width = item.metadata.width;
         canvas.height = item.metadata.height;
 
-        // Load image correctly for canvas
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+
+        // Draw Image FIRST
         const imgElement = await new Promise<HTMLImageElement>((resolve, reject) => {
           const img = new Image();
           img.onload = () => resolve(img);
           img.onerror = reject;
-          img.src = item.imageUrl;
+          img.src = item.previewUrl;
         });
 
         // Apply framing (zoom and offsets)
@@ -411,6 +530,55 @@ export const PhotoverlayTool: React.FC = () => {
         const drawY = (canvas.height - drawHeight) / 2 + offsetY;
 
         ctx.drawImage(imgElement, drawX, drawY, drawWidth, drawHeight);
+
+        // Draw Border at output canvas dimensions (not at zoomed image position)
+        const bSize = (item.borderSettings.size || 0) * (canvas.height / 1000);
+        if (bSize > 0) {
+          ctx.save();
+          ctx.filter = 'none'; // Ensure border color is not affected by image filters
+          ctx.fillStyle = item.borderSettings.color || '#ffffff';
+
+          // Border rect follows the image boundaries, but remains visible at canvas edges (output aspect ratio) when zoomed in
+          const bLeft = Math.max(drawX, 0);
+          const bTop = Math.max(drawY, 0);
+          const bRight = Math.min(drawX + drawWidth, canvas.width);
+          const bBottom = Math.min(drawY + drawHeight, canvas.height);
+
+          const bW = bRight - bLeft;
+          const bH = bBottom - bTop;
+
+          if (bW > 0 && bH > 0) {
+            // Top, Bottom, Left, Right segments
+            ctx.fillRect(bLeft, bTop, bW, bSize);
+            ctx.fillRect(bLeft, bTop + bH - bSize, bW, bSize);
+            ctx.fillRect(bLeft, bTop + bSize, bSize, bH - 2 * bSize);
+            ctx.fillRect(bLeft + bW - bSize, bTop + bSize, bSize, bH - 2 * bSize);
+          }
+          ctx.restore();
+        }
+
+        // Apply filter
+        if (item.filterSettings === FilterMode.Grayscale) {
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imageData.data;
+          for (let i = 0; i < data.length; i += 4) {
+            const avg = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+            data[i] = avg;
+            data[i + 1] = avg;
+            data[i + 2] = avg;
+          }
+          ctx.putImageData(imageData, 0, 0);
+        } else if (item.filterSettings === FilterMode.Sepia) {
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imageData.data;
+          for (let i = 0; i < data.length; i += 4) {
+            const r = data[i], g = data[i + 1], b = data[i + 2];
+            data[i]     = Math.min(255, r * 0.393 + g * 0.769 + b * 0.189);
+            data[i + 1] = Math.min(255, r * 0.349 + g * 0.686 + b * 0.168);
+            data[i + 2] = Math.min(255, r * 0.272 + g * 0.534 + b * 0.131);
+          }
+          ctx.putImageData(imageData, 0, 0);
+        }
 
         // Watermark
         if (item.watermarkSettings.file) {
@@ -526,7 +694,7 @@ export const PhotoverlayTool: React.FC = () => {
     });
     // Clear object URL
     const itemToRemove = items.find((item) => item.id === id);
-    if (itemToRemove) URL.revokeObjectURL(itemToRemove.imageUrl);
+    if (itemToRemove) URL.revokeObjectURL(itemToRemove.previewUrl);
   };
 
   const handleDeleteItemRequest = (id: string) => {
@@ -538,7 +706,8 @@ export const PhotoverlayTool: React.FC = () => {
       !!item.watermarkSettings.file ||
       item.framingSettings.zoom !== 1 ||
       item.framingSettings.offsetX !== 0 ||
-      item.framingSettings.offsetY !== 0;
+      item.framingSettings.offsetY !== 0 ||
+      item.filterSettings !== FilterMode.Normal;
 
     if (isCustomized) {
       setItemToDeleteId(id);
@@ -548,7 +717,7 @@ export const PhotoverlayTool: React.FC = () => {
   };
 
   const confirmDeleteAll = () => {
-    items.forEach((item) => URL.revokeObjectURL(item.imageUrl));
+    items.forEach((item) => URL.revokeObjectURL(item.previewUrl));
     setItems([]);
     setSelectedId(null);
     setShowDeleteConfirm(false);
@@ -557,6 +726,7 @@ export const PhotoverlayTool: React.FC = () => {
       items: [],
       selectedId: null,
       applyToAll: false,
+      applyFilterToAll: false,
     });
   };
 
@@ -659,21 +829,30 @@ export const PhotoverlayTool: React.FC = () => {
         selectedItem={selectedItem}
         applyToAll={applyToAll}
         onApplyToAllChange={handleApplyToAllChange}
+        applyFilterToAll={applyFilterToAll}
+        onApplyFilterToAllChange={handleApplyFilterToAllChange}
         onFileChange={handleFileChange}
         onCaptionUpdate={handleCaptionUpdate}
         onWatermarkUpdate={handleWatermarkUpdate}
         onFramingUpdate={handleFramingUpdate}
+        onFilterUpdate={handleFilterUpdate}
+        onBorderUpdate={handleBorderUpdate}
+        applyBorderToAll={applyBorderToAll}
+        onApplyBorderToAllChange={handleApplyBorderToAllChange}
         namingSettings={namingSettings}
         onNamingUpdate={(updates) => setNamingSettings((prev) => ({ ...prev, ...updates }))}
         preserveMetadata={preserveMetadata}
         onPreserveMetadataChange={setPreserveMetadata}
         onDeleteAll={() => setShowDeleteConfirm(true)}
+        hasSlideSyncSlides={hasSlideSyncSlides}
+        onImportFromSlideSync={handleImportFromSlideSync}
       />
 
       {/* Main Preview / Viewport */}
 
-      <div className="flex-1 flex flex-col min-w-0 bg-slate-950">
-        <div className="flex-1 relative flex flex-col items-center justify-center pt-8 px-4 pb-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 bg-slate-950 relative">
+        {isInitialLoading && <ToolLoadingScreen Icon={ImageIcon} colorVar="--tool-photoverlay" />}
+        <div className="flex-1 relative flex flex-col items-center justify-center pt-8 px-6 pb-8 overflow-hidden">
           {items.length === 0 ? (
             <div className="flex flex-col items-center gap-4 text-slate-600 animate-pulse">
               <ImageIcon className="w-24 h-24 stroke-[1px]" />
@@ -685,7 +864,7 @@ export const PhotoverlayTool: React.FC = () => {
             <>
               <div
                 ref={containerRef}
-                className="relative group shadow-2xl rounded-2xl overflow-hidden border-4 border-slate-800 max-h-[60vh] mb-14"
+                className="relative group shadow-2xl rounded-2xl overflow-hidden border-4 border-slate-800 max-h-[70vh]"
                 style={{
                   aspectRatio: selectedItem?.metadata
                     ? `${selectedItem.metadata.width} / ${selectedItem.metadata.height}`
@@ -694,14 +873,54 @@ export const PhotoverlayTool: React.FC = () => {
               >
                 <img
                   ref={imageRef}
-                  src={selectedItem?.imageUrl}
-                  className="max-h-[60vh] w-auto pointer-events-none object-contain"
+                  src={selectedItem?.previewUrl}
+                  className="max-h-[70vh] w-auto pointer-events-none object-contain"
                   alt="Preview"
                   style={{
                     transform: `translate(${selectedItem?.framingSettings?.offsetX || 0}%, ${selectedItem?.framingSettings?.offsetY || 0}%) scale(${selectedItem?.framingSettings?.zoom || 1})`,
                     transition: 'transform 0.2s ease-out',
+                    filter: `
+                              ${selectedItem?.filterSettings === FilterMode.Grayscale ? 'grayscale(100%)' : ''}
+                              ${selectedItem?.filterSettings === FilterMode.Sepia ? 'sepia(100%)' : ''}
+                    `,
                   }}
                 />
+
+                {/* Border overlay — follows framing and scales with window */}
+                {selectedItem?.borderSettings.size && selectedItem.borderSettings.size > 0 && (() => {
+                  const bSize = (selectedItem.borderSettings.size * containerSize.height) / 1000;
+                  const zoom = selectedItem.framingSettings.zoom || 1;
+                  const offX = selectedItem.framingSettings.offsetX || 0;
+                  const offY = selectedItem.framingSettings.offsetY || 0;
+
+                  const renderX = (containerSize.width * (1 - zoom)) / 2 + (offX / 100) * containerSize.width;
+                  const renderY = (containerSize.height * (1 - zoom)) / 2 + (offY / 100) * containerSize.height;
+                  const renderW = containerSize.width * zoom;
+                  const renderH = containerSize.height * zoom;
+
+                  const bLeft = Math.max(renderX, 0);
+                  const bTop = Math.max(renderY, 0);
+                  const bRight = Math.min(renderX + renderW, containerSize.width);
+                  const bBottom = Math.min(renderY + renderH, containerSize.height);
+
+                  const bW = bRight - bLeft;
+                  const bH = bBottom - bTop;
+
+                  if (bW <= 0 || bH <= 0) return null;
+
+                  return (
+                    <div className="absolute inset-0 pointer-events-none z-10" style={{ transform: 'none' }}>
+                      {/* Top */}
+                      <div className="absolute" style={{ top: bTop, left: bLeft, width: bW, height: bSize, backgroundColor: selectedItem.borderSettings.color }} />
+                      {/* Bottom */}
+                      <div className="absolute" style={{ top: bBottom - bSize, left: bLeft, width: bW, height: bSize, backgroundColor: selectedItem.borderSettings.color }} />
+                      {/* Left */}
+                      <div className="absolute" style={{ top: bTop + bSize, left: bLeft, width: bSize, height: bH - 2 * bSize, backgroundColor: selectedItem.borderSettings.color }} />
+                      {/* Right */}
+                      <div className="absolute" style={{ top: bTop + bSize, left: bRight - bSize, width: bSize, height: bH - 2 * bSize, backgroundColor: selectedItem.borderSettings.color }} />
+                    </div>
+                  );
+                })()}
 
                 {selectedItem?.watermarkSettings.file && (
                   <img
@@ -721,149 +940,109 @@ export const PhotoverlayTool: React.FC = () => {
                 </div>
               </div>
 
-              {/* Thumbnails Bar */}
-              <div className="w-full px-6 pb-4">
-                <div
-                  ref={scrollRef}
-                  onWheel={handleWheel}
-                  className="flex items-center gap-6 overflow-x-auto py-4 px-4 hide-scrollbar select-none"
+              {/* Export Controls Overlay */}
+              <div className="absolute right-6 bottom-6 z-20 flex flex-col items-end gap-2">
+                <button
+                  onClick={handleExport}
+                  disabled={isExporting}
+                  className="flex items-center justify-center gap-3 px-8 py-3 bg-tool-photoverlay hover:opacity-90 text-white font-black rounded-full text-xs uppercase tracking-widest transition-transform hover:scale-[1.02] active:scale-95 shadow-[0_0_20px_rgba(59,130,246,0.3)] disabled:opacity-50 disabled:hover:scale-100 disabled:shadow-none min-w-[180px]"
                 >
-                  <style>{`
-                                        .hide-scrollbar::-webkit-scrollbar {
-                                          display: none;
-                                        }
-                                        .hide-scrollbar {
-                                          -ms-overflow-style: none;
-                                          scrollbar-width: none;
-                                        }
-                                    `}</style>
-                  {items.map((item) => (
-                    <div
-                      key={item.id}
-                      id={`photo-thumb-${item.id}`}
-                      onClick={() => setSelectedId(item.id)}
-                      className={`relative group h-24 aspect-square flex-shrink-0 rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
-                        selectedId === item.id
-                          ? 'border-tool-photoverlay shadow-lg shadow-tool-photoverlay/20 scale-105 z-10'
-                          : 'border-slate-600 hover:border-slate-400'
-                      }`}
-                    >
-                      <img
-                        src={item.imageUrl}
-                        className="w-full h-full object-cover pointer-events-none"
-                        alt="Thumb"
-                      />
-
-                      {(item.captionSettings.text ||
-                        item.watermarkSettings.file ||
-                        item.framingSettings.zoom !== 1 ||
-                        item.framingSettings.offsetX !== 0 ||
-                        item.framingSettings.offsetY !== 0) && (
-                        <div className="absolute top-2 right-2 z-10">
-                          <div
-                            className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"
-                            title={t.common.isCustomized}
-                          ></div>
-                        </div>
-                      )}
-
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteItemRequest(item.id);
-                        }}
-                        className="absolute bottom-1 right-1 p-1.5 bg-red-500/90 text-white rounded-md hover:bg-red-600 transition-all opacity-0 group-hover:opacity-100 z-30 shadow-sm hover:scale-110"
-                        title={t.common.removeFile}
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                  <label className="flex-shrink-0 h-24 aspect-square rounded-lg border-2 border-slate-700 hover:border-tool-photoverlay/50 hover:bg-slate-800/50 flex flex-col items-center justify-center gap-1 cursor-pointer transition-all">
-                    <Plus className="w-5 h-5 text-slate-500" />
-                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tighter">
-                      {t.common.addMore}
-                    </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleFileChange}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
+                  {isExporting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>{t.tools.photoverlay.exporting}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      <span>
+                        {items.length > 1
+                          ? t.tools.photoverlay.exportAllPhotos
+                          : t.tools.photoverlay.exportPhoto}
+                      </span>
+                    </>
+                  )}
+                </button>
               </div>
             </>
           )}
         </div>
 
-        {/* Controls Bar */}
-        {selectedItem && (
-          <div className="bg-slate-800/80 backdrop-blur-md border-t border-slate-700 p-6 flex items-center justify-between">
-            <div className="flex items-center gap-8">
-              <div className="flex flex-col">
-                <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
-                  <Monitor className="w-3 h-3" /> {t.common.resolution}
-                </p>
-                <p className="text-sm font-bold text-white">
-                  {selectedItem.metadata
-                    ? `${selectedItem.metadata.width} x ${selectedItem.metadata.height}`
-                    : '...'}
-                </p>
+        {items.length > 0 && (
+          <ToolFooter
+            headerContent={
+              <div className="flex justify-between items-end">
+                <div className="flex items-center gap-8">
+                  {selectedItem ? (
+                    <>
+                      <div className="flex flex-col">
+                        <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
+                          <Monitor className="w-3 h-3" /> {t.common.resolution}
+                        </p>
+                        <p className="text-sm font-bold text-white">
+                          {selectedItem.metadata
+                            ? `${selectedItem.metadata.width} x ${selectedItem.metadata.height}`
+                            : '...'}
+                        </p>
+                      </div>
+
+                      {selectedItem.exifData?.creationTime && (
+                        <div className="flex flex-col">
+                          <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
+                            <Calendar className="w-3 h-3" /> {t.common.mediaCreated}
+                          </p>
+                          <p className="text-sm font-bold text-white">
+                            {selectedItem.exifData.creationTime.toLocaleString(undefined, {
+                              dateStyle: 'medium',
+                              timeStyle: 'short',
+                            })}
+                          </p>
+                        </div>
+                      )}
+
+                      {selectedItem.exifData?.latitude && selectedItem.exifData?.longitude && (
+                        <div className="flex flex-col">
+                          <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
+                            <MapPin className="w-3 h-3" /> {t.common.location}
+                          </p>
+                          <p className="text-sm font-bold text-white">
+                            {selectedItem.exifData.latitude.toFixed(4)},{' '}
+                            {selectedItem.exifData.longitude.toFixed(4)}
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="h-9"></div>
+                  )}
+                </div>
+
+                <span className="text-[12px] text-slate-400 italic mb-1">
+                  {t.tools.slidesync.timelineTip}
+                </span>
               </div>
-
-              {selectedItem.exifData?.creationTime && (
-                <div className="flex flex-col">
-                  <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
-                    <Calendar className="w-3 h-3" /> {t.common.mediaCreated}
-                  </p>
-                  <p className="text-sm font-bold text-white">
-                    {selectedItem.exifData.creationTime.toLocaleString(undefined, {
-                      dateStyle: 'medium',
-                      timeStyle: 'short',
-                    })}
-                  </p>
-                </div>
-              )}
-
-              {selectedItem.exifData?.latitude && selectedItem.exifData?.longitude && (
-                <div className="flex flex-col">
-                  <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
-                    <MapPin className="w-3 h-3" /> {t.common.location}
-                  </p>
-                  <p className="text-sm font-bold text-white">
-                    {selectedItem.exifData.latitude.toFixed(4)},{' '}
-                    {selectedItem.exifData.longitude.toFixed(4)}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center gap-4">
-              <button
-                onClick={handleExport}
-                disabled={isExporting}
-                className="flex items-center gap-3 px-8 py-3.5 bg-tool-photoverlay hover:opacity-90 text-white font-black rounded-2xl transition-all shadow-xl shadow-tool-photoverlay/10 active:scale-95 disabled:opacity-50"
-              >
-                {isExporting ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>{t.tools.photoverlay.exporting}</span>
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-5 h-5" />
-                    <span>
-                      {items.length > 1
-                        ? t.tools.photoverlay.exportAllPhotos
-                        : t.tools.photoverlay.exportPhoto}
-                    </span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
+            }
+            items={items}
+            getItemId={(item) => item.id}
+            getItemUrl={(item) => item.previewUrl}
+            isItemCustomized={(item) =>
+              !!(
+                item.captionSettings.text ||
+                item.watermarkSettings.file ||
+                item.framingSettings.zoom !== 1 ||
+                item.framingSettings.offsetX !== 0 ||
+                item.framingSettings.offsetY !== 0 ||
+                item.filterSettings !== FilterMode.Normal ||
+                item.borderSettings.size !== BorderSize.None
+              )
+            }
+            activeItemId={selectedId}
+            emptyMessage={t.tools.photoverlay.uploadPhotos}
+            themeColorClass="tool-photoverlay"
+            onSelectItem={setSelectedId}
+            onDeleteRequest={handleDeleteItemRequest}
+            onAddMore={handleFileChange}
+          />
         )}
       </div>
 
@@ -877,17 +1056,34 @@ export const PhotoverlayTool: React.FC = () => {
         confirmLabel={t.tools.photoverlay.yesRemoveAll}
         cancelLabel={t.common.cancel}
         Icon={Trash2}
+        iconColor="text-red-500"
+        confirmButtonClass="bg-red-500 hover:bg-red-600"
       />
 
       <ConfirmationModal
-        isOpen={showApplyAllConfirm}
-        onClose={() => confirmApplyToAll(false)}
-        onConfirm={() => confirmApplyToAll(true)}
+        isOpen={overlayApply.showConfirm}
+        onClose={() => overlayApply.setShowConfirm(false)}
+        onConfirm={() => overlayApply.confirmApply(true)}
         title={t.tools.photoverlay.applyToAllTitle}
         message={t.tools.photoverlay.applyToAllMsg}
         confirmLabel={t.tools.photoverlay.yesApply}
         cancelLabel={t.common.cancel}
         Icon={Check}
+        iconColor="text-tool-photoverlay"
+        confirmButtonClass="bg-tool-photoverlay hover:opacity-90"
+      />
+
+      <ConfirmationModal
+        isOpen={filterApply.showConfirm}
+        onClose={() => filterApply.setShowConfirm(false)}
+        onConfirm={() => filterApply.confirmApply(true)}
+        title={t.tools.photoverlay.applyFilterToAllTitle}
+        message={t.tools.photoverlay.applyFilterToAllMsg}
+        confirmLabel={t.tools.photoverlay.yesApply}
+        cancelLabel={t.common.cancel}
+        Icon={Check}
+        iconColor="text-tool-photoverlay"
+        confirmButtonClass="bg-tool-photoverlay hover:opacity-90"
       />
 
       <ConfirmationModal
@@ -904,6 +1100,20 @@ export const PhotoverlayTool: React.FC = () => {
         confirmLabel={t.common.yesRemove}
         cancelLabel={t.common.cancel}
         Icon={Trash2}
+        iconColor="text-red-500"
+        confirmButtonClass="bg-red-500 hover:bg-red-600"
+      />
+      <ConfirmationModal
+        isOpen={borderApply.showConfirm}
+        onClose={() => borderApply.setShowConfirm(false)}
+        onConfirm={() => borderApply.confirmApply(true)}
+        title={t.tools.photoverlay.applyToAllTitle}
+        message={t.tools.photoverlay.applyToAllMsg}
+        confirmLabel={t.tools.photoverlay.yesApply}
+        cancelLabel={t.common.cancel}
+        Icon={Check}
+        iconColor="text-tool-photoverlay"
+        confirmButtonClass="bg-tool-photoverlay hover:opacity-90"
       />
     </div>
   );

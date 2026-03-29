@@ -2,20 +2,30 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { SlideSyncSidebar } from './SlideSyncSidebar';
 import { LanguageProvider } from '../../contexts/LanguageContext';
-import { AspectRatio, TextColor, TextPosition, TextSize } from '../../types';
+import { AspectRatio, TextColor, TextPosition, TextSize, FilterMode } from '../../types';
 
 describe('SlideSyncSidebar', () => {
   const mockSlide = {
     id: '1',
     file: new File([], 'img.jpg'),
     previewUrl: 'blob:1',
-    text: 'Slide 1',
-    color: TextColor.White,
-    position: TextPosition.Center,
-    textSize: TextSize.Small,
-    zoom: 1,
-    offsetX: 0,
-    offsetY: 0,
+    framingSettings: {
+      zoom: 1,
+      offsetX: 0,
+      offsetY: 0,
+    },
+    filterSettings: FilterMode.Normal,
+    borderSettings: {
+      size: 0,
+      color: TextColor.White,
+    },
+    captionSettings: {
+      text: 'Slide 1',
+      color: TextColor.White,
+      position: TextPosition.Center,
+      textSize: TextSize.Small,
+      isItalic: false,
+    },
     watermarkSettings: {
       file: null,
       position: TextPosition.TopRight,
@@ -53,7 +63,7 @@ describe('SlideSyncSidebar', () => {
     renderWithContext();
     expect(screen.getByText(/1\. Background music/i)).toBeInTheDocument();
     expect(screen.getByText(/2\. Images/i)).toBeInTheDocument();
-    expect(screen.getByText(/3\. Choose the aspect ratio/i)).toBeInTheDocument();
+    expect(screen.getByText(/Aspect Ratio/i)).toBeInTheDocument();
   });
 
   it('shows empty state when no slide is selected', () => {
@@ -71,20 +81,50 @@ describe('SlideSyncSidebar', () => {
   it('renders slide properties when a slide is selected', () => {
     renderWithContext({ ...defaultProps, slide: mockSlide });
     expect(screen.getByText(/Slide Properties/i)).toBeInTheDocument();
-    expect(screen.getByText(/Framing Preview/i)).toBeInTheDocument();
+    expect(screen.getByText(/Framing/i)).toBeInTheDocument();
+    expect(screen.getByText(/Border/i)).toBeInTheDocument();
+    expect(screen.getByText(/Filters/i)).toBeInTheDocument();
+    // expect(screen.getByText(/Overlay/i)).toBeInTheDocument();
     expect(screen.getByDisplayValue('Slide 1')).toBeInTheDocument();
   });
 
   it('calls onUpdate when zoom slider is moved', () => {
     renderWithContext({ ...defaultProps, slide: mockSlide });
+
+    // Expand Framing panel
+    fireEvent.click(screen.getByText(/Framing/i));
+
     const zoomSlider = screen.getByRole('slider');
     fireEvent.change(zoomSlider, { target: { value: '2.5' } });
-    expect(defaultProps.onUpdate).toHaveBeenCalledWith({ zoom: 2.5 });
+    expect(defaultProps.onUpdate).toHaveBeenCalledWith({ framingSettings: { zoom: 2.5, offsetX: 0, offsetY: 0 } });
   });
 
   it('renders watermark settings when a slide is selected', () => {
     renderWithContext({ ...defaultProps, slide: mockSlide });
     expect(screen.getAllByText(/Watermark/i).length).toBeGreaterThan(0);
+  });
+
+  it('renders filter buttons when a slide is selected', () => {
+    renderWithContext({ ...defaultProps, slide: mockSlide });
+
+    // Expand Filters panel
+    fireEvent.click(screen.getByText(/Filters/i));
+
+    expect(screen.getByText(/Filters/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Normal/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Grayscale/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sepia/i)).toBeInTheDocument();
+  });
+
+  it('calls onUpdate with grayscale filter when Grayscale button is clicked', () => {
+    renderWithContext({ ...defaultProps, slide: mockSlide });
+
+    // Expand Filters panel
+    fireEvent.click(screen.getByText(/Filters/i));
+
+    const bwBtn = screen.getByText(/Grayscale/i);
+    fireEvent.click(bwBtn);
+    expect(defaultProps.onUpdate).toHaveBeenCalledWith({ filterSettings: FilterMode.Grayscale });
   });
 
   it('calls onDeleteAll when erase button is clicked', () => {
@@ -95,12 +135,12 @@ describe('SlideSyncSidebar', () => {
   });
 
   describe('AudioTrim Integration', () => {
-    it('does not show Select from AudioTrim button when no tracks are available', () => {
+    it('does not show Import from AudioTrim button when no tracks are available', () => {
       renderWithContext({ ...defaultProps, audioTrimTracks: [] });
-      expect(screen.queryByText(/Select from AudioTrim/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Import from AudioTrim/i)).not.toBeInTheDocument();
     });
 
-    it('shows Select from AudioTrim button when tracks are available', () => {
+    it('shows Import from AudioTrim button when tracks are available', () => {
       const tracks = [
         {
           id: '1',
@@ -111,7 +151,7 @@ describe('SlideSyncSidebar', () => {
         },
       ];
       renderWithContext({ ...defaultProps, audioTrimTracks: tracks });
-      expect(screen.getByText(/Select from AudioTrim/i)).toBeInTheDocument();
+      expect(screen.getByText(/Import from AudioTrim/i)).toBeInTheDocument();
     });
 
     it('calls onSelectAudioTrimTrack immediately when there is only one track', () => {
@@ -124,7 +164,7 @@ describe('SlideSyncSidebar', () => {
       };
       renderWithContext({ ...defaultProps, audioTrimTracks: [track] });
 
-      const btn = screen.getByText(/Select from AudioTrim/i);
+      const btn = screen.getByText(/Import from AudioTrim/i);
       fireEvent.click(btn);
 
       expect(defaultProps.onSelectAudioTrimTrack).toHaveBeenCalledWith(track);
@@ -149,7 +189,7 @@ describe('SlideSyncSidebar', () => {
       ];
       renderWithContext({ ...defaultProps, audioTrimTracks: tracks });
 
-      const btn = screen.getByText(/Select from AudioTrim/i);
+      const btn = screen.getByText(/Import from AudioTrim/i);
       fireEvent.click(btn);
 
       expect(screen.getByText('music1.mp3')).toBeInTheDocument();
@@ -175,7 +215,7 @@ describe('SlideSyncSidebar', () => {
       ];
       renderWithContext({ ...defaultProps, audioTrimTracks: tracks });
 
-      fireEvent.click(screen.getByText(/Select from AudioTrim/i));
+      fireEvent.click(screen.getByText(/Import from AudioTrim/i));
       fireEvent.click(screen.getByText('music2.mp3'));
 
       expect(defaultProps.onSelectAudioTrimTrack).toHaveBeenCalledWith(tracks[1]);

@@ -16,6 +16,7 @@ import {
 import { PersistenceService, AudioTrackItem } from '../../services/PersistenceService';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { ConfirmationModal } from '../../components/ConfirmationModal';
+import { ToolLoadingScreen } from '../../components/ToolLoadingScreen';
 import { AudioTrimSidebar } from './AudioTrimSidebar';
 import { TimeRangeSelector } from '../../components/TimeRangeSelector';
 import * as lamejs from '@breezystack/lamejs';
@@ -71,13 +72,6 @@ export const AudioTrimTool: React.FC = () => {
     const secs = Math.floor(seconds % 60);
     const ms = Math.floor((seconds % 1) * 100);
     return `${mins}m${secs.toString().padStart(2, '0')}s${ms.toString().padStart(2, '0')}`;
-  };
-
-
-  const syncEndInputs = (time: number) => {
-    setEndMins(Math.floor(time / 60).toString());
-    setEndSecs(Math.floor(time % 60).toString());
-    setEndCents(Math.floor((time % 1) * 100).toString());
   };
 
   /**
@@ -683,26 +677,7 @@ export const AudioTrimTool: React.FC = () => {
       {/* Main content area */}
       <div className="flex-1 flex flex-col min-w-0 bg-slate-950 relative">
         {/* Loading Overlay */}
-        {isProcessing && (
-          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/60 backdrop-blur-md transition-all duration-300 animate-fadeIn">
-            <div className="flex flex-col items-center gap-6">
-              <div className="relative">
-                <div className="w-16 h-16 border-4 border-tool-audiotrim/20 border-t-tool-audiotrim rounded-full animate-spin"></div>
-                <Music className="w-6 h-6 text-tool-audiotrim absolute inset-0 m-auto animate-pulse" />
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <span className="text-white font-bold tracking-[0.2em] uppercase text-sm">
-                  {t.common.loading}
-                </span>
-                <div className="flex gap-1">
-                  <div className="w-1.5 h-1.5 bg-tool-audiotrim rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                  <div className="w-1.5 h-1.5 bg-tool-audiotrim rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                  <div className="w-1.5 h-1.5 bg-tool-audiotrim rounded-full animate-bounce"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        {isProcessing && <ToolLoadingScreen Icon={Music} colorVar="--tool-audiotrim" />}
 
         <div className="flex-1 relative flex flex-col items-center p-8 overflow-y-auto">
           {!selectedTrack ? (

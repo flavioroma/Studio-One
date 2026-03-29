@@ -10,12 +10,17 @@ import {
   NamingSettings,
   FramingSettings,
   WatermarkSettings,
+  FilterMode,
+  BorderSize,
+  BorderSettings,
+  CaptionSettings,
 } from '../types';
 
 const SLIDESYNC_KEY = 'slidesync_state_v1';
 const VIDEOVERLAY_KEY = 'videoverlay_state_v1';
 const PHOTOVERLAY_KEY = 'photoverlay_state_v1';
 const AUDIOTRIM_KEY = 'audiotrim_state_v1';
+const PICOLLAGE_KEY = 'picollage_state_v1';
 
 export interface SlideSyncState {
   slides: Slide[];
@@ -38,40 +43,28 @@ export interface VideoverlayState {
   audioFile?: File | null;
   startTime?: number;
   endTime?: number;
+  preserveVideoMetadata?: boolean;
 }
 
 export interface PhotoItemState {
   id: string;
   file: File;
-  caption: string;
-  color: TextColor;
-  position: TextPosition;
-  textSize: TextSize;
-  isItalic?: boolean;
-  watermarkFile?: File | null;
-  watermarkPosition?: TextPosition;
-  framingSettings?: FramingSettings;
+  framingSettings: FramingSettings;
+  filterSettings: FilterMode;
+  borderSettings: BorderSettings;
+  captionSettings: CaptionSettings;
+  watermarkSettings: WatermarkSettings;
 }
 
 export interface PhotoverlayState {
   items: PhotoItemState[];
   selectedId: string | null;
   applyToAll: boolean;
+  applyFilterToAll?: boolean;
   exportAsArchive?: boolean;
   namingSettings?: NamingSettings;
   preserveMetadata?: boolean;
-}
-
-// For backward compatibility
-export interface LegacyPhotoverlayState {
-  file: File | null;
-  caption: string;
-  color: TextColor;
-  position: TextPosition;
-  textSize: TextSize;
-  isItalic?: boolean;
-  watermarkFile?: File | null;
-  watermarkPosition?: TextPosition;
+  applyBorderToAll?: boolean;
 }
 
 export interface AudioTrackItem {
@@ -87,12 +80,10 @@ export interface AudioTrimState {
   selectedId: string | null;
 }
 
-// For backward compatibility
-export interface LegacyAudioTrimState {
-  file: File | null;
-  startTime: number;
-  endTime: number;
-  exportFormat: 'wav' | 'mp3';
+export interface PiCollageState {
+  pictures: import('../types').PiCollagePicture[];
+  aspectRatio: AspectRatio;
+  exportFormat: 'png' | 'jpg';
 }
 
 export class PersistenceService {
@@ -107,7 +98,9 @@ export class PersistenceService {
 
   static async loadSlideSyncState(): Promise<SlideSyncState | null> {
     try {
-      return (await get<SlideSyncState>(SLIDESYNC_KEY)) || null;
+      const state = await get<SlideSyncState>(SLIDESYNC_KEY);
+      if (!state) return null;
+      return state;
     } catch (error) {
       console.error('Failed to load SlideSync state:', error);
       return null;
@@ -146,33 +139,40 @@ export class PersistenceService {
       const state = await get<any>(PHOTOVERLAY_KEY);
       if (!state) return null;
 
-      // Migrate legacy state
-      if ('file' in state) {
-        const legacy = state as LegacyPhotoverlayState;
-        if (!legacy.file) return null;
-
-        const id = Math.random().toString(36).substr(2, 9);
+      const migratedItems = state.items?.map((s: any) => {
+        if (s.framingSettings) return s;
         return {
-          items: [
-            {
-              id,
-              file: legacy.file,
-              caption: legacy.caption || '',
-              color: legacy.color || TextColor.White,
-              position: legacy.position || TextPosition.BottomLeft,
-              textSize: legacy.textSize || TextSize.Small,
-              isItalic: legacy.isItalic || false,
-              watermarkFile: legacy.watermarkFile || null,
-              watermarkPosition: legacy.watermarkPosition || TextPosition.TopRight,
-            },
-          ],
-          selectedId: id,
-          applyToAll: true,
+          ...s,
+          previewUrl: s.previewUrl || s.imageUrl || '',
+          framingSettings: {
+            zoom: s.zoom || 1,
+            offsetX: s.offsetX || 0,
+            offsetY: s.offsetY || 0,
+          },
+          filterSettings: s.filter || FilterMode.Normal,
+          borderSettings: {
+            size: s.borderSize || BorderSize.None,
+            color: s.borderColor || TextColor.White,
+          },
+          captionSettings: {
+            text: s.caption || s.text || '',
+            color: s.color || TextColor.White,
+            position: s.position || TextPosition.BottomLeft,
+            textSize: s.textSize || TextSize.Small,
+            isItalic: s.isItalic || false,
+          },
+          watermarkSettings: {
+            file: s.watermarkFile || null,
+            position: s.watermarkPosition || TextPosition.TopRight,
+            opacity: s.watermarkOpacity || 0.2,
+            scale: s.watermarkScale || 0.2,
+          },
         };
-      }
+      });
 
       return {
         ...state,
+        items: migratedItems || [],
         namingSettings: state.namingSettings || {
           keepOriginal: true,
           type: 'prefix',
@@ -196,32 +196,65 @@ export class PersistenceService {
 
   static async loadAudioTrimState(): Promise<AudioTrimState | null> {
     try {
-      const state = await get<any>(AUDIOTRIM_KEY);
+      const state = await get<AudioTrimState>(AUDIOTRIM_KEY);
       if (!state) return null;
 
-      // Migrate legacy single-file state
-      if ('file' in state) {
-        const legacy = state as LegacyAudioTrimState;
-        if (!legacy.file) return null;
-
-        const id = Math.random().toString(36).substr(2, 9);
-        return {
-          tracks: [
-            {
-              id,
-              file: legacy.file,
-              startTime: legacy.startTime,
-              endTime: legacy.endTime,
-              exportFormat: legacy.exportFormat,
-            },
-          ],
-          selectedId: id,
-        };
-      }
 
       return state as AudioTrimState;
     } catch (error) {
       console.error('Failed to load AudioTrim state:', error);
+      return null;
+    }
+  }
+
+  // PiCollage
+  static async savePiCollageState(state: PiCollageState): Promise<void> {
+    try {
+      await set(PICOLLAGE_KEY, state);
+    } catch (error) {
+      console.error('Failed to save PiCollage state:', error);
+    }
+  }
+
+  static async loadPiCollageState(): Promise<PiCollageState | null> {
+    try {
+      const state = await get<any>(PICOLLAGE_KEY);
+      if (!state) return null;
+
+      const migratedPictures = state.pictures?.map((s: any) => {
+        if (s.framingSettings) return s;
+        return {
+          ...s,
+          previewUrl: s.previewUrl || s.imageUrl || '',
+          framingSettings: {
+            zoom: s.zoom || 1,
+            offsetX: s.offsetX || 0,
+            offsetY: s.offsetY || 0,
+          },
+          filterSettings: s.filter || FilterMode.Normal,
+          borderSettings: {
+            size: s.borderSize || BorderSize.None,
+            color: s.borderColor || TextColor.White,
+          },
+          captionSettings: {
+            text: s.caption || s.text || '',
+            color: s.color || TextColor.White,
+            position: s.position || TextPosition.BottomLeft,
+            textSize: s.textSize || TextSize.Small,
+            isItalic: s.isItalic || false,
+          },
+          watermarkSettings: {
+            file: s.watermarkFile || null,
+            position: s.watermarkPosition || TextPosition.TopRight,
+            opacity: s.watermarkOpacity || 0.2,
+            scale: s.watermarkScale || 0.2,
+          },
+        };
+      });
+
+      return { ...state, pictures: migratedPictures || [] } as unknown as PiCollageState;
+    } catch (error) {
+      console.error('Failed to load PiCollage state:', error);
       return null;
     }
   }

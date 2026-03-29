@@ -1,13 +1,13 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Slide, AspectRatio, ExportFormat } from '../../types';
+import { Slide, AspectRatio, ExportFormat, FilterMode, BorderSize } from '../../types';
 import {
   calculateCaptionMetrics,
   calculateCaptionPosition,
   calculateWatermarkPosition,
 } from '../../utils/captionUtils';
 import { Mp4ExportService } from '../../services/Mp4ExportService';
-import { Download, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
-import { PlaybackControls } from '../../components/PlaybackControls';
+import { Download, Loader2, AlertCircle, RotateCcw, Play, Pause } from 'lucide-react';
+
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface VideoPreviewProps {
@@ -35,16 +35,40 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
   const [isRecording, setIsRecording] = useState(false);
-  const [exportFormat, setExportFormat] = useState<ExportFormat>(ExportFormat.WebM);
-  const [supportedFormats, setSupportedFormats] = useState<ExportFormat[]>([ExportFormat.WebM]);
+  const [exportFormat, setExportFormat] = useState<ExportFormat>(ExportFormat.MP4);
+  const [supportedFormats, setSupportedFormats] = useState<ExportFormat[]>([ExportFormat.MP4, ExportFormat.WebM]);
   const [watermarkImgs, setWatermarkImgs] = useState<Record<string, HTMLImageElement>>({});
+  const [isHoveringPlayer, setIsHoveringPlayer] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerSize({
+          width: entry.contentRect.width,
+          height: entry.contentRect.height,
+        });
+      }
+    });
+
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  const formatTime = (seconds: number) => {
+    if (!Number.isFinite(seconds) || isNaN(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   useEffect(() => {
     const checkSupport = async () => {
-      const formats = [ExportFormat.WebM];
+      let mp4Supported = false;
 
       // Check for MP4 support via WebCodecs (VideoEncoder)
-      // This is what Mp4ExportService uses
       if ('VideoEncoder' in window) {
         try {
           const support = await VideoEncoder.isConfigSupported({
@@ -56,19 +80,21 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
           });
 
           if (support.supported) {
-            formats.push(ExportFormat.MP4);
-            setExportFormat(ExportFormat.MP4); // Default to MP4 if supported
+            mp4Supported = true;
           }
         } catch (e) {
           console.error('Error checking VideoEncoder support:', e);
         }
       } else if (MediaRecorder.isTypeSupported('video/mp4;codecs=avc1.4d002a')) {
-        // Fallback to MediaRecorder check if VideoEncoder is not available
-        formats.push(ExportFormat.MP4);
-        setExportFormat(ExportFormat.MP4);
+        mp4Supported = true;
       }
 
+      const formats = mp4Supported
+        ? [ExportFormat.MP4, ExportFormat.WebM]
+        : [ExportFormat.WebM];
+
       setSupportedFormats(formats);
+      setExportFormat(mp4Supported ? ExportFormat.MP4 : ExportFormat.WebM);
     };
 
     checkSupport();
@@ -118,6 +144,10 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
 
   const renderFrame = (ctx: CanvasRenderingContext2D, time: number) => {
     ctx.fillStyle = '#000000';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0)';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     if (slides.length === 0 || audioDuration === 0) {
@@ -149,9 +179,9 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
     img.src = currentSlide.previewUrl;
 
     try {
-      const zoom = currentSlide.zoom || 1.0;
-      const offsetX = currentSlide.offsetX || 0;
-      const offsetY = currentSlide.offsetY || 0;
+      const zoom = currentSlide.framingSettings.zoom || 1.0;
+      const offsetX = currentSlide.framingSettings.offsetX || 0;
+      const offsetY = currentSlide.framingSettings.offsetY || 0;
 
       // Use 'fit' scaling by default (Math.min instead of Math.max)
       const baseScale = Math.min(CANVAS_WIDTH / img.width, CANVAS_HEIGHT / img.height);
@@ -166,31 +196,71 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
       const userX = (offsetX / 100) * CANVAS_WIDTH;
       const userY = (offsetY / 100) * CANVAS_HEIGHT;
 
-      ctx.drawImage(img, baseX + userX, baseY + userY, w, h);
+      // Apply filter before drawing image
+      ctx.filter =
+        currentSlide.filterSettings === FilterMode.Grayscale
+          ? 'grayscale(100%)'
+          : currentSlide.filterSettings === FilterMode.Sepia
+            ? 'sepia(100%)'
+            : 'none';
+
+      // Actual framing dimensions (with zoom+pan)
+      const renderX = baseX + userX;
+      const renderY = baseY + userY;
+
+      // Draw image freely with zoom+pan
+      ctx.drawImage(img, renderX, renderY, w, h);
+
+      // Reset filter before drawing border so color is not grayed/tinted
+      ctx.filter = 'none';
+
+      // Border rect follows the image boundaries, but remains visible at canvas edges (output aspect ratio) when zoomed in
+      const borderLeft = Math.max(renderX, 0);
+      const borderTop = Math.max(renderY, 0);
+      const borderRight = Math.min(renderX + w, CANVAS_WIDTH);
+      const borderBottom = Math.min(renderY + h, CANVAS_HEIGHT);
+
+      const borderWidth = borderRight - borderLeft;
+      const borderHeight = borderBottom - borderTop;
+
+      // Draw border as 4 opaque edge stripes ON TOP of the visible portion of the image
+      const bSize = (currentSlide.borderSettings?.size || 0) * (CANVAS_HEIGHT / 1080);
+      if (bSize > 0 && borderWidth > 0 && borderHeight > 0) {
+        ctx.fillStyle = currentSlide.borderSettings.color || '#ffffff';
+        ctx.fillRect(borderLeft, borderTop, borderWidth, bSize);                              // top
+        ctx.fillRect(borderLeft, borderTop + borderHeight - bSize, borderWidth, bSize);       // bottom
+        ctx.fillRect(borderLeft, borderTop + bSize, bSize, borderHeight - 2 * bSize);         // left
+        ctx.fillRect(borderLeft + borderWidth - bSize, borderTop + bSize, bSize, borderHeight - 2 * bSize); // right
+      }
     } catch (e) {}
 
-    if (currentSlide.text) {
-      ctx.fillStyle = currentSlide.color;
-
-      const metrics = calculateCaptionMetrics(CANVAS_WIDTH, CANVAS_HEIGHT, currentSlide);
+    if (currentSlide.captionSettings.text) {
+      const metrics = calculateCaptionMetrics(CANVAS_WIDTH, CANVAS_HEIGHT, {
+        text: currentSlide.captionSettings.text,
+        textSize: currentSlide.captionSettings.textSize,
+      });
       const position = calculateCaptionPosition(
         CANVAS_WIDTH,
         CANVAS_HEIGHT,
         metrics,
-        currentSlide.position
+        currentSlide.captionSettings.position
       );
 
-      ctx.font = `${currentSlide.isItalic ? 'italic ' : ''}bold ${metrics.fontSize}px Inter, sans-serif`;
-      ctx.shadowColor = 'rgba(0,0,0,0.8)';
-      ctx.shadowBlur = 10;
-      ctx.shadowOffsetX = 3;
-      ctx.shadowOffsetY = 3;
-
+      ctx.save();
+      const fontStyle = currentSlide.captionSettings.isItalic ? 'italic' : 'normal';
+      ctx.font = `${fontStyle} bold ${metrics.fontSize}px Inter, sans-serif`;
+      ctx.fillStyle = currentSlide.captionSettings.color;
       ctx.textAlign = position.textAlign as CanvasTextAlign;
+      ctx.textBaseline = 'alphabetic';
+      ctx.shadowColor = 'rgba(0,0,0,0.8)';
+      ctx.shadowBlur = metrics.fontSize * 0.15;
+      ctx.shadowOffsetX = metrics.fontSize * 0.04;
+      ctx.shadowOffsetY = metrics.fontSize * 0.04;
 
       metrics.lines.forEach((line, i) => {
         ctx.fillText(line, position.x, position.y + i * metrics.lineHeight);
       });
+      ctx.restore();
     }
 
     // Render Watermark
@@ -376,26 +446,47 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
 
   const isDisabled = slides.length === 0 || !audioRef.current;
 
-  // CSS for dynamic aspect ratio display
-  const getContainerAspect = () => {
+  // Pixel-perfect aspect ratio calculation for the player container
+  const getDynamicPlayerStyle = () => {
+    let ratio = 16 / 9;
     switch (aspectRatio) {
-      case AspectRatio.Landscape_16_9:
-        return 'aspect-video w-full max-w-5xl';
-      case AspectRatio.Portrait_9_16:
-        return 'aspect-[9/16] h-full max-h-[80vh]';
-      case AspectRatio.Portrait_3_4:
-        return 'aspect-[3/4] h-full max-h-[80vh]';
-      case AspectRatio.Square_1_1:
-        return 'aspect-square h-full max-h-[80vh]';
-      default:
-        return 'aspect-video w-full max-w-5xl';
+      case AspectRatio.Landscape_16_9: ratio = 16 / 9; break;
+      case AspectRatio.Portrait_9_16: ratio = 9 / 16; break;
+      case AspectRatio.Portrait_3_4: ratio = 3 / 4; break;
+      case AspectRatio.Square_1_1: ratio = 1 / 1; break;
     }
+
+    const availableW = containerSize.width;
+    const availableH = containerSize.height;
+
+    if (availableW === 0 || availableH === 0) return {};
+
+    const containerRatio = availableW / availableH;
+
+    let finalW, finalH;
+    if (containerRatio > ratio) {
+      // Container is wider than target ratio -> fit to height
+      finalH = availableH;
+      finalW = finalH * ratio;
+    } else {
+      // Container is taller than target ratio -> fit to width
+      finalW = availableW;
+      finalH = finalW / ratio;
+    }
+
+    return {
+      width: `${finalW}px`,
+      height: `${finalH}px`,
+    };
   };
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center relative">
+    <div ref={containerRef} className="w-full h-full flex flex-col items-center justify-center relative">
       <div
-        className={`relative shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden border-4 border-slate-800 bg-black transition-all duration-500 ${getContainerAspect()}`}
+        className="relative shadow-[0_0_50px_rgba(0,0,0,0.5)] rounded-2xl overflow-hidden border-4 border-slate-800 bg-black transition-all duration-500 flex-shrink-0"
+        style={getDynamicPlayerStyle()}
+        onMouseEnter={() => setIsHoveringPlayer(true)}
+        onMouseLeave={() => setIsHoveringPlayer(false)}
       >
         <canvas
           ref={canvasRef}
@@ -404,11 +495,11 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
           className="w-full h-full object-contain"
         />
         {!isPlaying && !isRecording && !isDisabled && (
-          <div
-            className="absolute inset-0 flex items-center justify-center cursor-pointer transition-all duration-300"
-            onClick={handleRestart}
-          >
-            <div className="bg-white/10 backdrop-blur-md p-4 rounded-full border border-white/20 hover:scale-110 hover:bg-white/20 transition-all flex flex-col items-center gap-2 group">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none transition-all duration-300 z-40">
+            <div
+              className="bg-white/10 backdrop-blur-md p-4 rounded-full border border-white/20 hover:scale-110 hover:bg-white/20 transition-all flex flex-col items-center gap-2 group pointer-events-auto cursor-pointer"
+              onClick={handleRestart}
+            >
               <RotateCcw className="w-8 h-8 text-white group-hover:rotate-[-45deg] transition-transform" />
               <span className="text-white text-[10px] font-black uppercase tracking-[0.2em]">
                 {t.common.restartPreview}
@@ -416,20 +507,83 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
             </div>
           </div>
         )}
+
+        {/* Player UI Overlay */}
+        <div
+          className={`absolute inset-0 z-30 flex flex-col transition-opacity duration-300 pointer-events-none ${isHoveringPlayer && !isRecording ? 'opacity-100' : 'opacity-0'}`}
+        >
+          <div className="flex-1 cursor-pointer pointer-events-auto" onClick={togglePlay} />
+
+          {/* Bottom Bar */}
+          <div className="bg-gradient-to-t from-black/90 via-black/50 to-transparent p-4 flex items-center gap-4 pointer-events-auto">
+            <button
+              onClick={togglePlay}
+              className="text-white hover:text-tool-slidesync transition-transform active:scale-95 disabled:opacity-50"
+              disabled={isDisabled || isRecording}
+            >
+              {isPlaying ? (
+                <Pause className="w-6 h-6 fill-current" />
+              ) : (
+                <Play className="w-6 h-6 fill-current" />
+              )}
+            </button>
+
+            <input
+              type="range"
+              min={0}
+              max={audioDuration > 0 ? audioDuration : 100}
+              step="0.033"
+              value={currentTime}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value);
+                setCurrentTime(val);
+                if (audioRef.current) {
+                  audioRef.current.currentTime = val;
+                }
+              }}
+              disabled={isDisabled || isRecording}
+              className="flex-1 h-1.5 bg-slate-600 rounded-full appearance-none cursor-pointer accent-tool-slidesync hover:h-2 transition-all outline-none"
+            />
+
+            <div className="font-mono text-xs text-white tabular-nums drop-shadow-md pr-2 select-none">
+              {formatTime(currentTime)} / {formatTime(audioDuration)}
+            </div>
+          </div>
+        </div>
       </div>
 
-      <PlaybackControls
-        isPlaying={isPlaying}
-        onTogglePlay={togglePlay}
-        currentTime={currentTime}
-        duration={audioDuration}
-        isDisabled={isDisabled || isRecording}
-        themeColor="tool-slidesync"
-      >
+      <div className="absolute right-6 bottom-6 z-50 flex flex-col items-end gap-2">
+        {/* Format Selector on top */}
+        <div className="flex bg-slate-800/50 backdrop-blur-md rounded-xl p-1 border border-slate-700/50 shadow-lg">
+          {supportedFormats.map((fmt) => (
+            <button
+              key={fmt}
+              onClick={() => setExportFormat(fmt)}
+              className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+                exportFormat === fmt
+                  ? 'bg-tool-slidesync text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+              }`}
+              title={
+                fmt === ExportFormat.MP4
+                  ? t.tools.slidesync.exportAsMp4
+                  : t.tools.slidesync.exportAsWebm
+              }
+            >
+              {fmt === ExportFormat.MP4 ? 'MP4' : 'WEBM'}
+            </button>
+          ))}
+        </div>
+
+        {/* Export Button on the bottom */}
         <button
           onClick={handleExport}
           disabled={isDisabled || isRecording}
-          className={`flex items-center gap-3 px-8 py-3 rounded-full font-black text-xs uppercase tracking-widest transition-all ${isRecording ? 'bg-slate-700 text-slate-400' : 'bg-tool-slidesync hover:opacity-90 text-white shadow-xl shadow-tool-slidesync/10 active:scale-95'}`}
+          className={`flex items-center justify-center gap-3 px-8 py-3 rounded-full font-black text-xs uppercase tracking-widest transition-all w-full min-w-[180px] ${
+            isRecording
+              ? 'bg-slate-800 text-slate-500'
+              : 'bg-tool-slidesync hover:opacity-90 hover:scale-[1.02] text-white shadow-xl shadow-tool-slidesync/10 active:scale-95'
+          }`}
         >
           {isRecording ? (
             <>
@@ -443,30 +597,9 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
             </>
           )}
         </button>
-
-        <div className="flex bg-slate-700/50 rounded-lg p-1 border border-slate-600">
-          {supportedFormats.map((fmt) => (
-            <button
-              key={fmt}
-              onClick={() => setExportFormat(fmt)}
-              className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-all ${
-                exportFormat === fmt
-                  ? 'bg-tool-slidesync text-white shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-              title={
-                fmt === ExportFormat.MP4
-                  ? t.tools.slidesync.exportAsMp4
-                  : t.tools.slidesync.exportAsWebm
-              }
-            >
-              {fmt === ExportFormat.MP4 ? 'MP4' : 'WEBM'}
-            </button>
-          ))}
-        </div>
-      </PlaybackControls>
+      </div>
       {isRecording && (
-        <div className="absolute top-12 bg-red-600/90 backdrop-blur-md text-white px-6 py-3 rounded-full flex items-center gap-3 animate-pulse z-50 shadow-2xl border border-white/20">
+        <div className="absolute top-12 bg-red-600/90 backdrop-blur-md text-white px-6 py-3 rounded-full flex items-center gap-3 animate-pulse z-[60] shadow-2xl border border-white/20">
           <div className="w-3 h-3 bg-white rounded-full"></div>
           <span className="font-bold uppercase tracking-wider text-xs">
             {t.tools.slidesync.recordingNote}

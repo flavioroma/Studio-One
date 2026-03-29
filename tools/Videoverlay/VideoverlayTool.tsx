@@ -30,6 +30,7 @@ import { ConfirmationModal } from '../../components/ConfirmationModal';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { VideoverlaySidebar } from './VideoverlaySidebar';
 import { TimeRangeSelector } from '../../components/TimeRangeSelector';
+import { ToolLoadingScreen } from '../../components/ToolLoadingScreen';
 
 export const VideoverlayTool: React.FC = () => {
   const { t } = useLanguage();
@@ -56,6 +57,7 @@ export const VideoverlayTool: React.FC = () => {
   const [rotation, setRotation] = useState<Rotation>(Rotation.None);
   const [audioMode, setAudioMode] = useState<AudioMode>(AudioMode.Keep);
   const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [preserveVideoMetadata, setPreserveVideoMetadata] = useState<boolean>(true);
 
   const [startTime, setStartTime] = useState(0);
   const [endTime, setEndTime] = useState(0);
@@ -74,6 +76,7 @@ export const VideoverlayTool: React.FC = () => {
 
   // Delete Confirmation
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   // Hover state for player controls
   const [isHoveringPlayer, setIsHoveringPlayer] = useState(false);
@@ -240,37 +243,41 @@ export const VideoverlayTool: React.FC = () => {
   // Load State
   useEffect(() => {
     const load = async () => {
-      const state = await PersistenceService.loadVideoverlayState();
-      if (state) {
-        setFile(state.file);
-        setCaptionSettings({
-          text: state.caption,
-          color: state.color,
-          position: state.position,
-          textSize: (state as any).textSize || TextSize.Small, // Backwards compat
-          isItalic: (state as any).isItalic || false,
-        });
+      try {
+        const state = await PersistenceService.loadVideoverlayState();
+        if (state) {
+          setFile(state.file);
+          setCaptionSettings({
+            text: state.caption,
+            color: state.color,
+            position: state.position,
+            textSize: (state as any).textSize || TextSize.Small,
+            isItalic: (state as any).isItalic || false,
+          });
 
-        // Load Watermark State
-        if (state.watermarkFile) {
-          setWatermarkSettings((prev) => ({
-            ...prev,
-            file: state.watermarkFile || null,
-            position: state.watermarkPosition || TextPosition.TopRight,
-          }));
+          if (state.watermarkFile) {
+            setWatermarkSettings((prev) => ({
+              ...prev,
+              file: state.watermarkFile || null,
+              position: state.watermarkPosition || TextPosition.TopRight,
+            }));
+          }
+
+          if (state.rotation !== undefined) setRotation(state.rotation);
+          if (state.audioMode) setAudioMode(state.audioMode);
+          if (state.audioFile) setAudioFile(state.audioFile);
+          if (state.startTime !== undefined) setStartTime(state.startTime);
+          if (state.endTime !== undefined) setEndTime(state.endTime);
+          if (state.preserveVideoMetadata !== undefined) setPreserveVideoMetadata(state.preserveVideoMetadata);
+
+          if (state.file) {
+            setVideoUrl(URL.createObjectURL(state.file));
+          }
         }
-
-        if (state.rotation !== undefined) setRotation(state.rotation);
-        if (state.audioMode) setAudioMode(state.audioMode);
-        if (state.audioFile) setAudioFile(state.audioFile);
-        if (state.startTime !== undefined) setStartTime(state.startTime);
-        if (state.endTime !== undefined) setEndTime(state.endTime);
-
-        if (state.file) {
-          setVideoUrl(URL.createObjectURL(state.file));
-        }
+        isLoadedRef.current = true;
+      } finally {
+        setIsInitialLoading(false);
       }
-      isLoadedRef.current = true;
     };
     load();
   }, []);
@@ -291,6 +298,7 @@ export const VideoverlayTool: React.FC = () => {
       audioFile,
       startTime,
       endTime,
+      preserveVideoMetadata,
     });
   };
 
@@ -312,6 +320,7 @@ export const VideoverlayTool: React.FC = () => {
     audioFile,
     startTime,
     endTime,
+    preserveVideoMetadata,
   ]);
 
   // Handle browser refresh/close
@@ -333,6 +342,7 @@ export const VideoverlayTool: React.FC = () => {
     audioFile,
     startTime,
     endTime,
+    preserveVideoMetadata,
   ]);
 
   // Effect to handle metadata extraction when file changes
@@ -445,10 +455,17 @@ export const VideoverlayTool: React.FC = () => {
         abortControllerRef.current.signal
       );
 
-      const url = URL.createObjectURL(blob);
+      // Apply metadata to the output blob before downloading
+      let finalBlob = blob;
+      const hasVideoMetadata = !!(metadata?.creationTime || metadata?.latitude !== undefined);
+      if (preserveVideoMetadata && hasVideoMetadata && metadata) {
+        finalBlob = await MetadataService.transferVideoMetadata(blob, metadata);
+      }
+
+      const url = URL.createObjectURL(finalBlob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `overlay-${file.name.replace(/\.[^/.]+$/, '')}.mp4`;
+      a.download = `${file.name.replace(/\.[^/.]+$/, '')}.mp4`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (error: any) {
@@ -654,19 +671,25 @@ export const VideoverlayTool: React.FC = () => {
         onRemoveAudioFile={() => setAudioFile(null)}
         onCaptionUpdate={(updates) => setCaptionSettings((prev) => ({ ...prev, ...updates }))}
         onWatermarkUpdate={(updates) => setWatermarkSettings((prev) => ({ ...prev, ...updates }))}
+        preserveVideoMetadata={preserveVideoMetadata}
+        onPreserveVideoMetadataChange={setPreserveVideoMetadata}
+        hasVideoMetadata={!!(metadata?.creationTime || metadata?.latitude !== undefined)}
         onDelete={handleDeleteRequest}
       />
 
       {/* Main Preview / Viewport */}
 
-      <div className="flex-1 flex flex-col min-w-0 bg-slate-950">
-        <div className="flex-1 relative flex flex-col items-center justify-center p-2 md:p-4 lg:p-6 xl:p-12 overflow-hidden gap-2 sm:gap-4 xl:gap-8">
+      <div className="flex-1 flex flex-col min-w-0 bg-slate-950 relative">
+        {isInitialLoading && <ToolLoadingScreen Icon={VideoIcon} colorVar="--tool-videoverlay" />}
+        <div className="flex-1 relative flex flex-col items-center p-8 overflow-hidden gap-8">
           {!videoUrl ? (
-            <div className="flex flex-col items-center gap-4 text-slate-600 animate-pulse">
-              <VideoIcon className="w-16 h-16 xl:w-24 xl:h-24 stroke-[1px]" />
-              <p className="font-bold uppercase tracking-[0.3em] text-[10px] xl:text-xs">
-                {t.tools.videoverlay.awaitingSource}
-              </p>
+            <div className="flex-1 w-full max-w-7xl flex items-center justify-center min-h-0 relative">
+              <div className="flex flex-col items-center gap-4 text-slate-600 animate-pulse">
+                <VideoIcon className="w-16 h-16 xl:w-24 xl:h-24 stroke-[1px]" />
+                <p className="font-bold uppercase tracking-[0.3em] text-[10px] xl:text-xs">
+                  {t.tools.videoverlay.awaitingSource}
+                </p>
+              </div>
             </div>
           ) : error ? (
             <div className="max-w-md w-full flex flex-col items-center gap-6 p-10 bg-slate-900/50 backdrop-blur-md rounded-3xl border border-red-500/20 shadow-2xl animate-fadeIn">
@@ -692,7 +715,7 @@ export const VideoverlayTool: React.FC = () => {
             <>
               <div
                 ref={containerRef}
-                className="relative group shadow-2xl rounded-xl xl:rounded-2xl overflow-hidden border border-slate-700 bg-black min-h-0 min-w-0 flex-1 max-h-[65vh] xl:max-h-[75vh]"
+                className="relative group shadow-2xl rounded-xl xl:rounded-2xl overflow-hidden border border-slate-700 bg-black min-h-0 min-w-0 flex-1"
                 style={{
                   aspectRatio: metadata
                     ? `${rotation === Rotation.CW_90 || rotation === Rotation.CCW_90 ? metadata.height : metadata.width} / ${rotation === Rotation.CW_90 || rotation === Rotation.CCW_90 ? metadata.width : metadata.height}`
@@ -791,7 +814,7 @@ export const VideoverlayTool: React.FC = () => {
 
               {/* Trimming Controls */}
               {!isExporting && metadata && (
-                <div className="w-full max-w-5xl mt-1 xl:mt-4 z-20 shadow-xl shrink-0">
+                <div className="w-full max-w-7xl mt-0 z-20 shadow-xl shrink-0">
                   <TimeRangeSelector
                     theme="videoverlay"
                     currentTime={currentTime}

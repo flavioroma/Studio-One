@@ -408,8 +408,148 @@ export class MetadataService {
     return undefined;
   }
 
+  // --- Video Metadata Transfer (Writing) ---
+  static async transferVideoMetadata(destBlob: Blob, metadata: VideoMetadata): Promise<Blob> {
+    try {
+      const MP4_EPOCH_OFFSET = 2082844800; // seconds between 1904-01-01 and 1970-01-01
+
+      const srcBuffer = await destBlob.arrayBuffer();
+      let bytes = new Uint8Array(srcBuffer);
+
+      // Find the byte offset of a four-character code within a range.
+      // Returns the offset of the first byte of the fourCC.
+      const findAtom = (data: Uint8Array, fourcc: string, start: number, end: number): number => {
+        const [a, b, c, d] = [
+          fourcc.charCodeAt(0), fourcc.charCodeAt(1),
+          fourcc.charCodeAt(2), fourcc.charCodeAt(3),
+        ];
+        for (let i = start; i < end - 3; i++) {
+          if (data[i] === a && data[i + 1] === b && data[i + 2] === c && data[i + 3] === d) return i;
+        }
+        return -1;
+      };
+
+      const readU32BE = (data: Uint8Array, offset: number): number =>
+        ((data[offset] << 24) | (data[offset + 1] << 16) | (data[offset + 2] << 8) | data[offset + 3]) >>> 0;
+
+      const writeU32BE = (data: Uint8Array, offset: number, value: number): void => {
+        data[offset]     = (value >>> 24) & 0xff;
+        data[offset + 1] = (value >>> 16) & 0xff;
+        data[offset + 2] = (value >>> 8)  & 0xff;
+        data[offset + 3] =  value         & 0xff;
+      };
+
+      // Locate moov (always present, always after ftyp)
+      const moovFourCCOff = findAtom(bytes, 'moov', 0, bytes.length);
+      if (moovFourCCOff === -1) throw new Error('moov not found');
+      const moovBoxStart  = moovFourCCOff - 4;          // includes 4-byte size field
+      const moovBoxSize   = readU32BE(bytes, moovBoxStart);
+      const moovBoxEnd    = moovBoxStart + moovBoxSize;  // first byte after moov = start of mdat
+      const moovContent   = moovBoxStart + 8;            // first byte of moov children
+
+      // --- Step 1: Patch mvhd creation_time / modification_time in-place ---
+      // Safe: only overwrites existing bytes, no size changes.
+      if (metadata.creationTime) {
+        const unixSec = Math.floor(metadata.creationTime.getTime() / 1000);
+        const mp4Sec  = (unixSec + MP4_EPOCH_OFFSET) >>> 0; // u32, valid for dates after 1970
+
+        const mvhdFourCCOff = findAtom(bytes, 'mvhd', moovContent, moovBoxEnd);
+        if (mvhdFourCCOff !== -1) {
+          // mvhd box: [4 size][4 'mvhd'][1 version][3 flags][timestamps...]
+          const versionOff = mvhdFourCCOff + 4; // byte right after 'mvhd'
+          if (bytes[versionOff] === 0) {
+            // version 0: 32-bit timestamps at version+4 and version+8
+            writeU32BE(bytes, versionOff + 4, mp4Sec); // creation_time
+            writeU32BE(bytes, versionOff + 8, mp4Sec); // modification_time
+          }
+          // version 1 (64-bit timestamps) is not patched — extremely rare on modern devices
+        }
+      }
+
+      // --- Step 2: Inject udta/©xyz for GPS (requires buffer rebuild + stco fixup) ---
+      // Critical: inserting bytes before mdat shifts the media data forward, so every
+      // absolute chunk offset stored in stco/co64 must be incremented by udtaSize.
+      if (metadata.latitude !== undefined && metadata.longitude !== undefined) {
+        const lat = metadata.latitude;
+        const lon = metadata.longitude;
+        // ISO 6709 short form (same as used by Apple/Android cameras)
+        const coordStr   = `${lat >= 0 ? '+' : ''}${lat.toFixed(4)}${lon >= 0 ? '+' : ''}${lon.toFixed(4)}/`;
+        const coordBytes = new TextEncoder().encode(coordStr);
+
+        // ©xyz atom: [4 size][4 '©xyz'][2 data-len][2 lang=0][coord bytes]
+        const xyzSize = 8 + 2 + 2 + coordBytes.length;
+        const xyzAtom = new Uint8Array(xyzSize);
+        writeU32BE(xyzAtom, 0, xyzSize);
+        xyzAtom[4] = 0xa9; xyzAtom[5] = 0x78; xyzAtom[6] = 0x79; xyzAtom[7] = 0x7a; // ©xyz
+        xyzAtom[8]  = (coordBytes.length >> 8) & 0xff;
+        xyzAtom[9]  =  coordBytes.length        & 0xff;
+        xyzAtom[10] = 0x00; xyzAtom[11] = 0x00; // language: undetermined
+        xyzAtom.set(coordBytes, 12);
+
+        // udta atom: [4 size][4 'udta'][©xyz]
+        const udtaSize = 8 + xyzSize;
+        const udtaAtom = new Uint8Array(udtaSize);
+        writeU32BE(udtaAtom, 0, udtaSize);
+        udtaAtom[4] = 0x75; udtaAtom[5] = 0x64; udtaAtom[6] = 0x74; udtaAtom[7] = 0x61; // udta
+        udtaAtom.set(xyzAtom, 8);
+
+        // Rebuild buffer with udta inserted right at moovBoxEnd (= start of mdat).
+        // Patching moov's size to moovBoxSize + udtaSize makes udta a child of moov.
+        const grown = new Uint8Array(bytes.length + udtaSize);
+        grown.set(bytes.subarray(0, moovBoxEnd), 0);        // ftyp + original moov
+        grown.set(udtaAtom,                     moovBoxEnd); // new udta child of moov
+        grown.set(bytes.subarray(moovBoxEnd), moovBoxEnd + udtaSize); // mdat + media data
+
+        // Grow moov's declared size to include the appended udta
+        writeU32BE(grown, moovBoxStart, moovBoxSize + udtaSize);
+
+        // Fix stco chunk offsets — mdat has shifted forward by udtaSize.
+        // stco boxes live inside original moov content: [moovContent, moovBoxEnd).
+        let scanPos = moovContent;
+        while (scanPos < moovBoxEnd) {
+          const stcoFourCCOff = findAtom(grown, 'stco', scanPos, moovBoxEnd);
+          if (stcoFourCCOff === -1) break;
+          // stco: [4 size][4 'stco'][1 ver][3 flags][4 entry_count][4*N offsets]
+          const stcoContent  = stcoFourCCOff + 4; // past 'stco' fourCC
+          const entryCount   = readU32BE(grown, stcoContent + 4);
+          for (let i = 0; i < entryCount; i++) {
+            const pos    = stcoContent + 8 + i * 4;
+            writeU32BE(grown, pos, readU32BE(grown, pos) + udtaSize);
+          }
+          // Advance past this stco box
+          scanPos = stcoFourCCOff - 4 + readU32BE(grown, stcoFourCCOff - 4);
+        }
+
+        // Fix co64 chunk offsets (large files, 8-byte entries)
+        scanPos = moovContent;
+        while (scanPos < moovBoxEnd) {
+          const co64FourCCOff = findAtom(grown, 'co64', scanPos, moovBoxEnd);
+          if (co64FourCCOff === -1) break;
+          const co64Content = co64FourCCOff + 4;
+          const entryCount  = readU32BE(grown, co64Content + 4);
+          for (let i = 0; i < entryCount; i++) {
+            const pos = co64Content + 8 + i * 8;
+            const lo  = readU32BE(grown, pos + 4) + udtaSize;
+            const hi  = readU32BE(grown, pos) + (lo > 0xffffffff ? 1 : 0);
+            writeU32BE(grown, pos,     hi);
+            writeU32BE(grown, pos + 4, lo >>> 0);
+          }
+          scanPos = co64FourCCOff - 4 + readU32BE(grown, co64FourCCOff - 4);
+        }
+
+        bytes = grown;
+      }
+
+      return new Blob([bytes], { type: 'video/mp4' });
+    } catch (error) {
+      console.warn('[MetadataService] Failed to transfer video metadata:', error);
+      return destBlob; // Always fall back to the unpatched blob — no corruption possible
+    }
+  }
+
   // --- Photo Metadata Transfer (Writing) ---
   static async transferPhotoMetadata(sourceFile: File, destBlob: Blob): Promise<Blob> {
+
     try {
       // 1. Read EXIF from Source as Binary String
       // Only attempt if it's a JPEG

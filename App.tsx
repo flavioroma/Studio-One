@@ -6,9 +6,18 @@ import { SlideSyncTool } from './tools/SlideSync/SlideSyncTool';
 import { AudioTrimTool } from './tools/AudioTrim/AudioTrimTool';
 import { VideoverlayTool } from './tools/Videoverlay/VideoverlayTool';
 import { PhotoverlayTool } from './tools/Photoverlay/PhotoverlayTool';
+import { PiCollageTool } from './tools/PiCollage/PiCollageTool';
+import { DonationTool } from './tools/Donation/DonationTool';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 
-export type ToolId = 'home' | 'slidesync' | 'photoverlay' | 'audiotrim' | 'videoverlay';
+export type ToolId =
+  | 'home'
+  | 'slidesync'
+  | 'photoverlay'
+  | 'audiotrim'
+  | 'videoverlay'
+  | 'picollage'
+  | 'donation';
 
 const AppContent: React.FC = () => {
   const [activeTool, setActiveTool] = useState<ToolId>('home');
@@ -23,6 +32,10 @@ const AppContent: React.FC = () => {
         return <VideoverlayTool />;
       case 'photoverlay':
         return <PhotoverlayTool />;
+      case 'picollage':
+        return <PiCollageTool />;
+      case 'donation':
+        return <DonationTool />;
       default:
         return <Home onSelectTool={setActiveTool} />;
     }
@@ -40,6 +53,10 @@ const AppContent: React.FC = () => {
         return t.tools.videoverlay.title;
       case 'photoverlay':
         return t.tools.photoverlay.title;
+      case 'picollage':
+        return t.tools.picollage.title;
+      case 'donation':
+        return t.home.donation.title;
       default:
         return '';
     }

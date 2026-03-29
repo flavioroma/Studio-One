@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Trash2 } from 'lucide-react';
+import { Settings2, Download, Trash2, Check, ZoomIn, Square, Filter, Palette, Image as ImageIcon } from 'lucide-react';
 import {
   PhotoItem,
   CaptionSettings,
@@ -10,10 +10,13 @@ import {
   NamingSettings,
   FramingSettings,
   AspectRatio,
+  FilterMode,
+  BorderSize,
 } from '../../types';
-import { CaptionSettingsPanel } from '../../components/CaptionSettingsPanel';
-import { WatermarkSettingsPanel } from '../../components/WatermarkSettingsPanel';
-import { MagnificationSettingsPanel } from '../../components/MagnificationSettingsPanel';
+import { FramingSettingsPanel } from '../../components/FramingSettingsPanel';
+import { OverlaySettingsPanel } from '../../components/OverlaySettingsPanel';
+import { FilterSettingsPanel } from '../../components/FilterSettingsPanel';
+import { BorderSettingsPanel } from '../../components/BorderSettingsPanel';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { FileDropZone } from '../../components/FileDropZone';
 
@@ -22,15 +25,23 @@ interface PhotoverlaySidebarProps {
   selectedItem: PhotoItem | null;
   applyToAll: boolean;
   onApplyToAllChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  applyFilterToAll: boolean;
+  onApplyFilterToAllChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onCaptionUpdate: (updates: Partial<CaptionSettings>) => void;
   onWatermarkUpdate: (updates: Partial<WatermarkSettings>) => void;
   onFramingUpdate: (updates: Partial<FramingSettings>) => void;
+  onFilterUpdate: (filter: FilterMode) => void;
+  onBorderUpdate: (updates: Partial<{ borderSize: BorderSize; borderColor: TextColor }>) => void;
+  applyBorderToAll: boolean;
+  onApplyBorderToAllChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   namingSettings: NamingSettings;
   onNamingUpdate: (updates: Partial<NamingSettings>) => void;
   preserveMetadata: boolean;
-  onPreserveMetadataChange: (value: boolean) => void;
+  onPreserveMetadataChange: (preserve: boolean) => void;
   onDeleteAll: () => void;
+  hasSlideSyncSlides?: boolean;
+  onImportFromSlideSync?: () => void;
 }
 
 export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
@@ -38,15 +49,23 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
   selectedItem,
   applyToAll,
   onApplyToAllChange,
+  applyFilterToAll,
+  onApplyFilterToAllChange,
   onFileChange,
   onCaptionUpdate,
   onWatermarkUpdate,
   onFramingUpdate,
+  onFilterUpdate,
+  onBorderUpdate,
+  applyBorderToAll,
+  onApplyBorderToAllChange,
   namingSettings,
   onNamingUpdate,
   preserveMetadata,
   onPreserveMetadataChange,
   onDeleteAll,
+  hasSlideSyncSlides = false,
+  onImportFromSlideSync,
 }) => {
   const { t } = useLanguage();
 
@@ -66,6 +85,15 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
             label={t.tools.photoverlay.uploadPhotos}
             themeColor="tool-photoverlay"
           />
+          {hasSlideSyncSlides && onImportFromSlideSync && (
+            <button
+              onClick={onImportFromSlideSync}
+              className="flex items-center justify-center gap-2 w-full p-4 rounded-xl border border-tool-slidesync/40 hover:border-tool-slidesync/60 bg-tool-slidesync/10 hover:bg-tool-slidesync/20 transition-all text-slate-300 hover:text-tool-slidesync"
+            >
+              <ImageIcon className="w-5 h-5" />
+              <span className="text-sm font-medium">{t.common.importFromSlideSync}</span>
+            </button>
+          )}
         </div>
       ) : (
         <>
@@ -74,13 +102,13 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
           </h2>
           <div className="space-y-4 animate-fadeIn">
             <div className="flex flex-col gap-4">
-              <div className="p-4 bg-slate-700/50 rounded-2xl border border-slate-600 space-y-4 hover:border-tool-photoverlay/40 shadow-inner">
+              <div className="p-4 bg-slate-700/50 rounded-2xl border border-slate-600 space-y-4 hover:bg-slate-700/50 hover:border-tool-photoverlay/40 transition-all">
                 <label className="flex items-center gap-3 cursor-pointer group">
                   <div
                     className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
                       namingSettings.keepOriginal
                         ? 'bg-tool-photoverlay border-tool-photoverlay'
-                        : 'border-slate-500 group-hover:border-slate-400'
+                        : 'border-slate-500 group-hover:border-tool-photoverlay/80'
                     }`}
                   >
                     {namingSettings.keepOriginal && <Check className="w-3.5 h-3.5 text-white" />}
@@ -108,7 +136,7 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
                           className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${
                             namingSettings.type === 'prefix'
                               ? 'bg-tool-photoverlay text-white shadow-lg'
-                              : 'text-slate-500 hover:text-slate-300'
+                              : 'text-slate-500 hover:text-tool-photoverlay'
                           }`}
                         >
                           {t.common.prefix}
@@ -118,7 +146,7 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
                           className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all ${
                             namingSettings.type === 'suffix'
                               ? 'bg-tool-photoverlay text-white shadow-lg'
-                              : 'text-slate-500 hover:text-slate-300'
+                              : 'text-slate-500 hover:text-tool-photoverlay'
                           }`}
                         >
                           {t.common.suffix}
@@ -144,13 +172,13 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
                 )}
               </div>
 
-              <div className="p-4 bg-slate-700/50 rounded-2xl border border-slate-600 hover:border-tool-photoverlay/40 shadow-inner transition-all">
+              <div className="p-4 bg-slate-700/50 rounded-2xl border border-slate-600 hover:bg-slate-700/50 hover:border-tool-photoverlay/40 transition-all">
                 <label className="flex items-center gap-3 cursor-pointer group">
                   <div
                     className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${
                       preserveMetadata
                         ? 'bg-tool-photoverlay border-tool-photoverlay'
-                        : 'border-slate-500 group-hover:border-slate-400'
+                        : 'border-slate-500 group-hover:border-tool-photoverlay/80'
                     }`}
                   >
                     {preserveMetadata && <Check className="w-3.5 h-3.5 text-white" />}
@@ -183,50 +211,69 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
               </div>
             </div>
           </div>
-          <h2 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
-            {t.tools.photoverlay.framing}
-          </h2>
-          <>
-            {selectedItem && (
-              <div className="px-1">
-                <MagnificationSettingsPanel
-                  imageUrl={selectedItem.imageUrl}
-                  settings={selectedItem.framingSettings}
-                  onUpdate={onFramingUpdate}
-                  aspectRatio={AspectRatio.Original}
-                  sourceDimensions={selectedItem.metadata}
-                  themeColor="tool-photoverlay"
-                />
-              </div>
-            )}
-          </>
 
-          <h2 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
-            {t.common.overlay}
-          </h2>
+          <hr className="border-slate-700 my-2 pt-4" />
 
-          <div className="p-4 bg-slate-700/50 rounded-2xl border border-slate-600 hover:border-tool-photoverlay/40 hover:bg-slate-700/50 transition-all">
-            <label className="flex items-center gap-3 cursor-pointer group">
-              <div
-                className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${applyToAll ? 'bg-tool-photoverlay border-tool-photoverlay' : 'border-slate-500 group-hover:border-tool-photoverlay/80'}`}
-              >
-                {applyToAll && <Check className="w-3.5 h-3.5 text-white stroke-[3px]" />}
-              </div>
-              <span className="text-xs font-bold text-slate-300 group-hover:text-slate-100 transition-colors">
-                {t.tools.photoverlay.applyToAll}
-              </span>
-              <input
-                type="checkbox"
-                checked={applyToAll}
-                onChange={onApplyToAllChange}
-                className="hidden"
-              />
-            </label>
-          </div>
+          <h3 className="mt-2 text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
+            {t.tools.photoverlay.pictureProperties}
+          </h3>
 
-          <div className="space-y-8 animate-fadeIn pb-8">
-            <CaptionSettingsPanel
-              settings={
+          {/* New Collapsible Framing Section */}
+          {selectedItem && (
+            <FramingSettingsPanel
+              key={`framing-${selectedItem.id}`}
+              imageUrl={selectedItem.previewUrl}
+              settings={selectedItem.framingSettings}
+              onUpdate={onFramingUpdate}
+              aspectRatio={AspectRatio.Original}
+              sourceDimensions={selectedItem.metadata}
+              themeColor="tool-photoverlay"
+              defaultExpanded={
+                selectedItem.framingSettings.zoom !== 1 ||
+                selectedItem.framingSettings.offsetX !== 0 ||
+                selectedItem.framingSettings.offsetY !== 0
+              }
+            />
+          )}
+
+          {/* New Collapsible Filter Section */}
+          {selectedItem && (
+            <FilterSettingsPanel
+              key={`filter-${selectedItem.id}`}
+              currentFilter={selectedItem.filterSettings}
+              onChange={onFilterUpdate}
+              themeColor="tool-photoverlay"
+              collapsible
+              applyToAll={applyFilterToAll}
+              onApplyToAllChange={onApplyFilterToAllChange}
+              defaultExpanded={
+                !!selectedItem.filterSettings && selectedItem.filterSettings !== FilterMode.Normal
+              }
+            />
+          )}
+
+          {/* New Collapsible Border Section */}
+          {selectedItem && (
+            <BorderSettingsPanel
+              key={`border-${selectedItem.id}`}
+              borderSize={selectedItem.borderSettings.size || BorderSize.None}
+              borderColor={selectedItem.borderSettings.color || TextColor.White}
+              onSizeChange={(borderSize) => onBorderUpdate({ borderSize })}
+              onColorChange={(borderColor) => onBorderUpdate({ borderColor })}
+              themeColor="tool-photoverlay"
+              applyToAll={applyBorderToAll}
+              onApplyToAllChange={onApplyBorderToAllChange}
+              defaultExpanded={!!selectedItem.borderSettings.size}
+            />
+          )}
+
+          {/* New Collapsible Overlay Section */}
+          {selectedItem && (
+            <OverlaySettingsPanel
+              key={`overlay-${selectedItem.id}`}
+              applyToAll={applyToAll}
+              onApplyToAllChange={onApplyToAllChange}
+              captionSettings={
                 selectedItem?.captionSettings || {
                   text: '',
                   color: TextColor.White,
@@ -235,12 +282,8 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
                   isItalic: false,
                 }
               }
-              onUpdate={onCaptionUpdate}
-              themeColor="tool-photoverlay"
-            />
-
-            <WatermarkSettingsPanel
-              settings={
+              onCaptionUpdate={onCaptionUpdate}
+              watermarkSettings={
                 selectedItem?.watermarkSettings || {
                   file: null,
                   position: TextPosition.TopRight,
@@ -248,10 +291,14 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
                   scale: 0.2,
                 }
               }
-              onUpdate={onWatermarkUpdate}
+              onWatermarkUpdate={onWatermarkUpdate}
               themeColor="tool-photoverlay"
+              defaultExpanded={
+                (selectedItem?.captionSettings?.text && selectedItem.captionSettings.text !== '') ||
+                !!selectedItem?.watermarkSettings?.file
+              }
             />
-          </div>
+          )}
 
           <div className="pt-6 mt-auto border-t border-slate-700">
             <button

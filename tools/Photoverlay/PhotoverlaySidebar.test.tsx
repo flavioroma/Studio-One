@@ -2,7 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { PhotoverlaySidebar } from './PhotoverlaySidebar';
 import { LanguageProvider } from '../../contexts/LanguageContext';
-import { TextColor, TextPosition, TextSize } from '../../types';
+import { TextColor, TextPosition, TextSize, FilterMode } from '../../types';
 
 describe('PhotoverlaySidebar', () => {
   const defaultProps = {
@@ -10,10 +10,13 @@ describe('PhotoverlaySidebar', () => {
     selectedItem: null,
     applyToAll: false,
     onApplyToAllChange: vi.fn(),
+    applyFilterToAll: false,
+    onApplyFilterToAllChange: vi.fn(),
     onFileChange: vi.fn(),
     onCaptionUpdate: vi.fn(),
     onWatermarkUpdate: vi.fn(),
     onFramingUpdate: vi.fn(),
+    onFilterUpdate: vi.fn(),
     namingSettings: {
       keepOriginal: true,
       type: 'prefix' as const,
@@ -23,6 +26,9 @@ describe('PhotoverlaySidebar', () => {
     preserveMetadata: true,
     onPreserveMetadataChange: vi.fn(),
     onDeleteAll: vi.fn(),
+    onBorderUpdate: vi.fn(),
+    applyBorderToAll: false,
+    onApplyBorderToAllChange: vi.fn(),
   };
 
   const renderWithContext = (props = defaultProps) => {
@@ -74,7 +80,7 @@ describe('PhotoverlaySidebar', () => {
     const mockItem = {
       id: '1',
       file: new File([], 'test.jpg'),
-      imageUrl: '',
+      previewUrl: '',
       captionSettings: {
         text: 'Hello',
         color: TextColor.White,
@@ -84,6 +90,8 @@ describe('PhotoverlaySidebar', () => {
       },
       watermarkSettings: { file: null, position: TextPosition.TopRight, opacity: 0.2, scale: 0.2 },
       framingSettings: { zoom: 1, offsetX: 0, offsetY: 0 },
+      filterSettings: FilterMode.Normal,
+      borderSettings: { size: 0, color: TextColor.White },
       metadata: null,
       exifData: null,
     };
@@ -98,5 +106,56 @@ describe('PhotoverlaySidebar', () => {
     const eraseBtn = screen.getByText(/Erase the project/i);
     fireEvent.click(eraseBtn);
     expect(defaultProps.onDeleteAll).toHaveBeenCalled();
+  });
+
+  it('renders filter buttons when an item is selected', () => {
+    const mockItem = {
+      id: '1',
+      file: new File([], 'test.jpg'),
+      previewUrl: '',
+      captionSettings: {
+        text: '',
+        color: TextColor.White,
+        position: TextPosition.BottomLeft,
+        textSize: TextSize.Small,
+        isItalic: false,
+      },
+      watermarkSettings: { file: null, position: TextPosition.TopRight, opacity: 0.2, scale: 0.2 },
+      framingSettings: { zoom: 1, offsetX: 0, offsetY: 0 },
+      filterSettings: FilterMode.Grayscale,
+      borderSettings: { size: 0, color: TextColor.White },
+      metadata: null,
+      exifData: null,
+    };
+    renderWithContext({ ...defaultProps, itemsCount: 1, selectedItem: mockItem });
+    expect(screen.getByText(/Filters/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Normal/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Grayscale/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sepia/i)).toBeInTheDocument();
+  });
+
+  it('calls onFilterUpdate with sepia when Sepia button is clicked', () => {
+    const mockItem = {
+      id: '1',
+      file: new File([], 'test.jpg'),
+      previewUrl: '',
+      captionSettings: {
+        text: '',
+        color: TextColor.White,
+        position: TextPosition.BottomLeft,
+        textSize: TextSize.Small,
+        isItalic: false,
+      },
+      watermarkSettings: { file: null, position: TextPosition.TopRight, opacity: 0.2, scale: 0.2 },
+      framingSettings: { zoom: 1, offsetX: 0, offsetY: 0 },
+      filterSettings: FilterMode.Grayscale,
+      borderSettings: { size: 0, color: TextColor.White },
+      metadata: null,
+      exifData: null,
+    };
+    renderWithContext({ ...defaultProps, itemsCount: 1, selectedItem: mockItem });
+    const sepiaBtn = screen.getByText(/Sepia/i);
+    fireEvent.click(sepiaBtn);
+    expect(defaultProps.onFilterUpdate).toHaveBeenCalledWith(FilterMode.Sepia);
   });
 });

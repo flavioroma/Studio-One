@@ -4,7 +4,7 @@
 
 Created by Flavio Biundo - powered by Google Antigravity.
 
-**Studio One** is a sleek, modern suite of tools for processing pictures, videos, and audio tracks directly in your browser.
+**Studio One** is a sleek, modern suite of tools for processing pictures, videos and audio tracks directly in your browser.
 
 > [!TIP]
 > For the best experience (especially for video tools), please use a **Chromium-based browser** such as **Google Chrome**, **Microsoft Edge**, **Brave**, or **Opera**. Firefox currently has limited support for some advanced video processing features.
