@@ -44,6 +44,7 @@ interface SlideSyncSidebarProps {
   hasPhotoverlayItems?: boolean;
   onImportFromPhotoverlay?: () => void;
   hasSlides: boolean;
+  hasMedia: boolean;
 }
 
 export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
@@ -71,6 +72,7 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
   hasPhotoverlayItems = false,
   onImportFromPhotoverlay,
   hasSlides,
+  hasMedia,
 }) => {
   const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -289,33 +291,37 @@ export const SlideSyncSidebar: React.FC<SlideSyncSidebarProps> = ({
             </button>
           )}
         </div>
-        <hr className="border-slate-700 my-2 pt-4" />
-        <div className="flex flex-col gap-4">
-          <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
-            {t.common.aspectRatio}
-          </h3>
-          <div className="grid grid-cols-2 gap-2">
-            {formatOptions.map((opt) => (
-              <button
-                key={opt.id}
-                onClick={() => onAspectRatioChange(opt.id)}
-                className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${
-                  aspectRatio === opt.id
-                    ? 'bg-tool-slidesync/20 border-tool-slidesync text-tool-slidesync shadow-[0_0_15px_rgba(59,130,246,0.2)]'
-                    : 'bg-slate-700/50 border-slate-600 hover:border-tool-slidesync/40 text-slate-300 hover:text-tool-slidesync'
-                }`}
-              >
-                <opt.icon className="w-4 h-4 mb-1" />
-                <span className="text-[10px] font-bold uppercase">{opt.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+        {hasMedia && (
+          <>
+            <hr className="border-slate-700 my-2 pt-4" />
+            <div className="flex flex-col gap-4">
+              <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
+                {t.common.aspectRatio}
+              </h3>
+              <div className="grid grid-cols-2 gap-2">
+                {formatOptions.map((opt) => (
+                  <button
+                    key={opt.id}
+                    onClick={() => onAspectRatioChange(opt.id)}
+                    className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${
+                      aspectRatio === opt.id
+                        ? 'bg-tool-slidesync/20 border-tool-slidesync text-tool-slidesync shadow-[0_0_15px_rgba(59,130,246,0.2)]'
+                        : 'bg-slate-700/50 border-slate-600 hover:border-tool-slidesync/40 text-slate-300 hover:text-tool-slidesync'
+                    }`}
+                  >
+                    <opt.icon className="w-4 h-4 mb-1" />
+                    <span className="text-[10px] font-bold uppercase">{opt.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       <hr className="border-slate-700 my-2 pt-4" />
 
-      {slide ? (
+      {slide && hasMedia ? (
         <div className="space-y-6 animate-fadeIn pb-8">
           <div className="flex items-center justify-center">
             <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">

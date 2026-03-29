@@ -628,7 +628,7 @@ export const PiCollageTool: React.FC = () => {
         {isInitialLoading && <ToolLoadingScreen Icon={LayoutGrid} colorVar="--tool-picollage" />}
         {/* Canvas Area */}
         <div className="flex-1 bg-slate-950 relative overflow-hidden">
-          {pictures.length > 0 && (
+          {pictures.length > 0 ? (
             <PiCollageCanvas
               pictures={pictures}
               activePictureId={activePictureId}
@@ -636,83 +636,93 @@ export const PiCollageTool: React.FC = () => {
               onSelectPicture={setActivePictureId}
               onUpdatePicture={updatePicture}
             />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full gap-4 text-slate-600 animate-pulse">
+              <LayoutGrid className="w-24 h-24 stroke-[1px]" />
+              <p className="font-bold uppercase tracking-[0.3em] text-xs">
+                {t.tools.photoverlay.awaitingSource}
+              </p>
+            </div>
           )}
 
           {/* Export Controls Overlay */}
-          <div className="absolute right-6 bottom-6 z-20 flex flex-col items-end gap-2">
-            <div className="flex bg-slate-800/50 backdrop-blur-md rounded-xl p-1 border border-slate-700/50 shadow-lg">
+          {pictures.length > 0 && (
+            <div className="absolute right-6 bottom-6 z-20 flex flex-col items-end gap-2">
+              <div className="flex bg-slate-800/50 backdrop-blur-md rounded-xl p-1 border border-slate-700/50 shadow-lg">
+                <button
+                  onClick={() => setExportFormat('png')}
+                  className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+                    exportFormat === 'png'
+                      ? 'bg-tool-picollage text-slate-900 shadow-md'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                  }`}
+                >
+                  PNG
+                </button>
+                <button
+                  onClick={() => setExportFormat('jpg')}
+                  className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
+                    exportFormat === 'jpg'
+                      ? 'bg-tool-picollage text-slate-900 shadow-md'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                  }`}
+                >
+                  JPG
+                </button>
+              </div>
               <button
-                onClick={() => setExportFormat('png')}
-                className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
-                  exportFormat === 'png'
-                    ? 'bg-tool-picollage text-slate-900 shadow-md'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-                }`}
+                onClick={handleExport}
+                className="flex items-center justify-center gap-3 px-8 py-3 bg-tool-picollage hover:bg-tool-picollage/90 text-slate-900 rounded-full text-xs font-black uppercase tracking-widest transition-transform hover:scale-[1.02] active:scale-95 shadow-[0_0_20px_rgba(234,179,8,0.3)] disabled:opacity-50 disabled:hover:scale-100 disabled:shadow-none min-w-[180px]"
               >
-                PNG
-              </button>
-              <button
-                onClick={() => setExportFormat('jpg')}
-                className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${
-                  exportFormat === 'jpg'
-                    ? 'bg-tool-picollage text-slate-900 shadow-md'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
-                }`}
-              >
-                JPG
+                <Download className="w-4 h-4" /> {t.tools.picollage.exportCollage}
               </button>
             </div>
-            <button
-              onClick={handleExport}
-              disabled={pictures.length === 0}
-              className="flex items-center justify-center gap-3 px-8 py-3 bg-tool-picollage hover:bg-tool-picollage/90 text-slate-900 rounded-full text-xs font-black uppercase tracking-widest transition-transform hover:scale-[1.02] active:scale-95 shadow-[0_0_20px_rgba(234,179,8,0.3)] disabled:opacity-50 disabled:hover:scale-100 disabled:shadow-none min-w-[180px]"
-            >
-              <Download className="w-4 h-4" /> {t.tools.picollage.exportCollage}
-            </button>
-          </div>
+          )}
         </div>
 
-        <ToolFooter
-          headerContent={
-            <div className="flex justify-between items-end">
-              <div>
-                {activePictureId && pictures.some((p) => p.id === activePictureId && p.isVisible) ? (
-                  <PiCollageSettingsBar
-                    onMoveUp={() => moveActive(0, -5)}
-                    onMoveDown={() => moveActive(0, 5)}
-                    onMoveLeft={() => moveActive(-5, 0)}
-                    onMoveRight={() => moveActive(5, 0)}
-                    onRotateCw={() => rotateActive(15)}
-                    onRotateCcw={() => rotateActive(-15)}
-                    onBringForward={() => reorderZ(1)}
-                    onSendBackward={() => reorderZ(-1)}
-                  />
-                ) : (
-                  <div className="h-10"></div>
-                )}
+        {pictures.length > 0 && (
+          <ToolFooter
+            headerContent={
+              <div className="flex justify-between items-end">
+                <div>
+                  {activePictureId && pictures.some((p) => p.id === activePictureId && p.isVisible) ? (
+                    <PiCollageSettingsBar
+                      onMoveUp={() => moveActive(0, -5)}
+                      onMoveDown={() => moveActive(0, 5)}
+                      onMoveLeft={() => moveActive(-5, 0)}
+                      onMoveRight={() => moveActive(5, 0)}
+                      onRotateCw={() => rotateActive(15)}
+                      onRotateCcw={() => rotateActive(-15)}
+                      onBringForward={() => reorderZ(1)}
+                      onSendBackward={() => reorderZ(-1)}
+                    />
+                  ) : (
+                    <div className="h-10"></div>
+                  )}
+                </div>
+                
+                <span className="text-[12px] text-slate-400 italic mb-1">
+                  {t.tools.slidesync.timelineTip}
+                </span>
               </div>
-              
-              <span className="text-[12px] text-slate-400 italic mb-1">
-                {t.tools.slidesync.timelineTip}
-              </span>
-            </div>
-          }
-          items={pictures}
-          getItemId={(p) => p.id}
-          getItemUrl={(p) => p.previewUrl}
-          isItemCustomized={(p) => !!(p.captionSettings?.text || p.watermarkSettings?.file || p.framingSettings?.zoom !== 1 || p.framingSettings?.offsetX !== 0 || p.framingSettings?.offsetY !== 0 || p.filterSettings !== FilterMode.Normal)}
-          isItemVisible={(p) => p.isVisible !== false}
-          activeItemId={activePictureId}
-          emptyMessage={t.tools.picollage.addPictures}
-          themeColorClass="tool-picollage"
-          onSelectItem={setActivePictureId}
-          onDeleteRequest={deletePicture}
-          onAddMore={(e) => handleImageUpload(e as any)}
-          onToggleVisibility={(id) => {
-            const p = pictures.find((x) => x.id === id);
-            if (p) updatePicture(id, { isVisible: !p.isVisible });
-          }}
-        />
+            }
+            items={pictures}
+            getItemId={(p) => p.id}
+            getItemUrl={(p) => p.previewUrl}
+            isItemCustomized={(p) => !!(p.captionSettings?.text || p.watermarkSettings?.file || p.framingSettings?.zoom !== 1 || p.framingSettings?.offsetX !== 0 || p.framingSettings?.offsetY !== 0 || p.filterSettings !== FilterMode.Normal)}
+            isItemVisible={(p) => p.isVisible !== false}
+            activeItemId={activePictureId}
+            emptyMessage={t.tools.picollage.addPictures}
+            themeColorClass="tool-picollage"
+            onSelectItem={setActivePictureId}
+            onDeleteRequest={deletePicture}
+            onAddMore={(e) => handleImageUpload(e as any)}
+            onToggleVisibility={(id) => {
+              const p = pictures.find((x) => x.id === id);
+              if (p) updatePicture(id, { isVisible: !p.isVisible });
+            }}
+          />
+        )}
       </div>
 
       <ConfirmationModal

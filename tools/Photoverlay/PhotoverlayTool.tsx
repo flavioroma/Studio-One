@@ -925,70 +925,82 @@ export const PhotoverlayTool: React.FC = () => {
           )}
         </div>
 
-        <ToolFooter
-          headerContent={
-            <div className="flex justify-between items-end">
-              <div className="flex items-center gap-8">
-                {selectedItem ? (
-                  <>
-                    <div className="flex flex-col">
-                      <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
-                        <Monitor className="w-3 h-3" /> {t.common.resolution}
-                      </p>
-                      <p className="text-sm font-bold text-white">
-                        {selectedItem.metadata
-                          ? `${selectedItem.metadata.width} x ${selectedItem.metadata.height}`
-                          : '...'}
-                      </p>
-                    </div>
-
-                    {selectedItem.exifData?.creationTime && (
+        {items.length > 0 && (
+          <ToolFooter
+            headerContent={
+              <div className="flex justify-between items-end">
+                <div className="flex items-center gap-8">
+                  {selectedItem ? (
+                    <>
                       <div className="flex flex-col">
                         <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
-                          <Calendar className="w-3 h-3" /> {t.common.mediaCreated}
+                          <Monitor className="w-3 h-3" /> {t.common.resolution}
                         </p>
                         <p className="text-sm font-bold text-white">
-                          {selectedItem.exifData.creationTime.toLocaleString(undefined, {
-                            dateStyle: 'medium',
-                            timeStyle: 'short',
-                          })}
+                          {selectedItem.metadata
+                            ? `${selectedItem.metadata.width} x ${selectedItem.metadata.height}`
+                            : '...'}
                         </p>
                       </div>
-                    )}
 
-                    {selectedItem.exifData?.latitude && selectedItem.exifData?.longitude && (
-                      <div className="flex flex-col">
-                        <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
-                          <MapPin className="w-3 h-3" /> {t.common.location}
-                        </p>
-                        <p className="text-sm font-bold text-white">
-                          {selectedItem.exifData.latitude.toFixed(4)},{' '}
-                          {selectedItem.exifData.longitude.toFixed(4)}
-                        </p>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="h-9"></div>
-                )}
+                      {selectedItem.exifData?.creationTime && (
+                        <div className="flex flex-col">
+                          <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
+                            <Calendar className="w-3 h-3" /> {t.common.mediaCreated}
+                          </p>
+                          <p className="text-sm font-bold text-white">
+                            {selectedItem.exifData.creationTime.toLocaleString(undefined, {
+                              dateStyle: 'medium',
+                              timeStyle: 'short',
+                            })}
+                          </p>
+                        </div>
+                      )}
+
+                      {selectedItem.exifData?.latitude && selectedItem.exifData?.longitude && (
+                        <div className="flex flex-col">
+                          <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-1.5">
+                            <MapPin className="w-3 h-3" /> {t.common.location}
+                          </p>
+                          <p className="text-sm font-bold text-white">
+                            {selectedItem.exifData.latitude.toFixed(4)},{' '}
+                            {selectedItem.exifData.longitude.toFixed(4)}
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="h-9"></div>
+                  )}
+                </div>
+
+                <span className="text-[12px] text-slate-400 italic mb-1">
+                  {t.tools.slidesync.timelineTip}
+                </span>
               </div>
-              
-              <span className="text-[12px] text-slate-400 italic mb-1">
-                {t.tools.slidesync.timelineTip}
-              </span>
-            </div>
-          }
-          items={items}
-          getItemId={(i) => i.id}
-          getItemUrl={(i) => i.previewUrl}
-          isItemCustomized={(i) => !!(i.captionSettings.text || i.watermarkSettings.file || i.framingSettings.zoom !== 1 || i.framingSettings.offsetX !== 0 || i.framingSettings.offsetY !== 0 || i.filterSettings !== FilterMode.Normal)}
-          activeItemId={selectedId}
-          emptyMessage={t.tools.photoverlay.awaitingSource}
-          themeColorClass="tool-photoverlay"
-          onSelectItem={setSelectedId}
-          onDeleteRequest={handleDeleteItemRequest}
-          onAddMore={handleFileChange}
-        />
+            }
+            items={items}
+            getItemId={(item) => item.id}
+            getItemUrl={(item) => item.previewUrl}
+            isItemCustomized={(item) =>
+              !!(
+                item.captionSettings.text ||
+                item.watermarkSettings.file ||
+                item.framingSettings.zoom !== 1 ||
+                item.framingSettings.offsetX !== 0 ||
+                item.framingSettings.offsetY !== 0 ||
+                item.filterSettings !== FilterMode.Normal ||
+                item.borderSettings.size !== BorderSize.None
+              )
+            }
+            activeItemId={selectedId}
+            emptyMessage={t.tools.photoverlay.uploadPhotos}
+            themeColorClass="tool-photoverlay"
+            onSelectItem={setSelectedId}
+            onDeleteRequest={handleDeleteItemRequest}
+            onAddMore={handleFileChange}
+          />
+        )}
       </div>
 
       {/* Global Modals */}

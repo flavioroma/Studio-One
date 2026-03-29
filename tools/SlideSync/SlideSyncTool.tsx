@@ -445,57 +445,69 @@ export const SlideSyncTool: React.FC = () => {
           hasPhotoverlayItems={hasPhotoverlayItems}
           onImportFromPhotoverlay={handleImportFromPhotoverlay}
           hasSlides={slides.length > 0}
+          hasMedia={slides.length > 0 && !!audioFile}
         />
       </div>
 
       <div className="flex-1 flex flex-col min-w-0 relative">
         {isInitialLoading && <ToolLoadingScreen Icon={Layers} colorVar="--tool-slidesync" />}
         <div className="flex-1 bg-slate-950 relative flex items-center justify-center pt-8 px-6 pb-8 overflow-hidden">
-          <VideoPreview
-            slides={slides}
-            audioRef={audioRef}
-            audioDuration={audioDuration}
-            isPlaying={isPlaying}
-            setIsPlaying={setIsPlaying}
-            currentTime={currentTime}
-            setCurrentTime={setCurrentTime}
-            aspectRatio={aspectRatio}
-          />
+          {slides.length > 0 && audioFile ? (
+            <VideoPreview
+              slides={slides}
+              audioRef={audioRef}
+              audioDuration={audioDuration}
+              isPlaying={isPlaying}
+              setIsPlaying={setIsPlaying}
+              currentTime={currentTime}
+              setCurrentTime={setCurrentTime}
+              aspectRatio={aspectRatio}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full gap-4 text-slate-600 animate-pulse">
+              <Layers className="w-24 h-24 stroke-[1px]" />
+              <p className="font-bold uppercase tracking-[0.3em] text-xs">
+                {t.tools.slidesync.awaitingMedia}
+              </p>
+            </div>
+          )}
         </div>
 
-        <ToolFooter
-          headerContent={
-            <div className="flex justify-between items-start">
-              <div className="flex flex-col">
-                <span className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-500">
-                  {t.tools.slidesync.timelineSequence}
-                </span>
-                <span className="text-[11px] font-bold text-slate-400 mt-1 uppercase tracking-wider">
-                  {slides.length} {t.tools.slidesync.slidesCount}
-                  {audioDuration > 0 && slides.length > 0 && (
-                    <span className="ml-2 text-tool-slidesync lowercase tracking-normal font-bold">
-                      {(audioDuration).toFixed(2)}s ({(audioDuration / slides.length).toFixed(2)}s / {t.tools.slidesync.slide})
-                    </span>
-                  )}
+        {slides.length > 0 && (
+          <ToolFooter
+            headerContent={
+              <div className="flex justify-between items-start">
+                <div className="flex flex-col">
+                  <span className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-500">
+                    {t.tools.slidesync.timelineSequence}
+                  </span>
+                  <span className="text-[11px] font-bold text-slate-400 mt-1 uppercase tracking-wider">
+                    {slides.length} {t.tools.slidesync.slidesCount}
+                    {audioDuration > 0 && slides.length > 0 && (
+                      <span className="ml-2 text-tool-slidesync lowercase tracking-normal font-bold">
+                        {(audioDuration).toFixed(2)}s ({(audioDuration / slides.length).toFixed(2)}s / {t.tools.slidesync.slide})
+                      </span>
+                    )}
+                  </span>
+                </div>
+                <span className="text-[12px] text-slate-400 italic mt-0.5">
+                  {t.tools.slidesync.timelineTip}
                 </span>
               </div>
-              <span className="text-[12px] text-slate-400 italic mt-0.5">
-                {t.tools.slidesync.timelineTip}
-              </span>
-            </div>
-          }
-          items={slides}
-          getItemId={(s) => s.id}
-          getItemUrl={(s) => s.previewUrl}
-          isItemCustomized={(s) => !!(s.captionSettings.text || s.framingSettings.zoom !== 1 || s.framingSettings.offsetX !== 0 || s.framingSettings.offsetY !== 0)}
-          activeItemId={activeSlideId}
-          emptyMessage={t.tools.slidesync.noSlidesAdded}
-          themeColorClass="tool-slidesync"
-          onSelectItem={setActiveSlideId}
-          onDeleteRequest={handleDeleteSlideRequest}
-          onAddMore={handleImageUpload}
-          onReorder={reorderSlides}
-        />
+            }
+            items={slides}
+            getItemId={(s) => s.id}
+            getItemUrl={(s) => s.previewUrl}
+            isItemCustomized={(s) => !!(s.captionSettings.text || s.framingSettings.zoom !== 1 || s.framingSettings.offsetX !== 0 || s.framingSettings.offsetY !== 0)}
+            activeItemId={activeSlideId}
+            emptyMessage={t.tools.slidesync.noSlidesAdded}
+            themeColorClass="tool-slidesync"
+            onSelectItem={setActiveSlideId}
+            onDeleteRequest={handleDeleteSlideRequest}
+            onAddMore={handleImageUpload}
+            onReorder={reorderSlides}
+          />
+        )}
       </div>
 
       <ConfirmationModal
