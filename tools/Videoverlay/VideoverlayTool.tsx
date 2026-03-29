@@ -681,13 +681,15 @@ export const VideoverlayTool: React.FC = () => {
 
       <div className="flex-1 flex flex-col min-w-0 bg-slate-950 relative">
         {isInitialLoading && <ToolLoadingScreen Icon={VideoIcon} colorVar="--tool-videoverlay" />}
-        <div className="flex-1 relative flex flex-col items-center justify-center p-2 md:p-4 lg:p-6 xl:p-12 overflow-hidden gap-2 sm:gap-4 xl:gap-8">
+        <div className="flex-1 relative flex flex-col items-center p-8 overflow-hidden gap-8">
           {!videoUrl ? (
-            <div className="flex flex-col items-center gap-4 text-slate-600 animate-pulse">
-              <VideoIcon className="w-16 h-16 xl:w-24 xl:h-24 stroke-[1px]" />
-              <p className="font-bold uppercase tracking-[0.3em] text-[10px] xl:text-xs">
-                {t.tools.videoverlay.awaitingSource}
-              </p>
+            <div className="flex-1 w-full max-w-7xl flex items-center justify-center min-h-0 relative">
+              <div className="flex flex-col items-center gap-4 text-slate-600 animate-pulse">
+                <VideoIcon className="w-16 h-16 xl:w-24 xl:h-24 stroke-[1px]" />
+                <p className="font-bold uppercase tracking-[0.3em] text-[10px] xl:text-xs">
+                  {t.tools.videoverlay.awaitingSource}
+                </p>
+              </div>
             </div>
           ) : error ? (
             <div className="max-w-md w-full flex flex-col items-center gap-6 p-10 bg-slate-900/50 backdrop-blur-md rounded-3xl border border-red-500/20 shadow-2xl animate-fadeIn">
@@ -713,7 +715,7 @@ export const VideoverlayTool: React.FC = () => {
             <>
               <div
                 ref={containerRef}
-                className="relative group shadow-2xl rounded-xl xl:rounded-2xl overflow-hidden border border-slate-700 bg-black min-h-0 min-w-0 flex-1 max-h-[65vh] xl:max-h-[75vh]"
+                className="relative group shadow-2xl rounded-xl xl:rounded-2xl overflow-hidden border border-slate-700 bg-black min-h-0 min-w-0 flex-1"
                 style={{
                   aspectRatio: metadata
                     ? `${rotation === Rotation.CW_90 || rotation === Rotation.CCW_90 ? metadata.height : metadata.width} / ${rotation === Rotation.CW_90 || rotation === Rotation.CCW_90 ? metadata.width : metadata.height}`
@@ -812,7 +814,7 @@ export const VideoverlayTool: React.FC = () => {
 
               {/* Trimming Controls */}
               {!isExporting && metadata && (
-                <div className="w-full max-w-5xl mt-1 xl:mt-4 z-20 shadow-xl shrink-0">
+                <div className="w-full max-w-7xl mt-0 z-20 shadow-xl shrink-0">
                   <TimeRangeSelector
                     theme="videoverlay"
                     currentTime={currentTime}

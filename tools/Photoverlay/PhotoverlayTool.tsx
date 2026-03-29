@@ -834,7 +834,7 @@ export const PhotoverlayTool: React.FC = () => {
 
       <div className="flex-1 flex flex-col min-w-0 bg-slate-950 relative">
         {isInitialLoading && <ToolLoadingScreen Icon={ImageIcon} colorVar="--tool-photoverlay" />}
-        <div className="flex-1 relative flex flex-col items-center justify-center pt-8 px-4 pb-0 overflow-hidden">
+        <div className="flex-1 relative flex flex-col items-center justify-center pt-8 px-6 pb-8 overflow-hidden">
           {items.length === 0 ? (
             <div className="flex flex-col items-center gap-4 text-slate-600 animate-pulse">
               <ImageIcon className="w-24 h-24 stroke-[1px]" />
