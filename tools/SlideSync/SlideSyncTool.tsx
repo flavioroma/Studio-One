@@ -215,15 +215,15 @@ export const SlideSyncTool: React.FC = () => {
       item.borderSettings.size !== selected.borderSettings.size || item.borderSettings.color !== selected.borderSettings.color,
   });
   useEffect(() => {
-    if (!activeSlideId || slides.length === 0 || audioDuration === 0) return;
+    if (!activeSlideId || slides.length === 0) return;
 
     const index = slides.findIndex((s) => s.id === activeSlideId);
     if (index !== -1) {
-      const slideDuration = audioDuration / slides.length;
+      const slideDuration = audioDuration > 0 ? audioDuration / slides.length : 1;
       const startTime = index * slideDuration;
 
       setCurrentTime(startTime);
-      if (audioRef.current) {
+      if (audioRef.current && audioDuration > 0) {
         audioRef.current.currentTime = startTime;
       }
     }
@@ -445,14 +445,14 @@ export const SlideSyncTool: React.FC = () => {
           hasPhotoverlayItems={hasPhotoverlayItems}
           onImportFromPhotoverlay={handleImportFromPhotoverlay}
           hasSlides={slides.length > 0}
-          hasMedia={slides.length > 0 && !!audioFile}
+          hasMedia={slides.length > 0}
         />
       </div>
 
       <div className="flex-1 flex flex-col min-w-0 relative">
         {isInitialLoading && <ToolLoadingScreen Icon={Layers} colorVar="--tool-slidesync" />}
         <div className="flex-1 bg-slate-950 relative flex items-center justify-center pt-8 px-6 pb-8 overflow-hidden">
-          {slides.length > 0 && audioFile ? (
+          {slides.length > 0 ? (
             <VideoPreview
               slides={slides}
               audioRef={audioRef}

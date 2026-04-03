@@ -150,25 +150,28 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
     ctx.shadowColor = 'rgba(0, 0, 0, 0)';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    if (slides.length === 0 || audioDuration === 0) {
+    if (slides.length === 0) {
       ctx.fillStyle = '#0f172a';
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
       ctx.fillStyle = '#334155';
       ctx.font = 'bold 40px Inter, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(
-        slides.length === 0
-          ? audioRef.current
-            ? t.tools.slidesync.addImagesToStart
-            : t.tools.slidesync.addMediaToStart
-          : t.tools.slidesync.addAudioToStart,
+        audioRef.current
+          ? t.tools.slidesync.addImagesToStart
+          : t.tools.slidesync.addMediaToStart,
         CANVAS_WIDTH / 2,
         CANVAS_HEIGHT / 2
       );
       return;
     }
 
-    const slideDuration = audioDuration / slides.length;
+    if (audioDuration === 0) {
+      // Just show the current slide based on currentTime (which is synced to activeSlideId in parent)
+      // or if currentTime is 0, show the first slide.
+    }
+
+    const slideDuration = audioDuration > 0 ? audioDuration / slides.length : 1;
     let slideIndex = Math.floor(time / slideDuration);
     if (slideIndex >= slides.length) slideIndex = slides.length - 1;
     if (slideIndex < 0) slideIndex = 0;
@@ -444,7 +447,7 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
     recordLoop();
   };
 
-  const isDisabled = slides.length === 0 || !audioRef.current;
+  const isDisabled = slides.length === 0 || !audioRef.current || audioDuration === 0;
 
   // Pixel-perfect aspect ratio calculation for the player container
   const getDynamicPlayerStyle = () => {
@@ -518,7 +521,11 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
           <div className="bg-gradient-to-t from-black/90 via-black/50 to-transparent p-4 flex items-center gap-4 pointer-events-auto">
             <button
               onClick={togglePlay}
-              className="text-white hover:text-tool-slidesync transition-transform active:scale-95 disabled:opacity-50"
+              className={`transition-all active:scale-95 ${
+                isDisabled || isRecording
+                  ? 'text-slate-600 cursor-not-allowed'
+                  : 'text-white hover:text-tool-slidesync'
+              }`}
               disabled={isDisabled || isRecording}
             >
               {isPlaying ? (
@@ -580,8 +587,8 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
           onClick={handleExport}
           disabled={isDisabled || isRecording}
           className={`flex items-center justify-center gap-3 px-8 py-3 rounded-full font-black text-xs uppercase tracking-widest transition-all w-full min-w-[180px] ${
-            isRecording
-              ? 'bg-slate-800 text-slate-500'
+            isRecording || isDisabled
+              ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
               : 'bg-tool-slidesync hover:opacity-90 hover:scale-[1.02] text-white shadow-xl shadow-tool-slidesync/10 active:scale-95'
           }`}
         >
@@ -606,10 +613,16 @@ export const VideoPreview: React.FC<VideoPreviewProps> = ({
           </span>
         </div>
       )}
-      {isDisabled && (
+      {slides.length === 0 && (
         <div className="absolute bottom-6 text-amber-500 flex items-center gap-3 text-xs font-bold uppercase tracking-widest bg-amber-950/40 backdrop-blur px-6 py-3 rounded-full border border-amber-900/50 z-10">
           <AlertCircle className="w-5 h-5" />
           {t.tools.slidesync.awaitingMedia}
+        </div>
+      )}
+      {slides.length > 0 && audioDuration === 0 && (
+        <div className="absolute bottom-6 text-amber-500 flex items-center gap-3 text-xs font-bold uppercase tracking-widest bg-amber-950/40 backdrop-blur px-6 py-3 rounded-full border border-amber-900/50 z-10">
+          <AlertCircle className="w-5 h-5" />
+          {t.tools.slidesync.addAudioToStart}
         </div>
       )}
     </div>

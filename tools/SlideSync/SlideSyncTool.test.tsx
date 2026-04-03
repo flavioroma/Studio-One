@@ -24,6 +24,13 @@ HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
   fillText: vi.fn(),
   measureText: vi.fn().mockReturnValue({ width: 100 }),
   fillRect: vi.fn(),
+  save: vi.fn(),
+  restore: vi.fn(),
+  clearRect: vi.fn(),
+  putImageData: vi.fn(),
+  getImageData: vi.fn(),
+  createImageData: vi.fn(),
+  setTransform: vi.fn(),
 } as any);
 
 HTMLCanvasElement.prototype.toBlob = vi.fn((callback) => {
@@ -85,12 +92,6 @@ describe('SlideSyncTool', () => {
   it('shows confirmation modal when deleting customized slide', async () => {
     renderWithContext();
     
-    // 1. Add audio first (required by Sidebar to show slide settings)
-    const audioFile = new File([''], 'test.mp3', { type: 'audio/mpeg' });
-    const audioInput = screen.getByLabelText(new RegExp(t.tools.slidesync.selectAudio, 'i')) as HTMLInputElement;
-    fireEvent.change(audioInput, { target: { files: [audioFile] } });
-
-    // 2. Add an image
     const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
     const input = screen.getByLabelText(new RegExp(t.tools.slidesync.addImages, 'i')) as HTMLInputElement;
     fireEvent.change(input, { target: { files: [file] } });
@@ -98,7 +99,6 @@ describe('SlideSyncTool', () => {
     const slideThumb = await screen.findByAltText('Slide 1');
     fireEvent.click(slideThumb);
 
-    // 3. Edit properties
     const overlayPanel = await screen.findByText((content, element) => {
       return content.toLowerCase().includes(t.common.overlay.toLowerCase());
     });
@@ -117,12 +117,6 @@ describe('SlideSyncTool', () => {
   it('removes customized slide after confirmation', async () => {
     renderWithContext();
     
-    // Add audio
-    const audioFile = new File([''], 'test.mp3', { type: 'audio/mpeg' });
-    const audioInput = screen.getByLabelText(new RegExp(t.tools.slidesync.selectAudio, 'i')) as HTMLInputElement;
-    fireEvent.change(audioInput, { target: { files: [audioFile] } });
-
-    // Add image
     const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
     const input = screen.getByLabelText(new RegExp(t.tools.slidesync.addImages, 'i')) as HTMLInputElement;
     fireEvent.change(input, { target: { files: [file] } });
@@ -151,12 +145,6 @@ describe('SlideSyncTool', () => {
   it('keeps customized slide after cancellation', async () => {
     renderWithContext();
     
-    // Add audio
-    const audioFile = new File([''], 'test.mp3', { type: 'audio/mpeg' });
-    const audioInput = screen.getByLabelText(new RegExp(t.tools.slidesync.selectAudio, 'i')) as HTMLInputElement;
-    fireEvent.change(audioInput, { target: { files: [audioFile] } });
-
-    // Add image
     const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
     const input = screen.getByLabelText(new RegExp(t.tools.slidesync.addImages, 'i')) as HTMLInputElement;
     fireEvent.change(input, { target: { files: [file] } });
@@ -190,12 +178,6 @@ describe('SlideSyncTool', () => {
   it('shows confirmation modal when slide has magnification applied', async () => {
     renderWithContext();
     
-    // 1. Add audio first (required by Sidebar to show slide settings)
-    const audioFile = new File([''], 'test.mp3', { type: 'audio/mpeg' });
-    const audioInput = screen.getByLabelText(new RegExp(t.tools.slidesync.selectAudio, 'i')) as HTMLInputElement;
-    fireEvent.change(audioInput, { target: { files: [audioFile] } });
-
-    // 2. Add an image
     const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
     const input = screen.getByLabelText(new RegExp(t.tools.slidesync.addImages, 'i')) as HTMLInputElement;
     fireEvent.change(input, { target: { files: [file] } });
@@ -203,13 +185,10 @@ describe('SlideSyncTool', () => {
     const slideThumb = await screen.findByAltText('Slide 1');
     fireEvent.click(slideThumb);
 
-    // 3. Expand Framing panel
     const framingPanel = await screen.findByText((content, element) => {
       return content.toLowerCase().includes(t.common.framing.toLowerCase());
     });
     fireEvent.click(framingPanel);
-
-    // 4. Change zoom - Using specific ARIA label
     const zoomSlider = await screen.findByLabelText(new RegExp(t.tools.slidesync.magnification, 'i'));
     fireEvent.change(zoomSlider, { target: { value: '1.5' } });
 
@@ -244,6 +223,43 @@ describe('SlideSyncTool', () => {
     await waitFor(() => {
       expect(screen.queryByText(new RegExp(t.common.importFromPhotoverlay, 'i'))).not.toBeInTheDocument();
     });
+  });
+
+  it('shows Slide Properties menu when images are added but no audio', async () => {
+    renderWithContext();
+    
+    // Upload an image
+    const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
+    const input = screen.getByLabelText(new RegExp(t.tools.slidesync.addImages, 'i')) as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [file] } });
+
+    // Wait for the slide to appear in the timeline
+    await screen.findByAltText('Slide 1');
+
+    // Slide Properties header should be visible
+    expect(screen.getByText(new RegExp(t.tools.slidesync.slideProperties, 'i'))).toBeInTheDocument();
+
+    // Verify sub-menus are present (Framing, Filtering, Border, Overlay)
+    expect(screen.getByText((content) => content.toLowerCase().includes(t.common.framing.toLowerCase()))).toBeInTheDocument();
+    expect(screen.getByText((content) => content.toLowerCase().includes(t.common.filters.toLowerCase()))).toBeInTheDocument();
+    expect(screen.getByText((content) => content.toLowerCase().includes(t.tools.picollage.border.toLowerCase()))).toBeInTheDocument();
+    expect(screen.getByText((content) => content.toLowerCase().includes(t.common.overlay.toLowerCase()))).toBeInTheDocument();
+  });
+
+  it('disables Export clip button when images are added but no audio', async () => {
+    renderWithContext();
+    
+    // Upload an image
+    const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
+    const input = screen.getByLabelText(new RegExp(t.tools.slidesync.addImages, 'i')) as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [file] } });
+
+    // Wait for the slide to appear
+    await screen.findByAltText('Slide 1');
+
+    // Export button should be disabled
+    const exportBtn = screen.getByText(new RegExp(t.tools.slidesync.exportClip, 'i')).closest('button');
+    expect(exportBtn).toBeDisabled();
   });
 });
 
