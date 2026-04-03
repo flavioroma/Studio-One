@@ -3,8 +3,11 @@ import { describe, it, expect, vi } from 'vitest';
 import { AudioTrimSidebar } from './AudioTrimSidebar';
 import { LanguageProvider } from '../../contexts/LanguageContext';
 import { AudioTrackItem } from '../../services/PersistenceService';
+import { translations } from '../../translations';
 
 describe('AudioTrimSidebar', () => {
+  const t = translations.en;
+
   const mockTrack: AudioTrackItem = {
     id: 'track1',
     file: new File([''], 'song.mp3', { type: 'audio/mp3' }),
@@ -31,12 +34,12 @@ describe('AudioTrimSidebar', () => {
 
   it('renders drop zone when no tracks are present', () => {
     renderWithContext();
-    expect(screen.getByText(/Select or drop audio\/video files/i)).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(t.tools.audiotrim.dropZoneTitleMulti, 'i'))).toBeInTheDocument();
   });
 
   it('does not render erase button when no tracks', () => {
     renderWithContext();
-    expect(screen.queryByText(/Erase the project/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(new RegExp(t.common.eraseProject, 'i'))).not.toBeInTheDocument();
   });
 
   it('renders track list when tracks are present', () => {
@@ -46,7 +49,7 @@ describe('AudioTrimSidebar', () => {
 
   it('renders erase button when tracks are present', () => {
     renderWithContext({ ...defaultProps, tracks: [mockTrack], selectedId: 'track1' });
-    expect(screen.getByText(/Erase the project/i)).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(t.common.eraseProject, 'i'))).toBeInTheDocument();
   });
 
   it('calls onSelectTrack when a track is clicked', () => {
@@ -57,7 +60,7 @@ describe('AudioTrimSidebar', () => {
 
   it('calls onDeleteAll when erase button is clicked', () => {
     renderWithContext({ ...defaultProps, tracks: [mockTrack], selectedId: 'track1' });
-    const eraseBtn = screen.getByText(/Erase the project/i);
+    const eraseBtn = screen.getByText(new RegExp(t.common.eraseProject, 'i'));
     fireEvent.click(eraseBtn);
     expect(defaultProps.onDeleteAll).toHaveBeenCalled();
   });
@@ -90,3 +93,4 @@ describe('AudioTrimSidebar', () => {
     expect(screen.getByTestId('file-input')).toBeInTheDocument();
   });
 });
+

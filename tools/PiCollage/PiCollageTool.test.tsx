@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 import { PiCollageTool } from './PiCollageTool';
 import { LanguageProvider } from '../../contexts/LanguageContext';
+import { translations } from '../../translations';
 
 // Mock the PersistenceService to prevent IndexedDB errors in tests
 vi.mock('../../services/PersistenceService', () => ({
@@ -25,21 +26,27 @@ beforeAll(() => {
 });
 
 const renderWithLanguage = (component: React.ReactNode) => {
-  return render(<LanguageProvider>{component}</LanguageProvider>);
+  return render(<LanguageProvider defaultLanguage="en">{component}</LanguageProvider>);
 };
 
 describe('PiCollageTool', () => {
+  const t = translations.en;
+
   it('renders the empty state drop zone initially', async () => {
     renderWithLanguage(<PiCollageTool />);
 
-    // Check if the "Add Images" text or icon is present
-    expect(screen.queryByText('1. Background music')).toBeNull(); // Should not have SlideSync texts
+    // Check if the "Awaiting Source" text or icon is present
+    expect(screen.queryByText(new RegExp(t.tools.slidesync.backgroundMusic, 'i'))).toBeNull(); // Should not have SlideSync texts
 
-    expect(screen.getByText(/Select or drop pictures/i)).toBeInTheDocument();
+    expect(screen.getByText((content, element) => {
+      return content.toLowerCase().includes(t.tools.photoverlay.awaitingSource.toLowerCase());
+    })).toBeInTheDocument();
   });
 });
 
 describe('PiCollage Aspect Ratio & Export Regression', () => {
+  const t = translations.en;
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -87,8 +94,6 @@ describe('PiCollage Aspect Ratio & Export Regression', () => {
       { timeout: 3000 }
     );
 
-    const exportArea = document.getElementById('picollage-export-area');
-
     // Change to Square (1:1)
     const squareBtn = screen.getByText('1:1');
     fireEvent.click(squareBtn);
@@ -110,7 +115,7 @@ describe('PiCollage Aspect Ratio & Export Regression', () => {
     // Wait for the collage to be ready
     const exportBtn = await screen.findByRole(
       'button',
-      { name: /Export Collage/i },
+      { name: new RegExp(t.tools.picollage.exportCollage, 'i') },
       { timeout: 3000 }
     );
 
@@ -295,9 +300,6 @@ describe('PiCollage Aspect Ratio & Export Regression', () => {
     // Initial rotation
     expect(piece).toHaveStyle({ transform: 'rotate(0deg)' });
 
-    // Center of image in pixels (initialX=20%, initialWidth=30%, width=1600 -> cx = 35% of 1600 = 560)
-    // initialY=20%, initialHeight% = (30 / 1.777) * (1600/900) = 30%. cy = 35% of 900 = 315.
-    
     // Start rotation drag from handle
     fireEvent.pointerDown(rotateHandle, { clientX: 560, clientY: 100, pointerId: 1 });
 
@@ -330,6 +332,7 @@ describe('PiCollage Aspect Ratio & Export Regression', () => {
   });
 
   it('correctly swaps layers and keeps zIndex normalized when moving forward/backward', async () => {
+    const t = translations.en;
     global.URL.createObjectURL = vi.fn(() => 'test-url');
     renderWithLanguage(<PiCollageTool />);
 
@@ -360,7 +363,7 @@ describe('PiCollage Aspect Ratio & Export Regression', () => {
     fireEvent.click(pieces[1].closest('[data-testid="image-move-handle"]')!);
 
     // Click "Bring Forward"
-    const bringForwardBtn = screen.getByTitle(/Bring Forward/i);
+    const bringForwardBtn = screen.getByTitle(new RegExp(t.tools.picollage.bringForward, 'i'));
     fireEvent.click(bringForwardBtn);
 
     // Now pieces[1] should be 3, and pieces[2] should be 2
@@ -368,17 +371,18 @@ describe('PiCollage Aspect Ratio & Export Regression', () => {
     expect(getZIndex(pieces[2])).toBe(2);
     expect(getZIndex(pieces[0])).toBe(1);
 
-    // Click "Send Backward" (currently 3, should go back to 2)
-    const sendBackwardBtn = screen.getByTitle(/Send Backward/i);
+    // Click "Send Backward"
+    const sendBackwardBtn = screen.getByTitle(new RegExp(t.tools.picollage.sendBackward, 'i'));
     fireEvent.click(sendBackwardBtn);
 
     expect(getZIndex(pieces[1])).toBe(2);
     expect(getZIndex(pieces[2])).toBe(3);
 
-    // Click "Send Backward" again (currently 2, should go to 1)
+    // Click "Send Backward" again
     fireEvent.click(sendBackwardBtn);
     expect(getZIndex(pieces[1])).toBe(1);
     expect(getZIndex(pieces[0])).toBe(2);
     expect(getZIndex(pieces[2])).toBe(3);
   });
 });
+

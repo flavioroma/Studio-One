@@ -3,8 +3,11 @@ import { describe, it, expect, vi } from 'vitest';
 import { WatermarkSettingsPanel } from './WatermarkSettingsPanel';
 import { LanguageProvider } from '../contexts/LanguageContext';
 import { TextPosition } from '../types';
+import { translations } from '../translations';
 
 describe('WatermarkSettingsPanel', () => {
+  const t = translations.en;
+
   const defaultProps = {
     settings: {
       file: null,
@@ -17,7 +20,7 @@ describe('WatermarkSettingsPanel', () => {
 
   const renderWithContext = (props = defaultProps) => {
     return render(
-      <LanguageProvider>
+      <LanguageProvider defaultLanguage="en">
         <WatermarkSettingsPanel {...props} />
       </LanguageProvider>
     );
@@ -25,13 +28,13 @@ describe('WatermarkSettingsPanel', () => {
 
   it('renders upload zone when no file is present', () => {
     renderWithContext();
-    expect(screen.getByText(/Upload Watermark/i)).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(t.watermark.upload, 'i'))).toBeInTheDocument();
   });
 
   it('calls onUpdate when a file is selected', () => {
     renderWithContext();
     const file = new File(['hello'], 'watermark.png', { type: 'image/png' });
-    const input = screen.getByLabelText(/Upload Watermark/i) as HTMLInputElement;
+    const input = screen.getByLabelText(new RegExp(t.watermark.upload, 'i')) as HTMLInputElement;
 
     fireEvent.change(input, { target: { files: [file] } });
     expect(defaultProps.onUpdate).toHaveBeenCalledWith({ file });
@@ -47,9 +50,9 @@ describe('WatermarkSettingsPanel', () => {
     });
 
     expect(screen.getByText('watermark.png')).toBeInTheDocument();
-    expect(screen.getByText(/Position/i)).toBeInTheDocument();
-    expect(screen.getByText(/Size/i)).toBeInTheDocument();
-    expect(screen.getByText(/Opacity/i)).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(t.watermark.position, 'i'))).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(t.watermark.size, 'i'))).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(t.watermark.opacity, 'i'))).toBeInTheDocument();
   });
 
   it('calls onUpdate when position is changed', () => {
@@ -97,8 +100,9 @@ describe('WatermarkSettingsPanel', () => {
       settings: { ...defaultProps.settings, file },
     });
 
-    const removeBtn = screen.getByText(/Remove/i);
+    const removeBtn = screen.getByText(new RegExp(t.watermark.remove, 'i'));
     fireEvent.click(removeBtn);
     expect(defaultProps.onUpdate).toHaveBeenCalledWith({ file: null });
   });
 });
+

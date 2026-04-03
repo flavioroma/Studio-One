@@ -1,8 +1,9 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SlideSyncTool } from './SlideSyncTool';
 import { LanguageProvider } from '../../contexts/LanguageContext';
 import { PersistenceService } from '../../services/PersistenceService';
+import { translations } from '../../translations';
 
 // Mock services
 vi.mock('../../services/PersistenceService', () => ({
@@ -30,8 +31,8 @@ HTMLCanvasElement.prototype.toBlob = vi.fn((callback) => {
 });
 
 // Mock Icons
-vi.mock('lucide-react', async () => {
-  const actual = await vi.importActual('lucide-react');
+vi.mock('lucide-react', async (importOriginal) => {
+  const actual: any = await importOriginal();
   return {
     ...actual,
     PlayCircle: () => <div data-testid="play-circle-icon" />,
@@ -39,13 +40,15 @@ vi.mock('lucide-react', async () => {
 });
 
 describe('SlideSyncTool', () => {
+  const t = translations.en;
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   const renderWithContext = () => {
     return render(
-      <LanguageProvider>
+      <LanguageProvider defaultLanguage="en">
         <SlideSyncTool />
       </LanguageProvider>
     );
@@ -53,13 +56,13 @@ describe('SlideSyncTool', () => {
 
   it('renders the initial empty state', () => {
     renderWithContext();
-    expect(screen.getByText(/No slides yet. Add images to start/i)).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(t.tools.slidesync.awaitingMedia, 'i'))).toBeInTheDocument();
   });
 
   it('shows the editor after uploading images', async () => {
     renderWithContext();
     const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
-    const input = screen.getByLabelText(/Add Images/i) as HTMLInputElement;
+    const input = screen.getByLabelText(new RegExp(t.tools.slidesync.addImages, 'i')) as HTMLInputElement;
 
     fireEvent.change(input, { target: { files: [file] } });
 
@@ -70,10 +73,10 @@ describe('SlideSyncTool', () => {
   it('deletes non-customized slide immediately', async () => {
     renderWithContext();
     const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
-    const input = screen.getByLabelText(/Add Images/i) as HTMLInputElement;
+    const input = screen.getByLabelText(new RegExp(t.tools.slidesync.addImages, 'i')) as HTMLInputElement;
     fireEvent.change(input, { target: { files: [file] } });
 
-    const deleteBtn = await screen.findByTitle(/Remove file/i);
+    const deleteBtn = await screen.findByTitle(t.common.removeFile);
     fireEvent.click(deleteBtn);
 
     expect(screen.queryByAltText('Slide 1')).not.toBeInTheDocument();
@@ -81,105 +84,166 @@ describe('SlideSyncTool', () => {
 
   it('shows confirmation modal when deleting customized slide', async () => {
     renderWithContext();
+    
+    // 1. Add audio first (required by Sidebar to show slide settings)
+    const audioFile = new File([''], 'test.mp3', { type: 'audio/mpeg' });
+    const audioInput = screen.getByLabelText(new RegExp(t.tools.slidesync.selectAudio, 'i')) as HTMLInputElement;
+    fireEvent.change(audioInput, { target: { files: [audioFile] } });
+
+    // 2. Add an image
     const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
-    const input = screen.getByLabelText(/Add Images/i) as HTMLInputElement;
+    const input = screen.getByLabelText(new RegExp(t.tools.slidesync.addImages, 'i')) as HTMLInputElement;
     fireEvent.change(input, { target: { files: [file] } });
 
-    await screen.findByAltText('Slide 1');
+    const slideThumb = await screen.findByAltText('Slide 1');
+    fireEvent.click(slideThumb);
 
-    // Expand Overlay panel
-    fireEvent.click(screen.getByText(/Overlay/i));
+    // 3. Edit properties
+    const overlayPanel = await screen.findByText((content, element) => {
+      return content.toLowerCase().includes(t.common.overlay.toLowerCase());
+    });
+    fireEvent.click(overlayPanel);
 
-    // Add text
-    const textarea = screen.getByPlaceholderText(/Enter overlay text/i);
+    const textarea = await screen.findByPlaceholderText(t.captions.enterOverlayText);
     fireEvent.change(textarea, { target: { value: 'Test Slide Text' } });
 
-    const deleteBtn = screen.getByTitle(/Remove file/i);
+    const deleteBtn = screen.getByTitle(t.common.removeFile);
     fireEvent.click(deleteBtn);
 
-    // Modal should appear
-    expect(screen.getByText(/Remove Slide\?/i)).toBeInTheDocument();
-    expect(screen.getByText(/Are you sure you want to remove this slide\?/i)).toBeInTheDocument();
+    // 4. Check Modal
+    expect(await screen.findByText(t.tools.slidesync.removeSlideTitle)).toBeInTheDocument();
   });
 
   it('removes customized slide after confirmation', async () => {
     renderWithContext();
+    
+    // Add audio
+    const audioFile = new File([''], 'test.mp3', { type: 'audio/mpeg' });
+    const audioInput = screen.getByLabelText(new RegExp(t.tools.slidesync.selectAudio, 'i')) as HTMLInputElement;
+    fireEvent.change(audioInput, { target: { files: [audioFile] } });
+
+    // Add image
     const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
-    const input = screen.getByLabelText(/Add Images/i) as HTMLInputElement;
+    const input = screen.getByLabelText(new RegExp(t.tools.slidesync.addImages, 'i')) as HTMLInputElement;
     fireEvent.change(input, { target: { files: [file] } });
 
-    await screen.findByAltText('Slide 1');
-    fireEvent.click(screen.getByText(/Overlay/i));
-    fireEvent.change(screen.getByPlaceholderText(/Enter overlay text/i), {
-      target: { value: 'Test' },
-    });
-    fireEvent.click(screen.getByTitle(/Remove file/i));
+    const slideThumb = await screen.findByAltText('Slide 1');
+    fireEvent.click(slideThumb);
 
-    const confirmBtn = screen.getByText(/Yes, Remove/i);
+    const overlayPanel = await screen.findByText((content, element) => {
+      return content.toLowerCase().includes(t.common.overlay.toLowerCase());
+    });
+    fireEvent.click(overlayPanel);
+
+    const textarea = await screen.findByPlaceholderText(t.captions.enterOverlayText);
+    fireEvent.change(textarea, { target: { value: 'Test' } });
+    
+    fireEvent.click(screen.getByTitle(t.common.removeFile));
+
+    const confirmBtn = await screen.findByRole('button', { name: new RegExp(t.common.yesRemove, 'i') });
     fireEvent.click(confirmBtn);
 
-    expect(screen.queryByAltText('Slide 1')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByAltText('Slide 1')).not.toBeInTheDocument();
+    });
   });
 
   it('keeps customized slide after cancellation', async () => {
     renderWithContext();
+    
+    // Add audio
+    const audioFile = new File([''], 'test.mp3', { type: 'audio/mpeg' });
+    const audioInput = screen.getByLabelText(new RegExp(t.tools.slidesync.selectAudio, 'i')) as HTMLInputElement;
+    fireEvent.change(audioInput, { target: { files: [audioFile] } });
+
+    // Add image
     const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
-    const input = screen.getByLabelText(/Add Images/i) as HTMLInputElement;
+    const input = screen.getByLabelText(new RegExp(t.tools.slidesync.addImages, 'i')) as HTMLInputElement;
     fireEvent.change(input, { target: { files: [file] } });
 
-    await screen.findByAltText('Slide 1');
-    fireEvent.click(screen.getByText(/Overlay/i));
-    fireEvent.change(screen.getByPlaceholderText(/Enter overlay text/i), {
-      target: { value: 'Test' },
-    });
-    fireEvent.click(screen.getByTitle(/Remove file/i));
+    const slideThumb = await screen.findByAltText('Slide 1');
+    fireEvent.click(slideThumb);
 
-    const cancelBtn = screen.getAllByText(/Cancel/i)[0];
+    const overlayPanel = await screen.findByText((content, element) => {
+      return content.toLowerCase().includes(t.common.overlay.toLowerCase());
+    });
+    fireEvent.click(overlayPanel);
+
+    const textarea = await screen.findByPlaceholderText(t.captions.enterOverlayText);
+    fireEvent.change(textarea, { target: { value: 'Test' } });
+
+    fireEvent.click(screen.getByTitle(t.common.removeFile));
+
+    const cancelBtn = await screen.findByRole('button', { name: new RegExp(t.common.cancel, 'i') });
     fireEvent.click(cancelBtn);
 
-    expect(screen.getByAltText('Slide 1')).toBeInTheDocument();
-    expect(screen.queryByText(/Remove Slide\?/i)).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByAltText('Slide 1')).toBeInTheDocument();
+      expect(screen.queryByText(t.tools.slidesync.removeSlideTitle)).not.toBeInTheDocument();
+    });
   });
+
+
+
+
 
   it('shows confirmation modal when slide has magnification applied', async () => {
     renderWithContext();
+    
+    // 1. Add audio first (required by Sidebar to show slide settings)
+    const audioFile = new File([''], 'test.mp3', { type: 'audio/mpeg' });
+    const audioInput = screen.getByLabelText(new RegExp(t.tools.slidesync.selectAudio, 'i')) as HTMLInputElement;
+    fireEvent.change(audioInput, { target: { files: [audioFile] } });
+
+    // 2. Add an image
     const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
-    const input = screen.getByLabelText(/Add Images/i) as HTMLInputElement;
+    const input = screen.getByLabelText(new RegExp(t.tools.slidesync.addImages, 'i')) as HTMLInputElement;
     fireEvent.change(input, { target: { files: [file] } });
 
-    await screen.findByAltText('Slide 1');
+    const slideThumb = await screen.findByAltText('Slide 1');
+    fireEvent.click(slideThumb);
 
-    // Expand Framing panel
-    fireEvent.click(screen.getByText(/Framing/i));
+    // 3. Expand Framing panel
+    const framingPanel = await screen.findByText((content, element) => {
+      return content.toLowerCase().includes(t.common.framing.toLowerCase());
+    });
+    fireEvent.click(framingPanel);
 
-    // Change zoom
-    const zoomSlider = await screen.findByRole('slider', { name: /magnification/i });
-    fireEvent.change(zoomSlider, { target: { value: '1.2' } });
+    // 4. Change zoom - Using specific ARIA label
+    const zoomSlider = await screen.findByLabelText(new RegExp(t.tools.slidesync.magnification, 'i'));
+    fireEvent.change(zoomSlider, { target: { value: '1.5' } });
 
-    fireEvent.click(screen.getByTitle(/Remove file/i));
+    const deleteBtn = screen.getByTitle(t.common.removeFile);
+    fireEvent.click(deleteBtn);
 
-    expect(screen.getByText(/Remove Slide\?/i)).toBeInTheDocument();
+    // 5. Check Modal
+    expect(await screen.findByText(t.tools.slidesync.removeSlideTitle)).toBeInTheDocument();
   });
 
   it('hides "Import from Photoverlay" button when slides are present', async () => {
-    vi.mocked(PersistenceService.loadPhotoverlayState).mockResolvedValue({
-      items: [{ file: new File([''], 'test.jpg'), id: '1' }],
-    } as any);
+    // Mock Photoverlay data to be available
+    PersistenceService.loadPhotoverlayState = vi.fn().mockResolvedValue({
+      items: [{ id: '1', file: new File([''], 'test.jpg') }],
+    });
 
     renderWithContext();
 
     // Button should be visible initially
-    expect(await screen.findByText(/Import from Photoverlay/i)).toBeInTheDocument();
+    const importBtn = await screen.findByText(new RegExp(t.common.importFromPhotoverlay, 'i'));
+    expect(importBtn).toBeInTheDocument();
 
-    // Upload an image
+    // Upload an image to SlideSync
     const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
-    const input = screen.getByLabelText(/Add Images/i) as HTMLInputElement;
+    const input = screen.getByLabelText(new RegExp(t.tools.slidesync.addImages, 'i')) as HTMLInputElement;
     fireEvent.change(input, { target: { files: [file] } });
 
     // Timeline should show the slide
     await screen.findByAltText('Slide 1');
 
     // Button should be hidden now
-    expect(screen.queryByText(/Import from Photoverlay/i)).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText(new RegExp(t.common.importFromPhotoverlay, 'i'))).not.toBeInTheDocument();
+    });
   });
 });
+

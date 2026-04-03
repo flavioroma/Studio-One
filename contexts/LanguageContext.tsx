@@ -9,8 +9,12 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const LanguageProvider: React.FC<{ children: React.ReactNode; defaultLanguage?: Language }> = ({
+  children,
+  defaultLanguage,
+}) => {
   const [language, setLanguageState] = useState<Language>(() => {
+    if (defaultLanguage) return defaultLanguage;
     const saved = localStorage.getItem('studio-one-language');
     return (saved as Language) || 'it';
   });

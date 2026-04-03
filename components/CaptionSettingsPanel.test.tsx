@@ -3,8 +3,11 @@ import { describe, it, expect, vi } from 'vitest';
 import { CaptionSettingsPanel } from './CaptionSettingsPanel';
 import { LanguageProvider } from '../contexts/LanguageContext';
 import { TextColor, TextPosition, TextSize } from '../types';
+import { translations } from '../translations';
 
 describe('CaptionSettingsPanel', () => {
+  const t = translations.en;
+
   const defaultProps = {
     settings: {
       text: 'Test Caption',
@@ -18,7 +21,7 @@ describe('CaptionSettingsPanel', () => {
 
   const renderWithContext = (props = defaultProps) => {
     return render(
-      <LanguageProvider>
+      <LanguageProvider defaultLanguage="en">
         <CaptionSettingsPanel {...props} />
       </LanguageProvider>
     );
@@ -39,14 +42,14 @@ describe('CaptionSettingsPanel', () => {
 
   it('calls onUpdate when italic toggle is clicked', () => {
     renderWithContext();
-    const italicBtn = screen.getByText('Italic');
+    const italicBtn = screen.getByText(t.captions.italic);
     fireEvent.click(italicBtn);
     expect(defaultProps.onUpdate).toHaveBeenCalledWith({ isItalic: true });
   });
 
   it('calls onUpdate when text size is changed', () => {
     renderWithContext();
-    const largeBtn = screen.getByText('Large');
+    const largeBtn = screen.getByText(t.captions.textSizes.Large);
     fireEvent.click(largeBtn);
     expect(defaultProps.onUpdate).toHaveBeenCalledWith({ textSize: TextSize.Large });
   });
@@ -65,8 +68,10 @@ describe('CaptionSettingsPanel', () => {
     });
 
     // Find Red color button (hex #ef4444)
+    // Note: Color names in the title come from the TextColor enum keys, which are currently not localized in the component.
     const redBtn = screen.getByTitle('Red');
     fireEvent.click(redBtn);
     expect(defaultProps.onUpdate).toHaveBeenCalledWith({ color: TextColor.Red });
   });
 });
+

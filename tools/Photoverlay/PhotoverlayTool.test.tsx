@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PhotoverlayTool } from './PhotoverlayTool';
 import { LanguageProvider } from '../../contexts/LanguageContext';
+import { translations } from '../../translations';
 
 // Mock services
 vi.mock('../../services/PersistenceService', () => ({
@@ -46,6 +47,8 @@ HTMLCanvasElement.prototype.toBlob = vi.fn((callback) => {
 });
 
 describe('PhotoverlayTool', () => {
+  const t = translations.en;
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -55,7 +58,7 @@ describe('PhotoverlayTool', () => {
     const input = screen.getByTestId('file-input') as HTMLInputElement;
     fireEvent.change(input, { target: { files: [file] } });
     await waitFor(() => {
-      expect(screen.getAllByText(/Erase the project/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(new RegExp(t.common.eraseProject, 'i')).length).toBeGreaterThan(0);
     });
     return file;
   };
@@ -70,7 +73,7 @@ describe('PhotoverlayTool', () => {
 
   it('renders the initial state with upload button', () => {
     renderWithContext();
-    expect(screen.getByText(/Select or drop photos/i)).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(t.tools.photoverlay.uploadPhotos, 'i'))).toBeInTheDocument();
   });
 
   it('shows the main tool interface after uploading files', async () => {
@@ -82,11 +85,11 @@ describe('PhotoverlayTool', () => {
 
     // Wait for it to switch to editing mode
     await waitFor(() => {
-      expect(screen.getAllByText(/Erase the project/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(new RegExp(t.common.eraseProject, 'i')).length).toBeGreaterThan(0);
     });
 
     // Check for resolution info which appears after upload
-    expect(await screen.findByText(/Resolution/i)).toBeInTheDocument();
+    expect(await screen.findByText(t.common.resolution)).toBeInTheDocument();
   });
 
   it('preserves metadata when the checkbox is checked', async () => {
@@ -94,10 +97,10 @@ describe('PhotoverlayTool', () => {
     await uploadFile();
 
     // The checkbox is checked by default
-    const checkbox = screen.getByLabelText(/Preserve image metadata/i) as HTMLInputElement;
+    const checkbox = screen.getByLabelText(new RegExp(t.tools.photoverlay.preserveMetadata, 'i')) as HTMLInputElement;
     expect(checkbox.checked).toBe(true);
 
-    const exportBtn = screen.getByText(/EXPORT PHOTO/i);
+    const exportBtn = screen.getByText(t.tools.photoverlay.exportPhoto);
     fireEvent.click(exportBtn);
 
     await waitFor(() => {
@@ -109,11 +112,11 @@ describe('PhotoverlayTool', () => {
     renderWithContext();
     await uploadFile();
 
-    const checkbox = screen.getByLabelText(/Preserve image metadata/i) as HTMLInputElement;
+    const checkbox = screen.getByLabelText(new RegExp(t.tools.photoverlay.preserveMetadata, 'i')) as HTMLInputElement;
     fireEvent.click(checkbox);
     expect(checkbox.checked).toBe(false);
 
-    const exportBtn = screen.getByText(/EXPORT PHOTO/i);
+    const exportBtn = screen.getByText(t.tools.photoverlay.exportPhoto);
     fireEvent.click(exportBtn);
 
     await waitFor(() => {
@@ -126,11 +129,11 @@ describe('PhotoverlayTool', () => {
     renderWithContext();
     await uploadFile();
 
-    const deleteBtn = screen.getByTitle(/Remove file/i);
+    const deleteBtn = screen.getByTitle(t.common.removeFile);
     fireEvent.click(deleteBtn);
 
     await waitFor(() => {
-      expect(screen.queryByTitle(/Remove file/i)).not.toBeInTheDocument();
+      expect(screen.queryByTitle(t.common.removeFile)).not.toBeInTheDocument();
     });
   });
 
@@ -139,35 +142,35 @@ describe('PhotoverlayTool', () => {
     await uploadFile();
 
     // Expand Overlay panel
-    fireEvent.click(screen.getByText(/Overlay/i));
+    fireEvent.click(screen.getByText(t.common.overlay));
 
     // Add caption
-    const textarea = screen.getByPlaceholderText(/Enter overlay text/i);
+    const textarea = screen.getByPlaceholderText(t.captions.enterOverlayText);
     fireEvent.change(textarea, { target: { value: 'Test Caption' } });
 
-    const deleteBtn = screen.getByTitle(/Remove file/i);
+    const deleteBtn = screen.getByTitle(t.common.removeFile);
     fireEvent.click(deleteBtn);
 
     // Modal should appear
-    expect(screen.getByText(/Remove Photo\?/i)).toBeInTheDocument();
-    expect(screen.getByText(/Are you sure you want to remove this photo\?/i)).toBeInTheDocument();
+    expect(screen.getByText(t.tools.photoverlay.removePhotoTitle)).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(t.tools.photoverlay.removePhotoMsg.substring(0, 20), 'i'))).toBeInTheDocument();
   });
 
   it('removes customized photo after confirmation', async () => {
     renderWithContext();
     await uploadFile();
 
-    fireEvent.click(screen.getByText(/Overlay/i));
-    fireEvent.change(screen.getByPlaceholderText(/Enter overlay text/i), {
+    fireEvent.click(screen.getByText(t.common.overlay));
+    fireEvent.change(screen.getByPlaceholderText(t.captions.enterOverlayText), {
       target: { value: 'Test' },
     });
-    fireEvent.click(screen.getByTitle(/Remove file/i));
+    fireEvent.click(screen.getByTitle(t.common.removeFile));
 
-    const confirmBtn = screen.getByText(/Yes, Remove/i);
+    const confirmBtn = screen.getByText(t.common.yesRemove);
     fireEvent.click(confirmBtn);
 
     await waitFor(() => {
-      expect(screen.queryByTitle(/Remove file/i)).not.toBeInTheDocument();
+      expect(screen.queryByTitle(t.common.removeFile)).not.toBeInTheDocument();
     });
   });
 
@@ -175,18 +178,18 @@ describe('PhotoverlayTool', () => {
     renderWithContext();
     await uploadFile();
 
-    fireEvent.click(screen.getByText(/Overlay/i));
-    fireEvent.change(screen.getByPlaceholderText(/Enter overlay text/i), {
+    fireEvent.click(screen.getByText(t.common.overlay));
+    fireEvent.change(screen.getByPlaceholderText(t.captions.enterOverlayText), {
       target: { value: 'Test' },
     });
-    fireEvent.click(screen.getByTitle(/Remove file/i));
+    fireEvent.click(screen.getByTitle(t.common.removeFile));
 
-    const cancelBtn = screen.getAllByText(/Cancel/i)[0]; // Could be multiple cancel buttons, but usually first one in modal or sidebar
+    const cancelBtn = screen.getAllByText(t.common.cancel)[0]; // Could be multiple cancel buttons, but usually first one in modal or sidebar
     fireEvent.click(cancelBtn);
 
     await waitFor(() => {
-      expect(screen.getByTitle(/Remove file/i)).toBeInTheDocument();
-      expect(screen.queryByText(/Remove Photo\?/i)).not.toBeInTheDocument();
+      expect(screen.getByTitle(t.common.removeFile)).toBeInTheDocument();
+      expect(screen.queryByText(t.tools.photoverlay.removePhotoTitle)).not.toBeInTheDocument();
     });
   });
 
@@ -195,16 +198,16 @@ describe('PhotoverlayTool', () => {
     await uploadFile();
 
     // Expand Framing panel
-    fireEvent.click(screen.getByText(/Framing/i));
+    fireEvent.click(screen.getByText(t.common.framing));
 
     // Wait for the slider to be available
-    const zoomSlider = await screen.findByRole('slider', { name: /magnification/i });
+    const zoomSlider = await screen.findByRole('slider', { name: new RegExp(t.tools.slidesync.magnification, 'i') });
     fireEvent.change(zoomSlider, { target: { value: '1.5' } });
 
-    const deleteBtn = screen.getByTitle(/Remove file/i);
+    const deleteBtn = screen.getByTitle(t.common.removeFile);
     fireEvent.click(deleteBtn);
 
-    expect(screen.getByText(/Remove Photo\?/i)).toBeInTheDocument();
+    expect(screen.getByText(t.tools.photoverlay.removePhotoTitle)).toBeInTheDocument();
   });
 
   it('shows confirmation modal when image has been panned (offset)', async () => {
@@ -227,22 +230,19 @@ describe('PhotoverlayTool', () => {
     fireEvent.change(input, { target: { files: [file1, file2] } });
 
     await waitFor(() => {
-      expect(screen.getAllByText(/Erase the project/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(new RegExp(t.common.eraseProject, 'i')).length).toBeGreaterThan(0);
     });
 
     // 1. Initial state: both should have zoom 1.0
-    // We can't easily check the state of the second item without switching to it,
-    // but we can check if it gets updated when we change the first one.
-
     // 2. Set zoom on first photo
-    fireEvent.click(screen.getByText(/Framing/i));
-    const zoomSlider = await screen.findByRole('slider', { name: /magnification/i });
+    fireEvent.click(screen.getByText(t.common.framing));
+    const zoomSlider = await screen.findByRole('slider', { name: new RegExp(t.tools.slidesync.magnification, 'i') });
     fireEvent.change(zoomSlider, { target: { value: '1.5' } });
 
     // 3. Enable "Apply to All"
-    fireEvent.click(screen.getByText(/Overlay/i));
+    fireEvent.click(screen.getByText(t.common.overlay));
     const applyToAllCheckbox = screen.getByLabelText(
-      /Apply this overlay to all photos/i
+      new RegExp(t.tools.photoverlay.applyToAll, 'i')
     ) as HTMLInputElement;
     fireEvent.click(applyToAllCheckbox);
 
@@ -251,35 +251,29 @@ describe('PhotoverlayTool', () => {
     fireEvent.click(thumbs[1]);
 
     // 5. Check if zoom is still 1.0 for the second photo
-    fireEvent.click(screen.getByText(/Framing/i));
-    const zoomSlider2 = await screen.findByRole('slider', { name: /magnification/i });
+    fireEvent.click(screen.getByText(t.common.framing));
+    const zoomSlider2 = await screen.findByRole('slider', { name: new RegExp(t.tools.slidesync.magnification, 'i') });
     expect(zoomSlider2).toHaveValue('1');
 
     // 6. Switch back to first photo and set a caption
     fireEvent.click(thumbs[0]);
-    // Note: No need to expand Overlay here because it was expanded earlier and switching photos keeps it expanded 
-    // Wait, switching photos might re-render Sidebar and defaultExpanded might be used again.
-    // However, PhotoverlaySidebar uses key={`overlay-${selectedItem.id}`} which means it remounts.
-    // If it remounts, defaultExpanded will be re-evaluated.
-    // If we JUST switched to photo 0, and photo 0 already had caption settings (it doesn't yet), it would be expanded.
-    // But it's empty, so it will be collapsed again.
-    fireEvent.click(screen.getByText(/Overlay/i));
-    const textarea = screen.getByPlaceholderText(/Enter overlay text/i);
+    fireEvent.click(screen.getByText(t.common.overlay));
+    const textarea = screen.getByPlaceholderText(t.captions.enterOverlayText);
     fireEvent.change(textarea, { target: { value: 'Global Caption' } });
 
     // 7. Switch to second photo and check if caption applied
     fireEvent.click(thumbs[1]);
-    // It should be expanded now because it HAS a caption (Global Caption)
-    expect(screen.getByPlaceholderText(/Enter overlay text/i)).toHaveValue('Global Caption');
+    expect(screen.getByPlaceholderText(t.captions.enterOverlayText)).toHaveValue('Global Caption');
 
     // 8. While applyToAll is on, change zoom on second photo
-    fireEvent.click(screen.getByText(/Framing/i));
-    const zoomSlider3 = await screen.findByRole('slider', { name: /magnification/i });
+    fireEvent.click(screen.getByText(t.common.framing));
+    const zoomSlider3 = await screen.findByRole('slider', { name: new RegExp(t.tools.slidesync.magnification, 'i') });
     fireEvent.change(zoomSlider3, { target: { value: '2.0' } });
 
     // 9. Switch back to first photo and check if zoom is NOT 2.0
     fireEvent.click(thumbs[0]);
-    const zoomSlider4 = await screen.findByRole('slider', { name: /magnification/i });
+    const zoomSlider4 = await screen.findByRole('slider', { name: new RegExp(t.tools.slidesync.magnification, 'i') });
     expect(zoomSlider4).toHaveValue('1.5');
   });
 });
+

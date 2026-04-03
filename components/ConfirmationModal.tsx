@@ -1,5 +1,6 @@
 import React from 'react';
 import { LucideIcon } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface ConfirmationModalProps {
   isOpen: boolean;
@@ -20,13 +21,17 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   onConfirm,
   title,
   message,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   Icon,
   iconColor = 'text-red-500',
   confirmButtonClass = 'bg-red-500 hover:bg-red-600',
 }) => {
+  const { t } = useLanguage();
   if (!isOpen) return null;
+
+  const finalConfirmLabel = confirmLabel || t.common.yesRemove;
+  const finalCancelLabel = cancelLabel || t.common.cancel;
 
   return (
     <div className="fixed inset-0 bg-slate-950/90 z-[150] flex flex-col items-center justify-center p-8 animate-fadeIn">
@@ -41,16 +46,17 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             onClick={onClose}
             className="py-3 px-4 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-bold transition-all"
           >
-            {cancelLabel}
+            {finalCancelLabel}
           </button>
           <button
             onClick={onConfirm}
             className={`py-3 px-4 rounded-xl text-white font-bold transition-all ${confirmButtonClass}`}
           >
-            {confirmLabel}
+            {finalConfirmLabel}
           </button>
         </div>
       </div>
     </div>
   );
 };
+
