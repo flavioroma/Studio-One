@@ -21,6 +21,8 @@ export const Navbar: React.FC<NavbarProps> = ({ toolName, onBack, toolId }) => {
         return 'text-tool-photoverlay';
       case 'videoverlay':
         return 'text-tool-videoverlay';
+      case 'picollage':
+        return 'text-tool-picollage';
       default:
         return 'text-blue-400/80';
     }

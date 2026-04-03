@@ -214,11 +214,10 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
 
           <hr className="border-slate-700 my-2 pt-4" />
 
-          <h3 className="mt-2 text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
+          <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
             {t.tools.photoverlay.pictureProperties}
           </h3>
 
-          {/* New Collapsible Framing Section */}
           {selectedItem && (
             <FramingSettingsPanel
               key={`framing-${selectedItem.id}`}
@@ -236,7 +235,6 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
             />
           )}
 
-          {/* New Collapsible Filter Section */}
           {selectedItem && (
             <FilterSettingsPanel
               key={`filter-${selectedItem.id}`}
@@ -252,7 +250,6 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
             />
           )}
 
-          {/* New Collapsible Border Section */}
           {selectedItem && (
             <BorderSettingsPanel
               key={`border-${selectedItem.id}`}
@@ -267,7 +264,6 @@ export const PhotoverlaySidebar: React.FC<PhotoverlaySidebarProps> = ({
             />
           )}
 
-          {/* New Collapsible Overlay Section */}
           {selectedItem && (
             <OverlaySettingsPanel
               key={`overlay-${selectedItem.id}`}

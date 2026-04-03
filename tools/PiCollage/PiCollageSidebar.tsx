@@ -130,9 +130,8 @@ export const PiCollageSidebar: React.FC<PiCollageSidebarProps> = ({
 
           <hr className="border-slate-700" />
 
-          {/* Picture Properties */}
           <div className="space-y-4">
-            <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest text-center">
+            <h3 className="text-sm mb-6 font-bold text-slate-100 uppercase tracking-widest text-center">
               {t.tools.picollage.pictureProperties}
             </h3>
 
@@ -142,7 +141,6 @@ export const PiCollageSidebar: React.FC<PiCollageSidebarProps> = ({
               </div>
             ) : (
               <div className="space-y-6">
-                {/* Framing Settings */}
                 <FramingSettingsPanel
                   key={`framing-${activePicture.id}`}
                   imageUrl={activePicture.previewUrl}
@@ -157,7 +155,6 @@ export const PiCollageSidebar: React.FC<PiCollageSidebarProps> = ({
                   }
                 />
 
-                {/* Filter Settings */}
                 <FilterSettingsPanel
                   key={`filter-${activePicture.id}`}
                   currentFilter={activePicture.filterSettings}
@@ -169,7 +166,6 @@ export const PiCollageSidebar: React.FC<PiCollageSidebarProps> = ({
                   defaultExpanded={!!activePicture.filterSettings && activePicture.filterSettings !== FilterMode.Normal}
                 />
 
-                {/* Border Settings */}
                 <BorderSettingsPanel
                   key={`border-${activePicture.id}`}
                   borderSize={activePicture.borderSettings.size || BorderSize.None}
@@ -182,7 +178,6 @@ export const PiCollageSidebar: React.FC<PiCollageSidebarProps> = ({
                   defaultExpanded={activePicture.borderSettings.size !== BorderSize.None}
                 />
 
-                {/* Overlay Settings */}
                 <OverlaySettingsPanel
                   key={`overlay-${activePicture.id}`}
                   applyToAll={applyToAll}
@@ -203,7 +198,6 @@ export const PiCollageSidebar: React.FC<PiCollageSidebarProps> = ({
         </div>
       )}
 
-      {/* Erase Project Button */}
       {pictures.length > 0 && (
         <div className="pt-6 mt-auto border-t border-slate-700">
           <button
